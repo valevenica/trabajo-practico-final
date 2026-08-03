@@ -1,0 +1,42 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.0.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StockManufactura.Api", "src/StockManufactura.Api/StockManufactura.Api.csproj", "{B1A11111-1111-4A11-8111-11111111B1A1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StockManufactura.Application", "src/StockManufactura.Application/StockManufactura.Application.csproj", "{B2A22222-2222-4A22-8222-22222222B2A2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StockManufactura.Domain", "src/StockManufactura.Domain/StockManufactura.Domain.csproj", "{B3A33333-3333-4A33-8333-33333333B3A3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StockManufactura.Infrastructure", "src/StockManufactura.Infrastructure/StockManufactura.Infrastructure.csproj", "{B4A44444-4444-4A44-8444-44444444B4A4}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StockManufactura.Shared", "src/StockManufactura.Shared/StockManufactura.Shared.csproj", "{B5A55555-5555-4A55-8555-55555555B5A5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StockManufactura.UnitTests", "tests/StockManufactura.UnitTests/StockManufactura.UnitTests.csproj", "{B6A66666-6666-4A66-8666-66666666B6A6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StockManufactura.IntegrationTests", "tests/StockManufactura.IntegrationTests/StockManufactura.IntegrationTests.csproj", "{B7A77777-7777-4A77-8777-77777777B7A7}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B1A11111-1111-4A11-8111-11111111B1A1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B1A11111-1111-4A11-8111-11111111B1A1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B1A11111-1111-4A11-8111-11111111B1A1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B1A11111-1111-4A11-8111-11111111B1A1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B2A22222-2222-4A22-8222-22222222B2A2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B2A22222-2222-4A22-8222-22222222B2A2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B3A33333-3333-4A33-8333-33333333B3A3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B3A33333-3333-4A33-8333-33333333B3A3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B4A44444-4444-4A44-8444-44444444B4A4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B4A44444-4444-4A44-8444-44444444B4A4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B5A55555-5555-4A55-8555-55555555B5A5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B5A55555-5555-4A55-8555-55555555B5A5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B6A66666-6666-4A66-8666-66666666B6A6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B6A66666-6666-4A66-8666-66666666B6A6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B7A77777-7777-4A77-8777-77777777B7A7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B7A77777-7777-4A77-8777-77777777B7A7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+	EndGlobalSection
+EndGlobal
