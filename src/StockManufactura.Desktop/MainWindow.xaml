@@ -50,19 +50,27 @@
                 BorderBrush="#4A4B50"
                 BorderThickness="0,0,1,0"
                 Padding="12,16">
+            <Border.Resources>
+                <Style x:Key="SidebarMenuButtonStyle" TargetType="Button" BasedOn="{StaticResource SecondaryButtonStyle}">
+                    <Setter Property="Foreground" Value="White" />
+                    <Setter Property="Background" Value="#FFFFFF12" />
+                    <Setter Property="BorderBrush" Value="#D6B87A" />
+                    <Setter Property="FontWeight" Value="SemiBold" />
+                </Style>
+            </Border.Resources>
             <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                 <StackPanel>
-                    <Button Content="Dashboard" Margin="0,0,0,8" Command="{Binding NavigateDashboardCommand}" Style="{StaticResource SecondaryButtonStyle}" />
-                    <Button Content="Productos" Margin="0,0,0,8" Command="{Binding NavigateProductsCommand}" IsEnabled="{Binding CanViewProducts}" Style="{StaticResource SecondaryButtonStyle}" />
-                    <Button Content="Recetas BOM" Margin="0,0,0,8" Command="{Binding NavigateBomCommand}" IsEnabled="{Binding CanEditBom}" Style="{StaticResource SecondaryButtonStyle}" />
-                    <Button Content="Recursos" Margin="0,0,0,8" Command="{Binding NavigateResourcesCommand}" Style="{StaticResource SecondaryButtonStyle}" />
-                    <Button Content="Proveedores" Margin="0,0,0,8" Command="{Binding NavigateProvidersCommand}" IsEnabled="{Binding CanManageProviders}" Style="{StaticResource SecondaryButtonStyle}" />
-                    <Button Content="Órdenes" Margin="0,0,0,8" Command="{Binding NavigateProductionOrdersCommand}" IsEnabled="{Binding CanManageProductionOrders}" Style="{StaticResource SecondaryButtonStyle}" />
-                    <Button Content="Monetaria" Margin="0,0,0,8" Command="{Binding NavigateMonetaryCommand}" Style="{StaticResource SecondaryButtonStyle}" />
-                    <Button Content="Bitácora" Margin="0,0,0,8" Command="{Binding NavigateAuditCommand}" Style="{StaticResource SecondaryButtonStyle}" />
-                    <Button Content="Backups" Margin="0,0,0,8" Command="{Binding NavigateBackupsCommand}" Style="{StaticResource SecondaryButtonStyle}" />
-                    <Button Content="Historial Costos" Margin="0,0,0,8" Command="{Binding NavigateCostsCommand}" Style="{StaticResource SecondaryButtonStyle}" />
-                    <Button Content="Usuarios" Margin="0,0,0,8" Command="{Binding NavigateUsersCommand}" IsEnabled="{Binding CanManageUsers}" Style="{StaticResource SecondaryButtonStyle}" />
+                    <Button Content="Dashboard" Margin="0,0,0,8" Command="{Binding NavigateDashboardCommand}" Style="{StaticResource SidebarMenuButtonStyle}" />
+                    <Button Content="Productos" Margin="0,0,0,8" Command="{Binding NavigateProductsCommand}" Style="{StaticResource SidebarMenuButtonStyle}" />
+                    <Button Content="Recetas BOM" Margin="0,0,0,8" Command="{Binding NavigateBomCommand}" Style="{StaticResource SidebarMenuButtonStyle}" />
+                    <Button Content="Recursos" Margin="0,0,0,8" Command="{Binding NavigateResourcesCommand}" Style="{StaticResource SidebarMenuButtonStyle}" />
+                    <Button Content="Proveedores" Margin="0,0,0,8" Command="{Binding NavigateProvidersCommand}" Style="{StaticResource SidebarMenuButtonStyle}" />
+                    <Button Content="Órdenes" Margin="0,0,0,8" Command="{Binding NavigateProductionOrdersCommand}" Style="{StaticResource SidebarMenuButtonStyle}" />
+                    <Button Content="Monetaria" Margin="0,0,0,8" Command="{Binding NavigateMonetaryCommand}" Style="{StaticResource SidebarMenuButtonStyle}" />
+                    <Button Content="Bitácora" Margin="0,0,0,8" Command="{Binding NavigateAuditCommand}" Style="{StaticResource SidebarMenuButtonStyle}" />
+                    <Button Content="Backups" Margin="0,0,0,8" Command="{Binding NavigateBackupsCommand}" Style="{StaticResource SidebarMenuButtonStyle}" />
+                    <Button Content="Historial Costos" Margin="0,0,0,8" Command="{Binding NavigateCostsCommand}" Style="{StaticResource SidebarMenuButtonStyle}" />
+                    <Button Content="Usuarios" Margin="0,0,0,8" Command="{Binding NavigateUsersCommand}" Style="{StaticResource SidebarMenuButtonStyle}" />
                 </StackPanel>
             </ScrollViewer>
         </Border>

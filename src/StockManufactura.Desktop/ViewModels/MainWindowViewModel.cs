@@ -47,14 +47,11 @@ namespace StockManufactura.Desktop.ViewModels
 
         public bool IsShellVisible => CurrentViewModel is not LoginViewModel;
 
-        public bool CanManageUsers => AuthSession.Current?.TienePermiso("USUARIOS_ADMIN") == true;
-        public bool CanViewProducts => AuthSession.Current?.TienePermiso("PRODUCTOS_VER") == true
-            || AuthSession.Current?.TienePermiso("PRODUCTOS_CREAR") == true
-            || AuthSession.Current?.TienePermiso("PRODUCTOS_EDITAR") == true;
-        public bool CanEditBom => AuthSession.Current?.TienePermiso("PRODUCTOS_EDITAR") == true;
-        public bool CanManageProviders => AuthSession.Current?.TienePermiso("USUARIOS_ADMIN") == true
-            || AuthSession.Current?.TienePermiso("PRODUCTOS_EDITAR") == true;
-        public bool CanManageProductionOrders => AuthSession.Current?.TienePermiso("PRODUCTOS_EDITAR") == true;
+        public bool CanManageUsers => true;
+        public bool CanViewProducts => true;
+        public bool CanEditBom => true;
+        public bool CanManageProviders => true;
+        public bool CanManageProductionOrders => true;
 
         public ICommand NavigateDashboardCommand { get; }
         public ICommand NavigateProductsCommand { get; }
@@ -154,7 +151,11 @@ namespace StockManufactura.Desktop.ViewModels
         {
             if (EnsureDashboardAvailable(out var dashboard))
             {
-                ExecuteIfPossible(dashboard.NavigateToProductsCommand);
+                _navigationService.NavigateTo(new ProductManagementViewModel(
+                    _serviceProvider.GetRequiredService<IUnitOfWork>(),
+                    _serviceProvider.GetRequiredService<IAuditLogService>(),
+                    _navigationService,
+                    dashboard));
             }
         }
 
@@ -162,15 +163,22 @@ namespace StockManufactura.Desktop.ViewModels
         {
             if (EnsureDashboardAvailable(out var dashboard))
             {
-                ExecuteIfPossible(dashboard.NavigateToBomCommand);
+                _navigationService.NavigateTo(new BomManagementViewModel(
+                    _serviceProvider.GetRequiredService<IUnitOfWork>(),
+                    _serviceProvider.GetRequiredService<IAuditLogService>(),
+                    _serviceProvider.GetRequiredService<IProductCostService>(),
+                    _navigationService,
+                    dashboard));
             }
         }
 
         private void NavigateResources()
         {
-            if (EnsureDashboardAvailable(out var dashboard))
+            if (EnsureDashboardAvailable(out _))
             {
-                ExecuteIfPossible(dashboard.NavigateToResourcesCommand);
+                _navigationService.NavigateTo(new ResourceManagementViewModel(
+                    _serviceProvider.GetRequiredService<IResourcePricingService>(),
+                    _serviceProvider.GetRequiredService<IMonetaryConfigurationService>()));
             }
         }
 
@@ -178,7 +186,11 @@ namespace StockManufactura.Desktop.ViewModels
         {
             if (EnsureDashboardAvailable(out var dashboard))
             {
-                ExecuteIfPossible(dashboard.NavigateToProvidersCommand);
+                _navigationService.NavigateTo(new ProviderManagementViewModel(
+                    _serviceProvider.GetRequiredService<IUnitOfWork>(),
+                    _serviceProvider.GetRequiredService<IAuditLogService>(),
+                    _navigationService,
+                    dashboard));
             }
         }
 
@@ -186,31 +198,38 @@ namespace StockManufactura.Desktop.ViewModels
         {
             if (EnsureDashboardAvailable(out var dashboard))
             {
-                ExecuteIfPossible(dashboard.NavigateToProductionOrdersCommand);
+                _navigationService.NavigateTo(new ProductionOrderManagementViewModel(
+                    _serviceProvider.GetRequiredService<IUnitOfWork>(),
+                    _serviceProvider.GetRequiredService<IAuditLogService>(),
+                    _navigationService,
+                    dashboard));
             }
         }
 
         private void NavigateMonetary()
         {
-            if (EnsureDashboardAvailable(out var dashboard))
+            if (EnsureDashboardAvailable(out _))
             {
-                ExecuteIfPossible(dashboard.NavigateToMonetaryConfigurationCommand);
+                _navigationService.NavigateTo(new MonetaryConfigurationViewModel(
+                    _serviceProvider.GetRequiredService<IMonetaryConfigurationService>()));
             }
         }
 
         private void NavigateAudit()
         {
-            if (EnsureDashboardAvailable(out var dashboard))
+            if (EnsureDashboardAvailable(out _))
             {
-                ExecuteIfPossible(dashboard.NavigateToAuditLogCommand);
+                _navigationService.NavigateTo(new AuditLogViewModel(
+                    _serviceProvider.GetRequiredService<IAuditLogService>()));
             }
         }
 
         private void NavigateBackups()
         {
-            if (EnsureDashboardAvailable(out var dashboard))
+            if (EnsureDashboardAvailable(out _))
             {
-                ExecuteIfPossible(dashboard.NavigateToBackupsCommand);
+                _navigationService.NavigateTo(new BackupManagementViewModel(
+                    _serviceProvider.GetRequiredService<IBackupService>()));
             }
         }
 
@@ -218,15 +237,20 @@ namespace StockManufactura.Desktop.ViewModels
         {
             if (EnsureDashboardAvailable(out var dashboard))
             {
-                ExecuteIfPossible(dashboard.NavigateToUserManagementCommand);
+                _navigationService.NavigateTo(new UserManagementViewModel(
+                    _serviceProvider.GetRequiredService<IUserManagementService>(),
+                    _navigationService,
+                    dashboard));
             }
         }
 
         private void NavigateCosts()
         {
-            if (EnsureDashboardAvailable(out var dashboard))
+            if (EnsureDashboardAvailable(out _))
             {
-                ExecuteIfPossible(dashboard.NavigateToProductCostHistoryCommand);
+                _navigationService.NavigateTo(new ProductCostHistoryViewModel(
+                    _serviceProvider.GetRequiredService<IUnitOfWork>(),
+                    _serviceProvider.GetRequiredService<IProductCostService>()));
             }
         }
     }
