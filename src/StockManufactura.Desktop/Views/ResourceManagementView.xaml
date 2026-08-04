@@ -61,15 +61,17 @@
             </DataGrid.Columns>
         </DataGrid>
 
-        <StackPanel Grid.Row="2" Grid.Column="1" Margin="10 0 0 10">
-            <TextBlock Text="Cotización vigente:" FontWeight="SemiBold" />
-            <TextBlock Text="{Binding CotizacionVigente}" Margin="0 2 0 10" />
-            <TextBlock Text="Costo equivalente en pesos:" FontWeight="SemiBold" />
-            <TextBlock Text="{Binding CostoEquivalentePesos}" Margin="0 2 0 10" />
-            <Button Content="Recalcular" Command="{Binding RecalculateCommand}" Height="34" Margin="0 0 0 8" />
-            <Button Content="Guardar precio" Command="{Binding SaveCommand}" Height="34" Margin="0 0 0 8" />
-            <TextBlock Text="{Binding StatusMessage}" TextWrapping="Wrap" />
-        </StackPanel>
+        <ScrollViewer Grid.Row="2" Grid.Column="1" Margin="10 0 0 10" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <StackPanel>
+                <TextBlock Text="Cotización vigente:" FontWeight="SemiBold" />
+                <TextBlock Text="{Binding CotizacionVigente}" Margin="0 2 0 10" />
+                <TextBlock Text="Costo equivalente en pesos:" FontWeight="SemiBold" />
+                <TextBlock Text="{Binding CostoEquivalentePesos}" Margin="0 2 0 10" />
+                <Button Content="Recalcular" Command="{Binding RecalculateCommand}" Height="34" Margin="0 0 0 8" />
+                <Button Content="Guardar precio" Command="{Binding SaveCommand}" Height="34" Margin="0 0 0 8" />
+                <TextBlock Text="{Binding StatusMessage}" TextWrapping="Wrap" />
+            </StackPanel>
+        </ScrollViewer>
 
         <DataGrid Grid.Row="3" Grid.ColumnSpan="2" ItemsSource="{Binding PriceHistory}" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False">
             <DataGrid.Columns>
