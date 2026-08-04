@@ -42,8 +42,28 @@
                 <StackPanel>
                     <TextBlock Text="Módulo: Órdenes de Producción" FontSize="24" FontWeight="Bold" Foreground="#050505" Margin="0,0,0,16" />
 
+                    <Grid Margin="0,0,0,12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="1.2*" />
+                            <ColumnDefinition Width="1.2*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0" Margin="0,0,10,0">
+                            <TextBlock Text="Filtrar por estado" FontWeight="SemiBold" Margin="0,0,0,4" />
+                            <ComboBox ItemsSource="{Binding OrderStatusFilters}" SelectedItem="{Binding SelectedOrderStatusFilter, UpdateSourceTrigger=PropertyChanged}" Height="34" />
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="1" Margin="0,0,10,0">
+                            <TextBlock Text="Ordenar tabla" FontWeight="SemiBold" Margin="0,0,0,4" />
+                            <ComboBox ItemsSource="{Binding OrderSortOptions}" SelectedItem="{Binding SelectedOrderSortOption, UpdateSourceTrigger=PropertyChanged}" Height="34" />
+                        </StackPanel>
+
+                        <Button Grid.Column="2" Content="Actualizar" Command="{Binding RefreshStatusCommand}" Width="130" Height="34" VerticalAlignment="Bottom" Style="{StaticResource SecondaryButtonStyle}" />
+                    </Grid>
+
                     <Border CornerRadius="8" Background="#EEEDEA" BorderBrush="#C6C0B8" BorderThickness="1" ClipToBounds="True">
-                        <DataGrid ItemsSource="{Binding Orders}"
+                        <DataGrid ItemsSource="{Binding OrdersView}"
                                   AutoGenerateColumns="False"
                                   CanUserAddRows="False"
                                   CanUserDeleteRows="False"

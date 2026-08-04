@@ -12,18 +12,26 @@ namespace StockManufactura.Desktop.ViewModels
             Codigo = order.Codigo;
             ProductName = productName;
             Quantity = order.CantidadPlaneada.ToString("0.##", CultureInfo.InvariantCulture);
+            StatusFilter = GetStatusFilter(order.Estado);
             Estado = GetStatusText(order.Estado);
-            Fecha = GetDateText(order);
+            Fecha = order.CreatedAt.ToString("dd/MM/yyyy");
             Costo = FormatMoney(estimatedCost);
+            CreatedAt = order.CreatedAt;
+            EstimatedCostValue = estimatedCost;
+            StatusSortOrder = GetStatusSortOrder(order.Estado);
             (StatusBackground, StatusForeground) = GetStatusBrushes(order.Estado);
         }
 
         public string Codigo { get; }
         public string ProductName { get; }
         public string Quantity { get; }
+        public string StatusFilter { get; }
         public string Estado { get; }
         public string Fecha { get; }
         public string Costo { get; }
+        public DateTime CreatedAt { get; }
+        public decimal EstimatedCostValue { get; }
+        public int StatusSortOrder { get; }
         public Brush StatusBackground { get; }
         public Brush StatusForeground { get; }
 
@@ -31,8 +39,8 @@ namespace StockManufactura.Desktop.ViewModels
         {
             return estado switch
             {
-                EstadoOrdenProduccion.Borrador => "BORRADOR",
-                EstadoOrdenProduccion.Planificada => "PLANIFICADA",
+                EstadoOrdenProduccion.Borrador => "EN ESPERA",
+                EstadoOrdenProduccion.Planificada => "EN ESPERA",
                 EstadoOrdenProduccion.EnProceso => "EN PROCESO",
                 EstadoOrdenProduccion.Finalizada => "FINALIZADA",
                 EstadoOrdenProduccion.Cancelada => "CANCELADA",
@@ -40,15 +48,35 @@ namespace StockManufactura.Desktop.ViewModels
             };
         }
 
-        private static string GetDateText(OrdenProduccion order)
+        private static string GetStatusFilter(EstadoOrdenProduccion estado)
         {
-            var date = order.FechaFin ?? order.FechaInicio ?? order.CreatedAt;
-            return date.ToString("dd/MM/yyyy");
+            return estado switch
+            {
+                EstadoOrdenProduccion.Borrador => "En espera",
+                EstadoOrdenProduccion.Planificada => "En espera",
+                EstadoOrdenProduccion.EnProceso => "En proceso",
+                EstadoOrdenProduccion.Finalizada => "Finalizada",
+                EstadoOrdenProduccion.Cancelada => "Cancelada",
+                _ => estado.ToString()
+            };
         }
 
         private static string FormatMoney(decimal amount)
         {
             return $"${amount.ToString("N2", CultureInfo.InvariantCulture)}";
+        }
+
+        private static int GetStatusSortOrder(EstadoOrdenProduccion estado)
+        {
+            return estado switch
+            {
+                EstadoOrdenProduccion.Borrador => 0,
+                EstadoOrdenProduccion.Planificada => 0,
+                EstadoOrdenProduccion.EnProceso => 1,
+                EstadoOrdenProduccion.Finalizada => 2,
+                EstadoOrdenProduccion.Cancelada => 3,
+                _ => 99
+            };
         }
 
         private static (Brush Background, Brush Foreground) GetStatusBrushes(EstadoOrdenProduccion estado)
