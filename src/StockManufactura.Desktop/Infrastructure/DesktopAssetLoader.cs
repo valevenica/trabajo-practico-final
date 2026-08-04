@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using StockManufactura.Shared;
@@ -8,39 +10,43 @@ namespace StockManufactura.Desktop.Infrastructure;
 
 public static class DesktopAssetLoader
 {
+    private const string LogoPathEnvVar = "STOCKMANUFACTURA_LOGO_PATH";
+    private const string IconPathEnvVar = "STOCKMANUFACTURA_ICON_PATH";
+
     private static readonly string[] EmbeddedLogoUris =
     {
         "pack://application:,,,/Assets/logo%202.png",
         "pack://application:,,,/Assets/logo.png"
     };
 
+    private static readonly string[] LogoFileExtensions = { ".png", ".jpg", ".jpeg", ".webp", ".bmp" };
+    private static readonly string[] LogoNamePatterns = { "logo*", "brand*", "integra*" };
+    private static readonly string[] IconNamePatterns = { "app*", "icon*", "logo*" };
+
     public static ImageSource? TryLoadLogoImage()
     {
-        foreach (var uri in EmbeddedLogoUris)
+        var configuredLogoPath = Environment.GetEnvironmentVariable(LogoPathEnvVar);
+        if (!string.IsNullOrWhiteSpace(configuredLogoPath))
         {
-            var image = TryCreateImageSource(uri);
+            var configuredLogo = TryCreateImageSource(configuredLogoPath.Trim());
+            if (configuredLogo is not null)
+            {
+                return configuredLogo;
+            }
+        }
+
+        foreach (var candidate in EnumerateLogoCandidates())
+        {
+            var image = TryCreateImageSource(candidate);
             if (image is not null)
             {
                 return image;
             }
         }
 
-        var fileCandidates = new[]
+        foreach (var uri in EmbeddedLogoUris)
         {
-            Path.Combine(AppContext.BaseDirectory, "Assets", "logo 2.png"),
-            Path.Combine(AppContext.BaseDirectory, "Assets", "logo.png"),
-            Path.Combine(AppPaths.AssetsDirectory, "logo 2.png"),
-            AppPaths.SplashLogoPath
-        };
-
-        foreach (var filePath in fileCandidates)
-        {
-            if (!File.Exists(filePath))
-            {
-                continue;
-            }
-
-            var image = TryCreateImageSource(filePath);
+            var image = TryCreateImageSource(uri);
             if (image is not null)
             {
                 return image;
@@ -52,20 +58,25 @@ public static class DesktopAssetLoader
 
     public static ImageSource? TryLoadWindowIcon()
     {
-        var fileCandidates = new[]
+        var configuredIconPath = Environment.GetEnvironmentVariable(IconPathEnvVar);
+        if (!string.IsNullOrWhiteSpace(configuredIconPath))
         {
-            Path.Combine(AppContext.BaseDirectory, "Assets", "app.ico"),
-            Path.Combine(AppPaths.AssetsDirectory, "app.ico")
-        };
-
-        foreach (var filePath in fileCandidates)
-        {
-            if (!File.Exists(filePath))
+            var configuredIcon = TryCreateIconSource(configuredIconPath.Trim());
+            if (configuredIcon is not null)
             {
-                continue;
+                return configuredIcon;
             }
+        }
 
-            var icon = TryCreateImageSource(filePath);
+        var embeddedIcon = TryCreateIconSource("pack://application:,,,/Assets/app.ico");
+        if (embeddedIcon is not null)
+        {
+            return embeddedIcon;
+        }
+
+        foreach (var filePath in EnumerateIconCandidates())
+        {
+            var icon = TryCreateIconSource(filePath);
             if (icon is not null)
             {
                 return icon;
@@ -92,6 +103,85 @@ public static class DesktopAssetLoader
         catch
         {
             return null;
+        }
+    }
+
+    private static ImageSource? TryCreateIconSource(string candidate)
+    {
+        try
+        {
+            var uri = new Uri(candidate, UriKind.Absolute);
+            var frame = BitmapFrame.Create(uri, BitmapCreateOptions.None, BitmapCacheOption.OnLoad);
+            frame.Freeze();
+            return frame;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static IEnumerable<string> EnumerateLogoCandidates()
+    {
+        foreach (var assetsFolder in GetAssetsFolders())
+        {
+            if (!Directory.Exists(assetsFolder))
+            {
+                continue;
+            }
+
+            foreach (var pattern in LogoNamePatterns)
+            {
+                foreach (var file in SafeEnumerateFiles(assetsFolder, pattern + ".*"))
+                {
+                    if (LogoFileExtensions.Contains(Path.GetExtension(file), StringComparer.OrdinalIgnoreCase))
+                    {
+                        yield return file;
+                    }
+                }
+            }
+        }
+
+        if (File.Exists(AppPaths.SplashLogoPath))
+        {
+            yield return AppPaths.SplashLogoPath;
+        }
+    }
+
+    private static IEnumerable<string> EnumerateIconCandidates()
+    {
+        foreach (var assetsFolder in GetAssetsFolders())
+        {
+            if (!Directory.Exists(assetsFolder))
+            {
+                continue;
+            }
+
+            foreach (var pattern in IconNamePatterns)
+            {
+                foreach (var file in SafeEnumerateFiles(assetsFolder, pattern + ".ico"))
+                {
+                    yield return file;
+                }
+            }
+        }
+    }
+
+    private static IEnumerable<string> GetAssetsFolders()
+    {
+        yield return Path.Combine(AppContext.BaseDirectory, "Assets");
+        yield return AppPaths.AssetsDirectory;
+    }
+
+    private static IEnumerable<string> SafeEnumerateFiles(string folderPath, string searchPattern)
+    {
+        try
+        {
+            return Directory.EnumerateFiles(folderPath, searchPattern, SearchOption.TopDirectoryOnly);
+        }
+        catch
+        {
+            return Array.Empty<string>();
         }
     }
 }
