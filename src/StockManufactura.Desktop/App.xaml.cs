@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -12,6 +13,7 @@ using StockManufactura.Desktop.Infrastructure;
 using StockManufactura.Desktop.Services;
 using StockManufactura.Desktop.ViewModels;
 using StockManufactura.Infrastructure.Db;
+using StockManufactura.Shared;
 
 namespace StockManufactura.Desktop;
 
@@ -22,48 +24,70 @@ public partial class App : global::System.Windows.Application
 {
     private IHost? _host;
 
-    protected override void OnStartup(StartupEventArgs e)
+    protected override async void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+
+        Directory.CreateDirectory(AppPaths.LogsDirectory);
+        Directory.CreateDirectory(AppPaths.AssetsDirectory);
+
+        var splashWindow = new SplashWindow();
+        splashWindow.Show();
+        await Task.Yield();
 
         Log.Logger = new LoggerConfiguration()
             .MinimumLevel.Debug()
             .WriteTo.Console()
-            .WriteTo.File("logs\\StockManufactura.log", rollingInterval: RollingInterval.Day)
+            .WriteTo.File(AppPaths.ApplicationLogPath, rollingInterval: RollingInterval.Day)
             .CreateLogger();
 
-        _host = Host.CreateDefaultBuilder()
-            .UseSerilog()
-            .ConfigureServices((context, services) =>
-            {
-                services.AddDesktopServices();
-                services.AddDesktopInfrastructure();
-            })
-            .Build();
-
-        using (var scope = _host.Services.CreateScope())
+        try
         {
-            var scopedServices = scope.ServiceProvider;
-            var healthCheck = scopedServices.GetRequiredService<DesktopStartupHealthCheck>();
-            var healthReport = healthCheck.Execute();
-            WriteStartupDiagnostics(healthReport);
+            _host = Host.CreateDefaultBuilder()
+                .UseSerilog()
+                .ConfigureServices((context, services) =>
+                {
+                    services.AddDesktopServices();
+                    services.AddDesktopInfrastructure();
+                })
+                .Build();
 
-            if (e.Args.Any(arg => string.Equals(arg, "--health-check", StringComparison.OrdinalIgnoreCase)))
+            using (var scope = _host.Services.CreateScope())
             {
-                Shutdown(0);
-                return;
+                var scopedServices = scope.ServiceProvider;
+                var healthCheck = scopedServices.GetRequiredService<DesktopStartupHealthCheck>();
+                var healthReport = healthCheck.Execute();
+                WriteStartupDiagnostics(healthReport);
+
+                if (e.Args.Any(arg => string.Equals(arg, "--health-check", StringComparison.OrdinalIgnoreCase)))
+                {
+                    splashWindow.Close();
+                    Shutdown(0);
+                    return;
+                }
             }
+
+            var mainWindow = _host.Services.GetRequiredService<MainWindow>();
+            var mainWindowViewModel = _host.Services.GetRequiredService<MainWindowViewModel>();
+            var loginViewModel = _host.Services.GetRequiredService<LoginViewModel>();
+            var navigationService = _host.Services.GetRequiredService<NavigationService>();
+
+            navigationService.NavigateAction = viewModel => mainWindowViewModel.CurrentViewModel = viewModel;
+            mainWindow.DataContext = mainWindowViewModel;
+            mainWindowViewModel.CurrentViewModel = loginViewModel;
+
+            splashWindow.Close();
+            mainWindow.Show();
         }
+        catch
+        {
+            if (splashWindow.IsVisible)
+            {
+                splashWindow.Close();
+            }
 
-        var mainWindow = _host.Services.GetRequiredService<MainWindow>();
-        var mainWindowViewModel = _host.Services.GetRequiredService<MainWindowViewModel>();
-        var loginViewModel = _host.Services.GetRequiredService<LoginViewModel>();
-        var navigationService = _host.Services.GetRequiredService<NavigationService>();
-
-        navigationService.NavigateAction = viewModel => mainWindowViewModel.CurrentViewModel = viewModel;
-        mainWindow.DataContext = mainWindowViewModel;
-        mainWindowViewModel.CurrentViewModel = loginViewModel;
-        mainWindow.Show();
+            throw;
+        }
     }
 
     protected override async void OnExit(ExitEventArgs e)
@@ -87,8 +111,8 @@ public partial class App : global::System.Windows.Application
         Trace.WriteLine(diagnosticText);
         Log.Information("{DesktopHealthCheckReport}", diagnosticText);
 
-        Directory.CreateDirectory("logs");
-        File.AppendAllText("logs\\startup-healthcheck.log", $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} {Environment.NewLine}{diagnosticText}{Environment.NewLine}");
+        Directory.CreateDirectory(AppPaths.LogsDirectory);
+        File.AppendAllText(AppPaths.StartupHealthcheckLogPath, $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} {Environment.NewLine}{diagnosticText}{Environment.NewLine}");
     }
 }
 

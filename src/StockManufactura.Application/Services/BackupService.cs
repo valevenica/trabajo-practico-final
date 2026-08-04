@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using StockManufactura.Application.Interfaces;
 using StockManufactura.Domain.Entities;
+using StockManufactura.Shared;
 
 namespace StockManufactura.Application.Services
 {
@@ -38,7 +39,7 @@ namespace StockManufactura.Application.Services
 
             settings = new BackupSettings
             {
-                CarpetaLocal = Path.Combine(AppContext.BaseDirectory, "Backups"),
+                CarpetaLocal = AppPaths.BackupsDirectory,
                 Automatico = false,
                 MantenerUltimasCopias = 10,
                 IntervaloMinutos = 60
@@ -87,7 +88,7 @@ namespace StockManufactura.Application.Services
         public async Task<BackupRecord> RestoreBackupAsync(string zipPath, string usuario, CancellationToken cancellationToken = default)
         {
             var settings = await GetSettingsAsync(cancellationToken);
-            var targetDbPath = Path.Combine(AppContext.BaseDirectory, "Data", "StockManufactura.db");
+            var targetDbPath = AppPaths.DatabaseFilePath;
             Directory.CreateDirectory(Path.GetDirectoryName(targetDbPath)!);
 
             using var archive = ZipFile.OpenRead(zipPath);
@@ -124,7 +125,7 @@ namespace StockManufactura.Application.Services
             var settings = await GetSettingsAsync(cancellationToken);
             Directory.CreateDirectory(settings.CarpetaLocal);
 
-            var dbPath = Path.Combine(AppContext.BaseDirectory, "Data", "StockManufactura.db");
+            var dbPath = AppPaths.DatabaseFilePath;
             var zipPath = Path.Combine(settings.CarpetaLocal, $"backup-{DateTime.UtcNow:yyyyMMdd-HHmmss}.zip");
 
             using (var archive = ZipFile.Open(zipPath, ZipArchiveMode.Create))

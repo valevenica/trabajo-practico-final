@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using StockManufactura.Application.Interfaces;
 using StockManufactura.Domain.Entities;
+using StockManufactura.Shared;
 
 namespace StockManufactura.Application.Services
 {
@@ -36,7 +37,7 @@ namespace StockManufactura.Application.Services
             var monetaryState = await _monetaryConfigurationService.GetCurrentStateAsync(cancellationToken);
             var settings = await _backupService.GetSettingsAsync(cancellationToken);
 
-            var databasePath = Path.Combine(AppContext.BaseDirectory, "stockmanufactura.db");
+            var databasePath = AppPaths.DatabaseFilePath;
             var databaseSizeBytes = File.Exists(databasePath) ? new FileInfo(databasePath).Length : 0;
             var backupEnabled = settings.Automatico || settings.GoogleDriveHabilitado || latestBackup is not null;
             var driveSyncEnabled = settings.GoogleDriveHabilitado && _cloudSyncService is not null;

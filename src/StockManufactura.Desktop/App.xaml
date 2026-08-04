@@ -3,5 +3,133 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:StockManufactura.Desktop">
     <Application.Resources>
+        <Color x:Key="ColorPrimaryAccent">#7A1C52</Color>
+        <Color x:Key="ColorPrimaryAccentHover">#9B2469</Color>
+        <Color x:Key="ColorSecondaryAccent">#B8860B</Color>
+        <Color x:Key="ColorBackgroundDarkMetal">#2E2D30</Color>
+        <Color x:Key="ColorBackgroundSoftLight">#F8F6F2</Color>
+        <Color x:Key="ColorCardSurface">#FFFFFF</Color>
+        <Color x:Key="ColorTextMain">#1A1A24</Color>
+        <Color x:Key="ColorTextMuted">#555555</Color>
+
+        <SolidColorBrush x:Key="PrimaryAccentBrush" Color="{StaticResource ColorPrimaryAccent}" />
+        <SolidColorBrush x:Key="PrimaryAccentHoverBrush" Color="{StaticResource ColorPrimaryAccentHover}" />
+        <SolidColorBrush x:Key="SecondaryAccentBrush" Color="{StaticResource ColorSecondaryAccent}" />
+        <SolidColorBrush x:Key="BackgroundDarkMetalBrush" Color="{StaticResource ColorBackgroundDarkMetal}" />
+        <SolidColorBrush x:Key="BackgroundSoftLightBrush" Color="{StaticResource ColorBackgroundSoftLight}" />
+        <SolidColorBrush x:Key="CardSurfaceBrush" Color="{StaticResource ColorCardSurface}" />
+        <SolidColorBrush x:Key="TextMainBrush" Color="{StaticResource ColorTextMain}" />
+        <SolidColorBrush x:Key="TextMutedBrush" Color="{StaticResource ColorTextMuted}" />
+
+        <FontFamily x:Key="HeaderFontFamily">Georgia</FontFamily>
+        <FontFamily x:Key="BodyFontFamily">Segoe UI</FontFamily>
+
+        <Style TargetType="Window">
+            <Setter Property="Background" Value="{StaticResource BackgroundSoftLightBrush}" />
+            <Setter Property="Foreground" Value="{StaticResource TextMainBrush}" />
+            <Setter Property="FontFamily" Value="{StaticResource BodyFontFamily}" />
+            <Setter Property="FontSize" Value="13" />
+        </Style>
+
+        <Style TargetType="UserControl">
+            <Setter Property="Background" Value="{StaticResource BackgroundSoftLightBrush}" />
+            <Setter Property="Foreground" Value="{StaticResource TextMainBrush}" />
+            <Setter Property="FontFamily" Value="{StaticResource BodyFontFamily}" />
+            <Setter Property="FontSize" Value="13" />
+        </Style>
+
+        <Style TargetType="TextBox">
+            <Setter Property="Background" Value="{StaticResource CardSurfaceBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource SecondaryAccentBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="8,4" />
+        </Style>
+
+        <Style TargetType="PasswordBox">
+            <Setter Property="Background" Value="{StaticResource CardSurfaceBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource SecondaryAccentBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="8,4" />
+        </Style>
+
+        <Style TargetType="ComboBox">
+            <Setter Property="Background" Value="{StaticResource CardSurfaceBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource SecondaryAccentBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="6,3" />
+        </Style>
+
+        <Style TargetType="ListBox">
+            <Setter Property="Background" Value="{StaticResource CardSurfaceBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource SecondaryAccentBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+        </Style>
+
+        <Style x:Key="ScreenTitleStyle" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="{StaticResource HeaderFontFamily}" />
+            <Setter Property="FontSize" Value="24" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="Foreground" Value="{StaticResource PrimaryAccentBrush}" />
+            <Setter Property="TextOptions.TextFormattingMode" Value="Display" />
+        </Style>
+
+        <Style x:Key="SectionTitleStyle" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="{StaticResource HeaderFontFamily}" />
+            <Setter Property="FontSize" Value="18" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="Foreground" Value="{StaticResource TextMainBrush}" />
+        </Style>
+
+        <Style x:Key="CardBorderStyle" TargetType="Border">
+            <Setter Property="Background" Value="{StaticResource CardSurfaceBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource SecondaryAccentBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="12" />
+        </Style>
+
+        <Style x:Key="PrimaryButtonStyle" TargetType="Button">
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Background" Value="{StaticResource PrimaryAccentBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource PrimaryAccentBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="12,6" />
+            <Setter Property="Height" Value="36" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="4">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="{StaticResource PrimaryAccentHoverBrush}" />
+                                <Setter Property="BorderBrush" Value="{StaticResource PrimaryAccentHoverBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.55" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="SecondaryButtonStyle" TargetType="Button" BasedOn="{StaticResource PrimaryButtonStyle}">
+            <Setter Property="Foreground" Value="{StaticResource TextMainBrush}" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="{StaticResource SecondaryAccentBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+        </Style>
+
+        <Style x:Key="StatusMessageStyle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource PrimaryAccentBrush}" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
     </Application.Resources>
 </Application>

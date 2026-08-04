@@ -8,7 +8,7 @@
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter" />
     </UserControl.Resources>
-    <Grid Margin="24">
+    <Grid Margin="24" Background="{StaticResource BackgroundSoftLightBrush}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
@@ -16,10 +16,11 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <TextBlock Text="StockManufactura" FontSize="28" FontWeight="Bold" Margin="0 0 0 24" />
-        <TextBlock Text="Acceso al sistema" FontSize="16" Margin="0 0 0 32" Grid.Row="1" />
+        <TextBlock Text="INTEGRA MANUFACTURING" Style="{StaticResource ScreenTitleStyle}" Margin="0 0 0 24" />
+        <TextBlock Text="Acceso al sistema" FontSize="16" FontFamily="Georgia" FontStyle="Italic" Foreground="{StaticResource TextMutedBrush}" Margin="0 0 0 32" Grid.Row="1" />
 
-        <StackPanel Grid.Row="2" Orientation="Vertical" Margin="0 8 0 0">
+        <Border Grid.Row="2" Style="{StaticResource CardBorderStyle}">
+            <StackPanel Orientation="Vertical" Margin="0 4 0 0">
             <TextBlock Text="Email" Margin="0 0 0 4" />
             <TextBox Text="{Binding Email, UpdateSourceTrigger=PropertyChanged}" Height="35" />
 
@@ -35,12 +36,13 @@
 
                 <Button Content="Cambiar contraseña"
                         Command="{Binding ChangePasswordCommand}"
-                        Height="36"
-                        Margin="0 12 0 0" />
+                        Margin="0 12 0 0"
+                        Style="{StaticResource PrimaryButtonStyle}" />
             </StackPanel>
 
-            <Button Content="Ingresar" Command="{Binding LoginCommand}" Height="40" Margin="0 24 0 0" />
-            <TextBlock Text="{Binding StatusMessage}" Foreground="Red" Margin="0 12 0 0" />
-        </StackPanel>
+            <Button Content="Ingresar" Command="{Binding LoginCommand}" Height="40" Margin="0 24 0 0" Style="{StaticResource PrimaryButtonStyle}" />
+            <TextBlock Text="{Binding StatusMessage}" Margin="0 12 0 0" Style="{StaticResource StatusMessageStyle}" />
+            </StackPanel>
+        </Border>
     </Grid>
 </UserControl>
