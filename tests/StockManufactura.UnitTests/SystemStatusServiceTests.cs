@@ -25,8 +25,9 @@ public class SystemStatusServiceTests
             LastUpdate = new DateTime(2026, 8, 3, 10, 0, 0, DateTimeKind.Utc),
             Source = "DolarHoy"
         });
+        var cloudSyncService = new StubGoogleDriveBackupSyncService();
 
-        var service = new SystemStatusService(unitOfWork, monetaryService, backupService);
+        var service = new SystemStatusService(unitOfWork, monetaryService, backupService, cloudSyncService);
 
         var snapshot = await service.GetSnapshotAsync();
 
@@ -223,5 +224,11 @@ public class SystemStatusServiceTests
         public Task<ExchangeRate> UpdateAutomaticAsync(string providerKey, string usuario, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
         public Task<IReadOnlyList<ExchangeRate>> GetHistoryAsync(CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<ExchangeRate>>(Array.Empty<ExchangeRate>());
+    }
+
+    private sealed class StubGoogleDriveBackupSyncService : IGoogleDriveBackupSyncService
+    {
+        public Task<bool> TryUploadAsync(BackupRecord backupRecord, BackupSettings settings, CancellationToken cancellationToken = default)
+            => Task.FromResult(true);
     }
 }

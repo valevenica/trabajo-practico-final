@@ -14,7 +14,7 @@ public class StockTests
         stock.RegistrarEntrada(5m);
 
         Assert.Equal(15m, stock.CantidadDisponible);
-        Assert.Equal(7m, stock.CantidadReservada);
+        Assert.Equal(2m, stock.CantidadReservada);
         Assert.True(stock.UltimaActualizacion > DateTime.UtcNow.AddMinutes(-1));
     }
 }

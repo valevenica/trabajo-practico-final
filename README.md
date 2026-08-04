@@ -2,6 +2,10 @@
 
 Sistema para PyME manufacturera con arquitectura limpia, MVVM en Desktop y persistencia SQLite.
 
+## Pruebas funcionales guiadas
+
+- Ver ejemplos por modulo en `docs/ejemplos-pruebas-funcionales.md`.
+
 ## Diseno actual de recursos y cotizacion monetaria
 
 El sistema ya no sincroniza precios de recursos desde proveedores externos.
