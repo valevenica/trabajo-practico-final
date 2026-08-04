@@ -68,5 +68,29 @@ namespace StockManufactura.Application.Services
             var variation = await GetCostVariationReportAsync(null, null, cancellationToken);
             return variation.OrderByDescending(x => x.VariacionAbsoluta).Take(top).ToArray();
         }
+
+        public async Task<CostSummaryReport> GetCostSummaryReportAsync(CancellationToken cancellationToken = default)
+        {
+            var products = await _productCostHistoryRepository.ListAsync();
+            var latestCosts = products
+                .GroupBy(x => x.ProductId)
+                .Select(g => g.OrderByDescending(x => x.Fecha).First())
+                .ToArray();
+
+            if (latestCosts.Length == 0)
+            {
+                return new CostSummaryReport();
+            }
+
+            var costs = latestCosts.Select(x => x.CostoNuevo).ToArray();
+            return new CostSummaryReport
+            {
+                TotalProductos = latestCosts.Length,
+                TotalRecetas = latestCosts.Length,
+                CostoPromedio = costs.Average(),
+                CostoMaximo = costs.Max(),
+                CostoMinimo = costs.Min()
+            };
+        }
     }
 }

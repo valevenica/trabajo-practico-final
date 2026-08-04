@@ -14,5 +14,6 @@ namespace StockManufactura.Application.Interfaces
         Task<IReadOnlyList<CostImpactReportItem>> GetCostVariationReportAsync(DateTime? from, DateTime? to, CancellationToken cancellationToken = default);
         Task<IReadOnlyList<CostImpactReportItem>> GetDollarImpactReportAsync(DateTime? from, DateTime? to, CancellationToken cancellationToken = default);
         Task<IReadOnlyList<CostImpactReportItem>> GetTopIncreasedProductsAsync(int top, CancellationToken cancellationToken = default);
+        Task<CostSummaryReport> GetCostSummaryReportAsync(CancellationToken cancellationToken = default);
     }
 }

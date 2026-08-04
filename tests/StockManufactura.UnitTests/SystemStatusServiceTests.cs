@@ -1,3 +1,5 @@
+#nullable enable
+
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -162,6 +164,12 @@ public class SystemStatusServiceTests
             new Usuario("Usuario 3", "user3@test.com", "hash", Guid.NewGuid()),
             new Usuario("Usuario 4", "user4@test.com", "hash", Guid.NewGuid())
         });
+
+        public Task<Usuario?> GetByEmailAsync(string email, bool includeRole = false) => Task.FromResult<Usuario?>(null);
+
+        public Task<Usuario?> GetByIdWithRoleAsync(Guid id) => Task.FromResult<Usuario?>(null);
+
+        public Task<IReadOnlyList<Usuario>> ListWithRoleAsync() => Task.FromResult<IReadOnlyList<Usuario>>(Array.Empty<Usuario>());
     }
 
     private sealed class StubBackupService : IBackupService
