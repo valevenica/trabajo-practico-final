@@ -18,7 +18,7 @@
                     <StackPanel>
                         <TextBlock Text="STOCK CRÍTICO" Style="{StaticResource DashboardMetricTitleStyle}" />
                         <Border Style="{StaticResource DashboardMetricPillStyle}" Margin="0,18,0,0">
-                            <TextBlock Text="STOCK MÍNIMO (7 items)" Foreground="{StaticResource PrimaryAccentBrush}" FontSize="17" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                            <TextBlock Text="{Binding Status.CriticalStockCount, FallbackValue=0, TargetNullValue=0, StringFormat=STOCK MÍNIMO ({0} items)}" Foreground="{StaticResource PrimaryAccentBrush}" FontSize="17" FontWeight="SemiBold" HorizontalAlignment="Center" />
                         </Border>
                     </StackPanel>
                 </Border>
@@ -26,14 +26,14 @@
                     <StackPanel>
                         <TextBlock Text="ÓRDENES DE PRODUCCIÓN" Style="{StaticResource DashboardMetricTitleStyle}" Foreground="{StaticResource SecondaryAccentBrush}" />
                         <Border Style="{StaticResource DashboardMetricPillStyle}" Margin="0,18,0,0">
-                            <TextBlock Text="EN PROCESO (3)" Foreground="{StaticResource PrimaryAccentBrush}" FontSize="17" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                            <TextBlock Text="{Binding Status.OrdersInProcessCount, FallbackValue=0, TargetNullValue=0, StringFormat=EN PROCESO ({0})}" Foreground="{StaticResource PrimaryAccentBrush}" FontSize="17" FontWeight="SemiBold" HorizontalAlignment="Center" />
                         </Border>
                     </StackPanel>
                 </Border>
                 <Border Style="{StaticResource DashboardMetricCardStyle}" Margin="12,0,0,0">
                     <StackPanel>
                         <TextBlock Text="COSTOS TOTALES MES" Style="{StaticResource DashboardMetricTitleStyle}" />
-                        <TextBlock Text="$89,450.00" Margin="0,18,0,0" FontSize="27" FontWeight="Bold" Foreground="#050505" HorizontalAlignment="Center" />
+                        <TextBlock Text="{Binding Status.MonthlyCostTotal, FallbackValue=0, TargetNullValue=0, StringFormat={}{0:C2}}" Margin="0,18,0,0" FontSize="27" FontWeight="Bold" Foreground="#050505" HorizontalAlignment="Center" />
                     </StackPanel>
                 </Border>
             </UniformGrid>
@@ -43,53 +43,48 @@
                     <TextBlock Text="Módulo: Órdenes de Producción" FontSize="24" FontWeight="Bold" Foreground="#050505" Margin="0,0,0,16" />
 
                     <Border CornerRadius="8" Background="#EEEDEA" BorderBrush="#C6C0B8" BorderThickness="1" ClipToBounds="True">
-                        <Grid>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="52" />
-                                <RowDefinition Height="56" />
-                                <RowDefinition Height="56" />
-                                <RowDefinition Height="56" />
-                            </Grid.RowDefinitions>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="1.1*" />
-                                <ColumnDefinition Width="1.8*" />
-                                <ColumnDefinition Width="1*" />
-                                <ColumnDefinition Width="1.25*" />
-                                <ColumnDefinition Width="1.45*" />
-                                <ColumnDefinition Width="1.1*" />
-                            </Grid.ColumnDefinitions>
-
-                            <Border Grid.ColumnSpan="6" Background="{StaticResource TableHeaderBrush}" />
-                            <TextBlock Text="ID ORDEN" Style="{StaticResource TableHeaderTextStyle}" />
-                            <TextBlock Grid.Column="1" Text="PRODUCTO" Style="{StaticResource TableHeaderTextStyle}" />
-                            <TextBlock Grid.Column="2" Text="CANTIDAD" Style="{StaticResource TableHeaderTextStyle}" />
-                            <TextBlock Grid.Column="3" Text="ESTADO" Style="{StaticResource TableHeaderTextStyle}" />
-                            <TextBlock Grid.Column="4" Text="FECHA ENTREGA" Style="{StaticResource TableHeaderTextStyle}" />
-                            <TextBlock Grid.Column="5" Text="COSTO" Style="{StaticResource TableHeaderTextStyle}" Foreground="{StaticResource SecondaryAccentBrush}" />
-
-                            <TextBlock Grid.Row="1" Text="ID-101" Style="{StaticResource TableCellTextStyle}" />
-                            <TextBlock Grid.Row="1" Grid.Column="1" Text="Gear Assembly A" Style="{StaticResource TableCellTextStyle}" />
-                            <TextBlock Grid.Row="1" Grid.Column="2" Text="50" Style="{StaticResource TableCellTextStyle}" />
-                            <Border Grid.Row="1" Grid.Column="3" Style="{StaticResource BadgeSuccessStyle}"><TextBlock Text="COMPLETADA" /></Border>
-                            <TextBlock Grid.Row="1" Grid.Column="4" Text="2024-05-15" Style="{StaticResource TableCellTextStyle}" />
-                            <TextBlock Grid.Row="1" Grid.Column="5" Text="12,500.00" Style="{StaticResource TableCellTextStyle}" />
-
-                            <Border Grid.Row="2" Grid.ColumnSpan="6" BorderBrush="#181818" BorderThickness="0,1" Background="#FCFBF8" />
-                            <Border Grid.Row="2" Width="5" HorizontalAlignment="Left" Background="{StaticResource PrimaryAccentBrush}" />
-                            <TextBlock Grid.Row="2" Text="ID-102" Style="{StaticResource TableCellTextStyle}" />
-                            <TextBlock Grid.Row="2" Grid.Column="1" Text="Circuit Core B" Style="{StaticResource TableCellTextStyle}" />
-                            <TextBlock Grid.Row="2" Grid.Column="2" Text="25" Style="{StaticResource TableCellTextStyle}" />
-                            <Border Grid.Row="2" Grid.Column="3" Style="{StaticResource BadgeWarningStyle}"><TextBlock Text="EN PROCESO" /></Border>
-                            <TextBlock Grid.Row="2" Grid.Column="4" Text="2024-05-20" Style="{StaticResource TableCellTextStyle}" />
-                            <TextBlock Grid.Row="2" Grid.Column="5" Text="8,750.00" Style="{StaticResource TableCellTextStyle}" />
-
-                            <TextBlock Grid.Row="3" Text="ID-103" Style="{StaticResource TableCellTextStyle}" />
-                            <TextBlock Grid.Row="3" Grid.Column="1" Text="Motor Assembly" Style="{StaticResource TableCellTextStyle}" />
-                            <TextBlock Grid.Row="3" Grid.Column="2" Text="100" Style="{StaticResource TableCellTextStyle}" />
-                            <Border Grid.Row="3" Grid.Column="3" Style="{StaticResource BadgeDangerStyle}"><TextBlock Text="SIN STOCK&#x0a;(Insumo X)" TextAlignment="Center" /></Border>
-                            <TextBlock Grid.Row="3" Grid.Column="4" Text="2024-05-25" Style="{StaticResource TableCellTextStyle}" />
-                            <TextBlock Grid.Row="3" Grid.Column="5" Text="--&#x0a;(Error de Costeo)" TextAlignment="Center" Style="{StaticResource TableCellTextStyle}" FontSize="14" />
-                        </Grid>
+                        <DataGrid ItemsSource="{Binding Orders}"
+                                  AutoGenerateColumns="False"
+                                  CanUserAddRows="False"
+                                  CanUserDeleteRows="False"
+                                  CanUserResizeRows="False"
+                                  HeadersVisibility="Column"
+                                  GridLinesVisibility="None"
+                                  Background="Transparent"
+                                  BorderThickness="0"
+                                  RowBackground="#FCFBF8"
+                                  AlternatingRowBackground="#F5F3EF"
+                                  IsReadOnly="True"
+                                  RowHeight="56"
+                                  ColumnHeaderHeight="52"
+                                  FontSize="16">
+                            <DataGrid.Resources>
+                                <Style TargetType="DataGridColumnHeader">
+                                    <Setter Property="Background" Value="{StaticResource TableHeaderBrush}" />
+                                    <Setter Property="Foreground" Value="White" />
+                                    <Setter Property="FontWeight" Value="SemiBold" />
+                                    <Setter Property="FontSize" Value="16" />
+                                    <Setter Property="BorderThickness" Value="0" />
+                                    <Setter Property="Padding" Value="14,0" />
+                                </Style>
+                            </DataGrid.Resources>
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="ID ORDEN" Binding="{Binding Codigo}" Width="1.1*" />
+                                <DataGridTextColumn Header="PRODUCTO" Binding="{Binding ProductName}" Width="1.8*" />
+                                <DataGridTextColumn Header="CANTIDAD" Binding="{Binding Quantity}" Width="1*" />
+                                <DataGridTemplateColumn Header="ESTADO" Width="1.25*">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Border Background="{Binding StatusBackground}" CornerRadius="7" Padding="10,6" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding Estado}" Foreground="{Binding StatusForeground}" FontWeight="SemiBold" TextAlignment="Center" />
+                                            </Border>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTextColumn Header="FECHA" Binding="{Binding Fecha}" Width="1.45*" />
+                                <DataGridTextColumn Header="COSTO" Binding="{Binding Costo}" Width="1.1*" />
+                            </DataGrid.Columns>
+                        </DataGrid>
                     </Border>
 
                     <DockPanel Margin="0,20,0,0">

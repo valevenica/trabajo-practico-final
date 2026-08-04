@@ -1,4 +1,7 @@
 using System;
+using System.Collections.ObjectModel;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -58,6 +61,7 @@ namespace StockManufactura.Desktop.ViewModels
             NavigateToProductionOrdersCommand = new RelayCommand(NavigateToProductionOrders);
             NavigateToUserManagementCommand = new RelayCommand(NavigateToUserManagement);
             RefreshStatusCommand = new AsyncRelayCommand(LoadStatusAsync);
+            Orders = new ObservableCollection<DashboardOrderRow>();
             _ = LoadStatusAsync();
         }
 
@@ -74,6 +78,7 @@ namespace StockManufactura.Desktop.ViewModels
         public ICommand NavigateToProductionOrdersCommand { get; }
         public ICommand NavigateToUserManagementCommand { get; }
         public ICommand RefreshStatusCommand { get; }
+        public ObservableCollection<DashboardOrderRow> Orders { get; }
         public bool CanManageUsers => AuthSession.Current?.TienePermiso("USUARIOS_ADMIN") == true;
         public bool CanViewProducts => AuthSession.Current?.TienePermiso("PRODUCTOS_VER") == true
             || AuthSession.Current?.TienePermiso("PRODUCTOS_CREAR") == true
@@ -196,13 +201,33 @@ namespace StockManufactura.Desktop.ViewModels
             try
             {
                 var snapshot = await _systemStatusService.GetSnapshotAsync();
+                var products = await _unitOfWork.Productos.ListAsync();
+                var orders = await _unitOfWork.OrdenesProduccion.ListByCreatedDescAsync();
+
                 Status = snapshot;
+                LoadOrders(orders, products);
                 StatusMessage = string.Empty;
             }
             catch (Exception ex)
             {
                 StatusMessage = $"No se pudo cargar el estado del sistema: {ex.Message}";
             }
+        }
+
+        private void LoadOrders(IEnumerable<OrdenProduccion> orders, IEnumerable<Producto> products)
+        {
+            var productsById = products.ToDictionary(product => product.Id, product => product);
+            Orders.Clear();
+
+            foreach (var order in orders)
+            {
+                productsById.TryGetValue(order.ProductoId, out var product);
+                var productName = product?.Nombre ?? "Producto eliminado";
+                var estimatedCost = (product?.CostoFabricacionActual ?? 0m) * order.CantidadPlaneada;
+                Orders.Add(new DashboardOrderRow(order, productName, estimatedCost));
+            }
+
+            OnPropertyChanged(nameof(Orders));
         }
 
         private static string FormatBytes(long bytes)

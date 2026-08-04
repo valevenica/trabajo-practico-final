@@ -39,9 +39,6 @@
 
                 <StackPanel Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Right">
                     <TextBlock FontSize="16" HorizontalAlignment="Right" Text="{Binding CurrentUserName, StringFormat=Usuario: {0}}" />
-                    <Border Margin="0,8,0,0" Padding="10,7" CornerRadius="8" Background="#EEF4E8" BorderBrush="#9A8A50" BorderThickness="1">
-                        <TextBlock Text="Servidor Fábrica: CONECTADO" FontSize="16" Foreground="#1F6D36" FontWeight="Bold" />
-                    </Border>
                 </StackPanel>
             </Grid>
         </Border>

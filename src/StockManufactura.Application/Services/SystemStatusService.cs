@@ -32,6 +32,8 @@ namespace StockManufactura.Application.Services
         {
             var products = await _unitOfWork.Productos.ListAsync();
             var resources = await _unitOfWork.Recursos.ListAsync();
+            var orders = await _unitOfWork.OrdenesProduccion.ListAsync();
+            var costHistory = await _unitOfWork.ProductCostHistory.ListAsync();
             var customers = await _unitOfWork.Usuarios.ListAsync();
             var latestBackup = (await _backupService.GetRecentBackupsAsync(1, cancellationToken)).FirstOrDefault();
             var monetaryState = await _monetaryConfigurationService.GetCurrentStateAsync(cancellationToken);
@@ -44,12 +46,22 @@ namespace StockManufactura.Application.Services
             var backupStatus = latestBackup is null ? "Sin respaldo reciente" : "Activo";
             var cloudProvider = driveSyncEnabled ? "Google Drive" : "No configurado";
             var statusTone = latestBackup is null ? "Warning" : "Success";
+            var criticalStockCount = resources.Count(resource => resource.StockActual <= resource.StockMinimo);
+            var ordersInProcessCount = orders.Count(order => order.Estado == EstadoOrdenProduccion.EnProceso);
+            var currentMonth = DateTime.UtcNow.Month;
+            var currentYear = DateTime.UtcNow.Year;
+            var monthlyCostTotal = costHistory
+                .Where(history => history.Fecha.Month == currentMonth && history.Fecha.Year == currentYear)
+                .Sum(history => history.CostoNuevo);
 
             return new SystemStatusSnapshot
             {
                 ProductCount = products.Count(),
                 ResourceCount = resources.Count(),
                 CustomerCount = customers.Count(),
+                CriticalStockCount = criticalStockCount,
+                OrdersInProcessCount = ordersInProcessCount,
+                MonthlyCostTotal = monthlyCostTotal,
                 LastBackupAt = latestBackup?.FechaHora,
                 LastDollarUpdateAt = monetaryState?.LastUpdate,
                 LastDollarSource = monetaryState?.Source ?? string.Empty,
