@@ -13,5 +13,6 @@ namespace StockManufactura.Application.Interfaces
         Task<IReadOnlyList<ProductCostHistory>> GetProductCostHistoryAsync(Guid productId, CancellationToken cancellationToken = default);
         Task<IReadOnlyList<ProductCostSnapshot>> GetProductSnapshotsAsync(Guid productId, CancellationToken cancellationToken = default);
         Task<ProductCostComparison> CompareVersionsAsync(Guid olderHistoryId, Guid newerHistoryId, CancellationToken cancellationToken = default);
+        Task<IReadOnlyList<ProductCostSummary>> GetCostSummaryAsync(CancellationToken cancellationToken = default);
     }
 }

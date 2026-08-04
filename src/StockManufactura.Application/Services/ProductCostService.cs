@@ -132,6 +132,21 @@ namespace StockManufactura.Application.Services
             return _snapshotRepository.ListByProductAsync(productId);
         }
 
+        public async Task<IReadOnlyList<ProductCostSummary>> GetCostSummaryAsync(CancellationToken cancellationToken = default)
+        {
+            var products = await _productoRepository.ListActivosAsync();
+            return products
+                .Select(product => new ProductCostSummary
+                {
+                    ProductId = product.Id,
+                    ProductName = product.Nombre,
+                    CosteActual = product.CostoFabricacionActual,
+                    PrecioSugerido = product.PrecioSugeridoActual,
+                    Margen = product.MargenActual
+                })
+                .ToArray();
+        }
+
         public async Task<ProductCostComparison> CompareVersionsAsync(Guid olderHistoryId, Guid newerHistoryId, CancellationToken cancellationToken = default)
         {
             var older = await _historyRepository.GetByIdAsync(olderHistoryId) ?? throw new InvalidOperationException("Version antigua no encontrada.");
