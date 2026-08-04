@@ -28,3 +28,4 @@ namespace StockManufactura.Infrastructure.Db.Configurations
             builder.HasIndex(x => x.Codigo).IsUnique();
         }
     }
+}

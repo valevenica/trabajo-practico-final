@@ -45,6 +45,7 @@ namespace StockManufactura.Desktop.Extensions
             services.AddTransient<IResourcePriceHistoryRepository, ResourcePriceHistoryRepository>();
             services.AddTransient<IProductoRepository, ProductoRepository>();
             services.AddTransient<IRecetaProductoItemRepository, RecetaProductoItemRepository>();
+            services.AddTransient<IStockRepository, StockRepository>();
             services.AddTransient<IProductCostHistoryRepository, ProductCostHistoryRepository>();
             services.AddTransient<IProductCostSnapshotRepository, ProductCostSnapshotRepository>();
             services.AddTransient<IProductCostSnapshotItemRepository, ProductCostSnapshotItemRepository>();
@@ -61,6 +62,7 @@ namespace StockManufactura.Desktop.Extensions
             services.AddTransient<IProductCostService, ProductCostService>();
             services.AddTransient<ICostReportService, CostReportService>();
             services.AddTransient<IMonetaryConfigurationService, MonetaryConfigurationService>();
+            services.AddTransient<ISystemStatusService, SystemStatusService>();
             services.AddTransient<IResourcePricingService, ResourcePricingService>();
             services.AddTransient<DesktopStartupHealthCheck>();
             return services;

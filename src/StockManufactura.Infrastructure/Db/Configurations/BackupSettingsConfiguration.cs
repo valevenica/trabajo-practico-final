@@ -24,3 +24,4 @@ namespace StockManufactura.Infrastructure.Db.Configurations
             builder.Property(x => x.IsDeleted).HasDefaultValue(false);
         }
     }
+}

@@ -19,6 +19,7 @@ namespace StockManufactura.Desktop.ViewModels
         private readonly IAuditLogService _auditLogService;
         private readonly IBackupService _backupService;
         private readonly IProductCostService _productCostService;
+        private readonly ISystemStatusService _systemStatusService;
 
         private string _email = string.Empty;
         private string _password = string.Empty;
@@ -31,7 +32,8 @@ namespace StockManufactura.Desktop.ViewModels
             IMonetaryConfigurationService monetaryConfigurationService,
             IAuditLogService auditLogService,
             IBackupService backupService,
-            IProductCostService productCostService)
+            IProductCostService productCostService,
+            ISystemStatusService systemStatusService)
         {
             _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
             _navigationService = navigationService ?? throw new ArgumentNullException(nameof(navigationService));
@@ -40,6 +42,7 @@ namespace StockManufactura.Desktop.ViewModels
             _auditLogService = auditLogService ?? throw new ArgumentNullException(nameof(auditLogService));
             _backupService = backupService ?? throw new ArgumentNullException(nameof(backupService));
             _productCostService = productCostService ?? throw new ArgumentNullException(nameof(productCostService));
+            _systemStatusService = systemStatusService ?? throw new ArgumentNullException(nameof(systemStatusService));
             LoginCommand = new AsyncRelayCommand(ExecuteLoginAsync);
         }
 
@@ -95,7 +98,8 @@ namespace StockManufactura.Desktop.ViewModels
                 _auditLogService,
                 _backupService,
                 _unitOfWork,
-                _productCostService));
+                _productCostService,
+                _systemStatusService));
         }
     }
 }

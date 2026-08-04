@@ -7,6 +7,7 @@ namespace StockManufactura.Application.DTOs
         public Guid Id { get; init; }
         public string Nombre { get; init; } = string.Empty;
         public string Descripcion { get; init; } = string.Empty;
+        public IReadOnlyCollection<string> Permisos { get; init; } = Array.Empty<string>();
         public DateTime CreatedAt { get; init; }
         public DateTime UpdatedAt { get; init; }
         public bool IsDeleted { get; init; }

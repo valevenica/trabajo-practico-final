@@ -18,6 +18,7 @@ namespace StockManufactura.Infrastructure.Db
         public DbSet<ResourceCostCalculation> ResourceCostCalculations { get; set; } = null!;
         public DbSet<Producto> Productos { get; set; } = null!;
         public DbSet<RecetaProductoItem> RecetaProductoItems { get; set; } = null!;
+        public DbSet<Stock> Stocks { get; set; } = null!;
         public DbSet<CostoIndirecto> CostosIndirectos { get; set; } = null!;
         public DbSet<ProductCostHistory> ProductCostHistory { get; set; } = null!;
         public DbSet<ProductCostSnapshot> ProductCostSnapshots { get; set; } = null!;

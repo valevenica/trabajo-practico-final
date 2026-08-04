@@ -12,6 +12,7 @@ namespace StockManufactura.Application.Interfaces
         IResourcePriceHistoryRepository ResourcePriceHistory { get; }
         IProductoRepository Productos { get; }
         IRecetaProductoItemRepository RecetaProductoItems { get; }
+        IStockRepository Stocks { get; }
         IProductCostHistoryRepository ProductCostHistory { get; }
         IProductCostSnapshotRepository ProductCostSnapshots { get; }
         IProductCostSnapshotItemRepository ProductCostSnapshotItems { get; }

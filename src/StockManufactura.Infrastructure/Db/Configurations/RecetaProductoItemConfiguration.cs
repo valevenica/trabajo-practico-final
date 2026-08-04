@@ -32,3 +32,4 @@ namespace StockManufactura.Infrastructure.Db.Configurations
             builder.HasIndex(x => new { x.ProductoId, x.RecursoId }).IsUnique();
         }
     }
+}

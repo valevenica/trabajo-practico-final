@@ -26,3 +26,4 @@ namespace StockManufactura.Infrastructure.Db.Configurations
                 .OnDelete(DeleteBehavior.Cascade);
         }
     }
+}
