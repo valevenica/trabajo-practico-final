@@ -1,13 +1,6 @@
-﻿using System.Text;
+﻿using System;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
+using StockManufactura.Desktop.Infrastructure;
 
 namespace StockManufactura.Desktop;
 
@@ -19,5 +12,22 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        TryLoadWindowIcon();
+    }
+
+    private void TryLoadWindowIcon()
+    {
+        try
+        {
+            var icon = DesktopAssetLoader.TryLoadWindowIcon();
+            if (icon is not null)
+            {
+                Icon = icon;
+            }
+        }
+        catch
+        {
+            // Keep default icon if custom asset cannot be loaded.
+        }
     }
 }

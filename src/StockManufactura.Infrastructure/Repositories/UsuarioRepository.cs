@@ -25,6 +25,25 @@ namespace StockManufactura.Infrastructure.Repositories
             return await query.FirstOrDefaultAsync(x => x.Email == email);
         }
 
+        public async Task<Usuario?> GetByEmailOrNombreAsync(string emailOrNombre, bool includeRole = false)
+        {
+            var normalized = (emailOrNombre ?? string.Empty).Trim().ToLower();
+            if (string.IsNullOrWhiteSpace(normalized))
+            {
+                return null;
+            }
+
+            var query = _context.Usuarios.AsQueryable();
+            if (includeRole)
+            {
+                query = query.Include(x => x.Rol);
+            }
+
+            return await query.FirstOrDefaultAsync(x =>
+                x.Email.ToLower() == normalized ||
+                x.Nombre.ToLower() == normalized);
+        }
+
         public Task<Usuario?> GetByIdWithRoleAsync(Guid id)
         {
             return _context.Usuarios

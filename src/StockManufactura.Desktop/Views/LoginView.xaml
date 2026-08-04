@@ -27,11 +27,11 @@
 
                 <Border Style="{StaticResource CardBorderStyle}">
                     <StackPanel Orientation="Vertical" Margin="0 2 0 0">
-                        <TextBlock Text="Email" Margin="0 0 0 4" />
-                        <TextBox Text="{Binding Email, UpdateSourceTrigger=PropertyChanged}" Height="32" />
+                        <TextBlock Text="Usuario" Margin="0 0 0 4" />
+                        <TextBox Text="{Binding Usuario, UpdateSourceTrigger=PropertyChanged}" Height="32" KeyDown="OnLoginEnterPressed" />
 
                         <TextBlock Text="Contraseña" Margin="0 16 0 4" />
-                        <PasswordBox x:Name="PasswordBox" Height="32" PasswordChanged="OnPasswordChanged" />
+                        <PasswordBox x:Name="PasswordBox" Height="32" PasswordChanged="OnPasswordChanged" KeyDown="OnLoginEnterPressed" />
 
                         <StackPanel Visibility="{Binding RequiresPasswordChange, Converter={StaticResource BoolToVisibilityConverter}}" Margin="0 16 0 0">
                             <TextBlock Text="Nueva contraseña" Margin="0 0 0 4" />

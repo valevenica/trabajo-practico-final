@@ -18,14 +18,14 @@ namespace StockManufactura.Application.Services
             _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
         }
 
-        public async Task<AuthenticationResult> AuthenticateDetailedAsync(string email, string password, CancellationToken cancellationToken = default)
+        public async Task<AuthenticationResult> AuthenticateDetailedAsync(string userOrEmail, string password, CancellationToken cancellationToken = default)
         {
-            if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
+            if (string.IsNullOrWhiteSpace(userOrEmail) || string.IsNullOrWhiteSpace(password))
             {
                 return AuthenticationResult.Failed("Usuario y contraseña son requeridos.");
             }
 
-            var usuario = await _unitOfWork.Usuarios.GetByEmailAsync(email, includeRole: true);
+            var usuario = await _unitOfWork.Usuarios.GetByEmailOrNombreAsync(userOrEmail, includeRole: true);
             if (usuario is null || !usuario.EsActivo)
             {
                 return AuthenticationResult.Failed("Credenciales inválidas.");
@@ -63,9 +63,9 @@ namespace StockManufactura.Application.Services
             };
         }
 
-        public async Task<Usuario?> AuthenticateAsync(string email, string password, CancellationToken cancellationToken = default)
+        public async Task<Usuario?> AuthenticateAsync(string userOrEmail, string password, CancellationToken cancellationToken = default)
         {
-            var result = await AuthenticateDetailedAsync(email, password, cancellationToken);
+            var result = await AuthenticateDetailedAsync(userOrEmail, password, cancellationToken);
             return result.IsSuccess ? result.Usuario : null;
         }
 

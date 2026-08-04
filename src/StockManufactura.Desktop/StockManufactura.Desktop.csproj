@@ -33,7 +33,7 @@
   <ItemGroup>
     <Resource Include="Assets\logo 2.png" Condition="Exists('Assets\logo 2.png')" />
     <Resource Include="Assets\logo.png" Condition="Exists('Assets\logo.png')" />
-    <Resource Include="Assets\app.ico" Condition="Exists('Assets\app.ico')" />
+    <None Include="Assets\app.ico" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" Condition="Exists('Assets\app.ico')" />
     <None Include="Assets\\*.png" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <ProjectReference Include="..\StockManufactura.Application\StockManufactura.Application.csproj" />
     <ProjectReference Include="..\StockManufactura.Infrastructure\StockManufactura.Infrastructure.csproj" />

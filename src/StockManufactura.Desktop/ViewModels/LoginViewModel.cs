@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -24,7 +23,7 @@ namespace StockManufactura.Desktop.ViewModels
         private readonly ISystemStatusService _systemStatusService;
         private readonly IUserManagementService _userManagementService;
 
-        private string _email = string.Empty;
+        private string _usuario = string.Empty;
         private string _password = string.Empty;
         private string _newPassword = string.Empty;
         private string _confirmNewPassword = string.Empty;
@@ -58,10 +57,10 @@ namespace StockManufactura.Desktop.ViewModels
             ChangePasswordCommand = new AsyncRelayCommand(ExecuteChangePasswordAsync);
         }
 
-        public string Email
+        public string Usuario
         {
-            get => _email;
-            set => SetProperty(ref _email, value);
+            get => _usuario;
+            set => SetProperty(ref _usuario, value);
         }
 
         public string Password
@@ -99,13 +98,13 @@ namespace StockManufactura.Desktop.ViewModels
 
         private async Task ExecuteLoginAsync()
         {
-            if (string.IsNullOrWhiteSpace(Email) || string.IsNullOrWhiteSpace(Password))
+            if (string.IsNullOrWhiteSpace(Usuario) || string.IsNullOrWhiteSpace(Password))
             {
                 StatusMessage = "Usuario y contraseña son requeridos.";
                 return;
             }
 
-            var authResult = await _authenticationService.AuthenticateDetailedAsync(Email, Password);
+            var authResult = await _authenticationService.AuthenticateDetailedAsync(Usuario, Password);
             if (!authResult.IsSuccess || authResult.Usuario is null)
             {
                 StatusMessage = authResult.Message;
@@ -148,7 +147,7 @@ namespace StockManufactura.Desktop.ViewModels
             try
             {
                 await _userManagementService.ChangePasswordAsync(_pendingAuthenticatedUser.Id, Password, NewPassword, _pendingAuthenticatedUser.Email);
-                _pendingAuthenticatedUser = await _authenticationService.AuthenticateAsync(Email, NewPassword);
+                _pendingAuthenticatedUser = await _authenticationService.AuthenticateAsync(Usuario, NewPassword);
                 if (_pendingAuthenticatedUser is null)
                 {
                     StatusMessage = "No se pudo revalidar la sesión después del cambio de contraseña.";
@@ -191,7 +190,7 @@ namespace StockManufactura.Desktop.ViewModels
         {
             return _auditLogService.RegisterAsync(new AuditLog
             {
-                Usuario = string.IsNullOrWhiteSpace(Email) ? "anonymous" : Email.Trim().ToLowerInvariant(),
+                Usuario = string.IsNullOrWhiteSpace(_usuario) ? "anonymous" : _usuario.Trim(),
                 Modulo = "Autenticacion",
                 Accion = action,
                 Entidad = "Usuario",

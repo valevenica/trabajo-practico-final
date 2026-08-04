@@ -23,7 +23,7 @@ public class AuthenticationServiceTests
         var unitOfWork = new StubUnitOfWork(usuario);
         var service = new AuthenticationService(unitOfWork);
 
-        var result = await service.AuthenticateAsync("admin@test.com", "Secret123!");
+        var result = await service.AuthenticateAsync("Admin", "Secret123!");
 
         Assert.NotNull(result);
         Assert.Equal("admin@test.com", result!.Email);
@@ -120,6 +120,18 @@ public class AuthenticationServiceTests
             }
 
             return Task.FromResult<Usuario?>(null);
+        }
+
+        public Task<Usuario?> GetByEmailOrNombreAsync(string emailOrNombre, bool includeRole = false)
+        {
+            if (_usuario is null)
+            {
+                return Task.FromResult<Usuario?>(null);
+            }
+
+            var matchesEmail = _usuario.Email.Equals(emailOrNombre, StringComparison.OrdinalIgnoreCase);
+            var matchesNombre = _usuario.Nombre.Equals(emailOrNombre, StringComparison.OrdinalIgnoreCase);
+            return Task.FromResult<Usuario?>(matchesEmail || matchesNombre ? _usuario : null);
         }
 
         public Task<Usuario?> GetByIdWithRoleAsync(Guid id)

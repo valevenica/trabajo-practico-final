@@ -177,6 +177,8 @@ public class SystemStatusServiceTests
 
         public Task<Usuario?> GetByEmailAsync(string email, bool includeRole = false) => Task.FromResult<Usuario?>(null);
 
+        public Task<Usuario?> GetByEmailOrNombreAsync(string emailOrNombre, bool includeRole = false) => Task.FromResult<Usuario?>(null);
+
         public Task<Usuario?> GetByIdWithRoleAsync(Guid id) => Task.FromResult<Usuario?>(null);
 
         public Task<IReadOnlyList<Usuario>> ListWithRoleAsync() => Task.FromResult<IReadOnlyList<Usuario>>(Array.Empty<Usuario>());
