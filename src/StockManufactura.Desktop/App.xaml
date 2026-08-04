@@ -21,6 +21,9 @@
         <SolidColorBrush x:Key="TextMainBrush" Color="{StaticResource ColorTextMain}" />
         <SolidColorBrush x:Key="TextMutedBrush" Color="{StaticResource ColorTextMuted}" />
 
+        <SolidColorBrush x:Key="TableHeaderBrush" Color="#26262A" />
+        <DropShadowEffect x:Key="CardShadowEffect" BlurRadius="10" ShadowDepth="2" Opacity="0.22" Color="#6E5B32" />
+
         <FontFamily x:Key="HeaderFontFamily">Georgia</FontFamily>
         <FontFamily x:Key="BodyFontFamily">Segoe UI</FontFamily>
 
@@ -124,6 +127,68 @@
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderBrush" Value="{StaticResource SecondaryAccentBrush}" />
             <Setter Property="BorderThickness" Value="1" />
+        </Style>
+
+
+
+        <Style x:Key="DashboardMetricCardStyle" TargetType="Border" BasedOn="{StaticResource CardBorderStyle}">
+            <Setter Property="Padding" Value="20,18" />
+            <Setter Property="MinHeight" Value="118" />
+            <Setter Property="Effect" Value="{StaticResource CardShadowEffect}" />
+        </Style>
+
+        <Style x:Key="DashboardMetricTitleStyle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource PrimaryAccentBrush}" />
+            <Setter Property="FontSize" Value="18" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
+
+        <Style x:Key="DashboardMetricPillStyle" TargetType="Border">
+            <Setter Property="Background" Value="#F4F2EE" />
+            <Setter Property="CornerRadius" Value="7" />
+            <Setter Property="Padding" Value="10,9" />
+        </Style>
+
+        <Style x:Key="DashboardPanelStyle" TargetType="Border" BasedOn="{StaticResource CardBorderStyle}">
+            <Setter Property="Padding" Value="20" />
+            <Setter Property="Effect" Value="{StaticResource CardShadowEffect}" />
+        </Style>
+
+        <Style x:Key="TableHeaderTextStyle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="FontSize" Value="16" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Margin" Value="14,0" />
+        </Style>
+
+        <Style x:Key="TableCellTextStyle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#050505" />
+            <Setter Property="FontSize" Value="17" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Margin" Value="14,0" />
+        </Style>
+
+        <Style x:Key="BadgeSuccessStyle" TargetType="Border">
+            <Setter Property="Background" Value="#BDEFC8" />
+            <Setter Property="CornerRadius" Value="7" />
+            <Setter Property="Padding" Value="10,6" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="TextElement.Foreground" Value="#1D6530" />
+            <Setter Property="TextElement.FontSize" Value="16" />
+            <Setter Property="TextElement.FontWeight" Value="SemiBold" />
+        </Style>
+
+        <Style x:Key="BadgeWarningStyle" TargetType="Border" BasedOn="{StaticResource BadgeSuccessStyle}">
+            <Setter Property="Background" Value="#FFE29A" />
+            <Setter Property="TextElement.Foreground" Value="#9A6D10" />
+        </Style>
+
+        <Style x:Key="BadgeDangerStyle" TargetType="Border" BasedOn="{StaticResource BadgeSuccessStyle}">
+            <Setter Property="Background" Value="#F7C8C8" />
+            <Setter Property="TextElement.Foreground" Value="#A72631" />
         </Style>
 
         <Style x:Key="StatusMessageStyle" TargetType="TextBlock">

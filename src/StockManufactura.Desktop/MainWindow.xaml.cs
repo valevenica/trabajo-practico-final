@@ -15,7 +15,7 @@ public partial class MainWindow : Window
     private const double LoginHeight = 620;
     private const double LoginMinWidth = 760;
     private const double LoginMinHeight = 520;
-    private const double ShellWidth = 1240;
+    private const double ShellWidth = 1120;
     private const double ShellHeight = 760;
     private const double ShellMinWidth = 900;
     private const double ShellMinHeight = 560;

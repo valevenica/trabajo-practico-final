@@ -3,152 +3,108 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-             xmlns:converters="clr-namespace:StockManufactura.Desktop.Converters"
              mc:Ignorable="d"
-             d:DesignHeight="360" d:DesignWidth="520">
-    <UserControl.Resources>
-        <converters:BoolToBrushConverter x:Key="BoolToBrushConverter" />
-    </UserControl.Resources>
-    <Grid Margin="24" Background="{StaticResource BackgroundSoftLightBrush}">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-        </Grid.RowDefinitions>
+             d:DesignHeight="700" d:DesignWidth="980">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <Grid Margin="26,22,26,28" Background="{StaticResource BackgroundSoftLightBrush}">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
 
-        <TextBlock Text="PANEL DE CONTROL" Style="{StaticResource ScreenTitleStyle}" />
-        <TextBlock Grid.Row="1" Text="Bienvenido al sistema de manufactura" Margin="0 10 0 0" FontStyle="Italic" FontFamily="Georgia" Foreground="{StaticResource TextMutedBrush}" />
-
-        <Border Grid.Row="2" Style="{StaticResource CardBorderStyle}" Margin="0 18 0 0">
-            <StackPanel>
-                <Border Background="{StaticResource BackgroundDarkMetalBrush}" CornerRadius="4" Padding="10 6">
-                    <TextBlock Text="ESTADO DEL SISTEMA" Foreground="{StaticResource SecondaryAccentBrush}" FontWeight="Bold" FontFamily="{StaticResource HeaderFontFamily}" />
+            <UniformGrid Columns="3" Margin="0,0,0,20">
+                <Border Style="{StaticResource DashboardMetricCardStyle}" Margin="0,0,12,0">
+                    <StackPanel>
+                        <TextBlock Text="STOCK CRÍTICO" Style="{StaticResource DashboardMetricTitleStyle}" />
+                        <Border Style="{StaticResource DashboardMetricPillStyle}" Margin="0,18,0,0">
+                            <TextBlock Text="STOCK MÍNIMO (7 items)" Foreground="{StaticResource PrimaryAccentBrush}" FontSize="17" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                        </Border>
+                    </StackPanel>
                 </Border>
-                <TextBlock Text="{Binding StatusMessage}" Style="{StaticResource StatusMessageStyle}" Margin="0 8 0 0" />
-                <Grid Margin="0 10 0 0">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                    </Grid.RowDefinitions>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="1*" />
-                        <ColumnDefinition Width="1*" />
-                        <ColumnDefinition Width="1*" />
-                    </Grid.ColumnDefinitions>
+                <Border Style="{StaticResource DashboardMetricCardStyle}" Margin="6,0,6,0">
+                    <StackPanel>
+                        <TextBlock Text="ÓRDENES DE PRODUCCIÓN" Style="{StaticResource DashboardMetricTitleStyle}" Foreground="{StaticResource SecondaryAccentBrush}" />
+                        <Border Style="{StaticResource DashboardMetricPillStyle}" Margin="0,18,0,0">
+                            <TextBlock Text="EN PROCESO (3)" Foreground="{StaticResource PrimaryAccentBrush}" FontSize="17" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                        </Border>
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource DashboardMetricCardStyle}" Margin="12,0,0,0">
+                    <StackPanel>
+                        <TextBlock Text="COSTOS TOTALES MES" Style="{StaticResource DashboardMetricTitleStyle}" />
+                        <TextBlock Text="$89,450.00" Margin="0,18,0,0" FontSize="27" FontWeight="Bold" Foreground="#050505" HorizontalAlignment="Center" />
+                    </StackPanel>
+                </Border>
+            </UniformGrid>
 
-                    <TextBlock Text="Último backup" FontWeight="SemiBold" Foreground="{StaticResource PrimaryAccentBrush}" />
-                    <TextBlock Grid.Column="1" Text="Última sincronización" FontWeight="SemiBold" Foreground="{StaticResource PrimaryAccentBrush}" />
-                    <TextBlock Grid.Column="2" Text="Última actualización del dólar" FontWeight="SemiBold" Foreground="{StaticResource PrimaryAccentBrush}" />
-                    <TextBlock Grid.Row="1" Text="{Binding LastBackupText}" Margin="0 4 0 0" />
-                    <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding LastDriveSyncText}" Margin="0 4 0 0" />
-                    <TextBlock Grid.Row="1" Grid.Column="2" Text="{Binding LastDollarUpdateText}" Margin="0 4 0 0" />
+            <Border Grid.Row="1" Style="{StaticResource DashboardPanelStyle}">
+                <StackPanel>
+                    <TextBlock Text="Módulo: Órdenes de Producción" FontSize="24" FontWeight="Bold" Foreground="#050505" Margin="0,0,0,16" />
 
-                    <TextBlock Grid.Row="2" Text="Internet" FontWeight="SemiBold" Margin="0 12 0 0" Foreground="{StaticResource PrimaryAccentBrush}" />
-                    <TextBlock Grid.Row="2" Grid.Column="1" Text="Tamaño DB" FontWeight="SemiBold" Margin="0 12 0 0" Foreground="{StaticResource PrimaryAccentBrush}" />
-                    <TextBlock Grid.Row="2" Grid.Column="2" Text="Versión" FontWeight="SemiBold" Margin="0 12 0 0" Foreground="{StaticResource PrimaryAccentBrush}" />
-                    <TextBlock Grid.Row="3" Text="{Binding InternetText}" Margin="0 4 0 0" />
-                    <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding DatabaseSizeText}" Margin="0 4 0 0" />
-                    <TextBlock Grid.Row="3" Grid.Column="2" Text="{Binding VersionText}" Margin="0 4 0 0" />
-                </Grid>
+                    <Border CornerRadius="8" Background="#EEEDEA" BorderBrush="#C6C0B8" BorderThickness="1" ClipToBounds="True">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="52" />
+                                <RowDefinition Height="56" />
+                                <RowDefinition Height="56" />
+                                <RowDefinition Height="56" />
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="1.1*" />
+                                <ColumnDefinition Width="1.8*" />
+                                <ColumnDefinition Width="1*" />
+                                <ColumnDefinition Width="1.25*" />
+                                <ColumnDefinition Width="1.45*" />
+                                <ColumnDefinition Width="1.1*" />
+                            </Grid.ColumnDefinitions>
 
-                <StackPanel Orientation="Horizontal" Margin="0 14 0 0">
-                    <Border Background="#F6EEF3" BorderBrush="{StaticResource SecondaryAccentBrush}" BorderThickness="1" CornerRadius="6" Padding="10 6" Margin="0 0 8 0">
-                        <TextBlock Text="{Binding ProductCountText, StringFormat='Productos: {0}'}" />
+                            <Border Grid.ColumnSpan="6" Background="{StaticResource TableHeaderBrush}" />
+                            <TextBlock Text="ID ORDEN" Style="{StaticResource TableHeaderTextStyle}" />
+                            <TextBlock Grid.Column="1" Text="PRODUCTO" Style="{StaticResource TableHeaderTextStyle}" />
+                            <TextBlock Grid.Column="2" Text="CANTIDAD" Style="{StaticResource TableHeaderTextStyle}" />
+                            <TextBlock Grid.Column="3" Text="ESTADO" Style="{StaticResource TableHeaderTextStyle}" />
+                            <TextBlock Grid.Column="4" Text="FECHA ENTREGA" Style="{StaticResource TableHeaderTextStyle}" />
+                            <TextBlock Grid.Column="5" Text="COSTO" Style="{StaticResource TableHeaderTextStyle}" Foreground="{StaticResource SecondaryAccentBrush}" />
+
+                            <TextBlock Grid.Row="1" Text="ID-101" Style="{StaticResource TableCellTextStyle}" />
+                            <TextBlock Grid.Row="1" Grid.Column="1" Text="Gear Assembly A" Style="{StaticResource TableCellTextStyle}" />
+                            <TextBlock Grid.Row="1" Grid.Column="2" Text="50" Style="{StaticResource TableCellTextStyle}" />
+                            <Border Grid.Row="1" Grid.Column="3" Style="{StaticResource BadgeSuccessStyle}"><TextBlock Text="COMPLETADA" /></Border>
+                            <TextBlock Grid.Row="1" Grid.Column="4" Text="2024-05-15" Style="{StaticResource TableCellTextStyle}" />
+                            <TextBlock Grid.Row="1" Grid.Column="5" Text="12,500.00" Style="{StaticResource TableCellTextStyle}" />
+
+                            <Border Grid.Row="2" Grid.ColumnSpan="6" BorderBrush="#181818" BorderThickness="0,1" Background="#FCFBF8" />
+                            <Border Grid.Row="2" Width="5" HorizontalAlignment="Left" Background="{StaticResource PrimaryAccentBrush}" />
+                            <TextBlock Grid.Row="2" Text="ID-102" Style="{StaticResource TableCellTextStyle}" />
+                            <TextBlock Grid.Row="2" Grid.Column="1" Text="Circuit Core B" Style="{StaticResource TableCellTextStyle}" />
+                            <TextBlock Grid.Row="2" Grid.Column="2" Text="25" Style="{StaticResource TableCellTextStyle}" />
+                            <Border Grid.Row="2" Grid.Column="3" Style="{StaticResource BadgeWarningStyle}"><TextBlock Text="EN PROCESO" /></Border>
+                            <TextBlock Grid.Row="2" Grid.Column="4" Text="2024-05-20" Style="{StaticResource TableCellTextStyle}" />
+                            <TextBlock Grid.Row="2" Grid.Column="5" Text="8,750.00" Style="{StaticResource TableCellTextStyle}" />
+
+                            <TextBlock Grid.Row="3" Text="ID-103" Style="{StaticResource TableCellTextStyle}" />
+                            <TextBlock Grid.Row="3" Grid.Column="1" Text="Motor Assembly" Style="{StaticResource TableCellTextStyle}" />
+                            <TextBlock Grid.Row="3" Grid.Column="2" Text="100" Style="{StaticResource TableCellTextStyle}" />
+                            <Border Grid.Row="3" Grid.Column="3" Style="{StaticResource BadgeDangerStyle}"><TextBlock Text="SIN STOCK&#x0a;(Insumo X)" TextAlignment="Center" /></Border>
+                            <TextBlock Grid.Row="3" Grid.Column="4" Text="2024-05-25" Style="{StaticResource TableCellTextStyle}" />
+                            <TextBlock Grid.Row="3" Grid.Column="5" Text="--&#x0a;(Error de Costeo)" TextAlignment="Center" Style="{StaticResource TableCellTextStyle}" FontSize="14" />
+                        </Grid>
                     </Border>
-                    <Border Background="#F6EEF3" BorderBrush="{StaticResource SecondaryAccentBrush}" BorderThickness="1" CornerRadius="6" Padding="10 6" Margin="0 0 8 0">
-                        <TextBlock Text="{Binding ResourceCountText, StringFormat='Recursos: {0}'}" />
-                    </Border>
-                    <Border Background="#F6EEF3" BorderBrush="{StaticResource SecondaryAccentBrush}" BorderThickness="1" CornerRadius="6" Padding="10 6" Margin="0 0 8 0">
-                        <TextBlock Text="{Binding CustomerCountText, StringFormat='Clientes: {0}'}" />
-                    </Border>
-                    <Button Content="Refrescar" Margin="8 0 0 0" Command="{Binding RefreshStatusCommand}" Style="{StaticResource PrimaryButtonStyle}" />
+
+                    <DockPanel Margin="0,20,0,0">
+                        <Button Content="Confirmar Orden" Width="230" Style="{StaticResource PrimaryButtonStyle}" DockPanel.Dock="Left" />
+                        <Button Content="Generar Reporte" Width="190" Style="{StaticResource SecondaryButtonStyle}" HorizontalAlignment="Right" DockPanel.Dock="Right" />
+                    </DockPanel>
                 </StackPanel>
+            </Border>
 
-                <StackPanel Orientation="Horizontal" Margin="0 12 0 0">
-                    <Border CornerRadius="6" Padding="10 8" Margin="0 0 8 0" BorderBrush="{StaticResource SecondaryAccentBrush}" BorderThickness="1" Background="{Binding BackupHealthy, Converter={StaticResource BoolToBrushConverter}, FallbackValue=#F3F4F6}">
-                        <TextBlock Text="{Binding BackupStatusText, StringFormat='Backup: {0}'}" />
-                    </Border>
-                    <Border CornerRadius="6" Padding="10 8" Margin="0 0 8 0" BorderBrush="{StaticResource SecondaryAccentBrush}" BorderThickness="1" Background="{Binding SyncHealthy, Converter={StaticResource BoolToBrushConverter}, FallbackValue=#F3F4F6}">
-                        <TextBlock Text="{Binding CloudStatusText}" />
-                    </Border>
-                    <Border CornerRadius="6" Padding="10 8" BorderBrush="{StaticResource SecondaryAccentBrush}" BorderThickness="1" Background="#F3F4F6">
-                        <TextBlock Text="{Binding StatusToneText, StringFormat='Estado: {0}'}" />
-                    </Border>
-                </StackPanel>
-            </StackPanel>
-        </Border>
-
-        <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0 18 0 0">
-            <Button Content="Productos"
-                Width="160"
-                Margin="0 0 12 0"
-                HorizontalAlignment="Left"
-                IsEnabled="{Binding CanViewProducts}"
-                Command="{Binding NavigateToProductsCommand}"
-                Style="{StaticResource PrimaryButtonStyle}" />
-            <Button Content="Recetas BOM"
-                Width="160"
-                Margin="0 0 12 0"
-                HorizontalAlignment="Left"
-                IsEnabled="{Binding CanEditBom}"
-                Command="{Binding NavigateToBomCommand}"
-                Style="{StaticResource PrimaryButtonStyle}" />
-            <Button Content="Recursos"
-                Width="160"
-                Margin="0 0 12 0"
-                HorizontalAlignment="Left"
-                Command="{Binding NavigateToResourcesCommand}"
-                Style="{StaticResource SecondaryButtonStyle}" />
-            <Button Content="Proveedores"
-                Width="160"
-                Margin="0 0 12 0"
-                HorizontalAlignment="Left"
-                IsEnabled="{Binding CanManageProviders}"
-                Command="{Binding NavigateToProvidersCommand}"
-                Style="{StaticResource PrimaryButtonStyle}" />
-            <Button Content="Órdenes Producción"
-                Width="180"
-                Margin="0 0 12 0"
-                HorizontalAlignment="Left"
-                IsEnabled="{Binding CanManageProductionOrders}"
-                Command="{Binding NavigateToProductionOrdersCommand}"
-                Style="{StaticResource PrimaryButtonStyle}" />
-            <Button Content="Configuración Monetaria"
-                Width="220"
-                HorizontalAlignment="Left"
-                Command="{Binding NavigateToMonetaryConfigurationCommand}"
-                Style="{StaticResource SecondaryButtonStyle}" />
-        </StackPanel>
-
-        <StackPanel Grid.Row="4" Orientation="Horizontal" Margin="0 12 0 0">
-            <Button Content="Bitácora"
-                Width="160"
-                Margin="0 0 12 0"
-                HorizontalAlignment="Left"
-                Command="{Binding NavigateToAuditLogCommand}"
-                Style="{StaticResource SecondaryButtonStyle}" />
-            <Button Content="Usuarios"
-                Width="140"
-                Margin="0 0 12 0"
-                HorizontalAlignment="Left"
-                IsEnabled="{Binding CanManageUsers}"
-                Command="{Binding NavigateToUserManagementCommand}"
-                Style="{StaticResource PrimaryButtonStyle}" />
-            <Button Content="Backups"
-                Width="160"
-                Margin="0 0 12 0"
-                HorizontalAlignment="Left"
-                Command="{Binding NavigateToBackupsCommand}"
-                Style="{StaticResource SecondaryButtonStyle}" />
-            <Button Content="Historial Costos"
-                Width="180"
-                HorizontalAlignment="Left"
-                Command="{Binding NavigateToProductCostHistoryCommand}"
-                Style="{StaticResource SecondaryButtonStyle}" />
-        </StackPanel>
-    </Grid>
+            <Canvas Grid.Row="2" Height="86" Margin="0,12,0,0">
+                <Polyline Points="310,34 390,34 412,56 540,56 562,40 640,40" Stroke="{StaticResource PrimaryAccentBrush}" StrokeThickness="5" StrokeLineJoin="Round" />
+                <Ellipse Canvas.Left="302" Canvas.Top="25" Width="18" Height="18" Fill="{StaticResource PrimaryAccentBrush}" Stroke="#4E1235" StrokeThickness="2" />
+                <Ellipse Canvas.Left="532" Canvas.Top="47" Width="18" Height="18" Fill="{StaticResource PrimaryAccentBrush}" Stroke="#4E1235" StrokeThickness="2" />
+                <Path Data="M640,40 L672,16 L658,52 Z" Fill="{StaticResource PrimaryAccentBrush}" Stroke="#4E1235" StrokeThickness="1" />
+            </Canvas>
+        </Grid>
+    </ScrollViewer>
 </UserControl>
