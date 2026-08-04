@@ -17,6 +17,12 @@ namespace StockManufactura.Desktop
 
         private void TryLoadLogo()
         {
+            if (TryLoadFromUri("pack://application:,,,/Assets/logo%202.png") ||
+                TryLoadFromUri("pack://application:,,,/Assets/logo.png"))
+            {
+                return;
+            }
+
             var candidatePaths = new[]
             {
                 Path.Combine(AppContext.BaseDirectory, "Assets", "logo 2.png"),
@@ -35,16 +41,33 @@ namespace StockManufactura.Desktop
 
             try
             {
-                var bitmap = new BitmapImage();
-                bitmap.BeginInit();
-                bitmap.CacheOption = BitmapCacheOption.OnLoad;
-                bitmap.UriSource = new Uri(candidate, UriKind.Absolute);
-                bitmap.EndInit();
-                LogoImage.Source = bitmap;
+                if (!TryLoadFromUri(candidate))
+                {
+                    FallbackText.Visibility = Visibility.Visible;
+                }
             }
             catch
             {
                 FallbackText.Visibility = Visibility.Visible;
+            }
+        }
+
+        private bool TryLoadFromUri(string uri)
+        {
+            try
+            {
+                var bitmap = new BitmapImage();
+                bitmap.BeginInit();
+                bitmap.CacheOption = BitmapCacheOption.OnLoad;
+                bitmap.UriSource = new Uri(uri, UriKind.Absolute);
+                bitmap.EndInit();
+                LogoImage.Source = bitmap;
+                FallbackText.Visibility = Visibility.Collapsed;
+                return true;
+            }
+            catch
+            {
+                return false;
             }
         }
     }
