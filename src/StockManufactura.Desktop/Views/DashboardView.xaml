@@ -14,13 +14,23 @@
         </Style>
 
         <Style x:Key="DashboardFilterComboStyle" TargetType="ComboBox">
-            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Background" Value="#FFFFFF" />
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="FontSize" Value="14" />
             <Setter Property="FontWeight" Value="SemiBold" />
             <Setter Property="Foreground" Value="#2A2432" />
-            <Setter Property="Padding" Value="2" />
+            <Setter Property="Padding" Value="4,0" />
             <Setter Property="Height" Value="34" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="HorizontalContentAlignment" Value="Left" />
+            <Setter Property="ItemContainerStyle">
+                <Setter.Value>
+                    <Style TargetType="ComboBoxItem">
+                        <Setter Property="Padding" Value="8,6" />
+                        <Setter Property="VerticalContentAlignment" Value="Center" />
+                    </Style>
+                </Setter.Value>
+            </Setter>
         </Style>
     </UserControl.Resources>
 
@@ -61,7 +71,7 @@
                 <StackPanel>
                     <TextBlock Text="Módulo: Órdenes de Producción" FontSize="24" FontWeight="Bold" Foreground="#050505" Margin="0,0,0,16" />
 
-                    <Border Margin="0,0,0,12" Padding="12" Background="#F4F1EB" BorderBrush="#D7CBAE" BorderThickness="1" CornerRadius="10">
+                    <Border Margin="0,0,0,12" Padding="12" Background="#FFFFFF" BorderBrush="#D7CBAE" BorderThickness="1" CornerRadius="10">
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="1.2*" />
@@ -71,7 +81,7 @@
 
                             <StackPanel Grid.Column="0" Margin="0,0,10,0">
                                 <TextBlock Text="Filtrar por estado" Style="{StaticResource DashboardFilterLabelStyle}" />
-                                <Border Background="#FFFDFC" BorderBrush="#B48B3A" BorderThickness="1" CornerRadius="8" Padding="8,0">
+                                <Border Background="#FFFFFF" BorderBrush="#B48B3A" BorderThickness="1" CornerRadius="8" Padding="8,0">
                                     <ComboBox Style="{StaticResource DashboardFilterComboStyle}"
                                               ItemsSource="{Binding OrderStatusFilters}"
                                               SelectedItem="{Binding SelectedOrderStatusFilter, UpdateSourceTrigger=PropertyChanged}" />
@@ -80,7 +90,7 @@
 
                             <StackPanel Grid.Column="1" Margin="0,0,10,0">
                                 <TextBlock Text="Ordenar tabla" Style="{StaticResource DashboardFilterLabelStyle}" />
-                                <Border Background="#FFFDFC" BorderBrush="#B48B3A" BorderThickness="1" CornerRadius="8" Padding="8,0">
+                                <Border Background="#FFFFFF" BorderBrush="#B48B3A" BorderThickness="1" CornerRadius="8" Padding="8,0">
                                     <ComboBox Style="{StaticResource DashboardFilterComboStyle}"
                                               ItemsSource="{Binding OrderSortOptions}"
                                               SelectedItem="{Binding SelectedOrderSortOption, UpdateSourceTrigger=PropertyChanged}" />

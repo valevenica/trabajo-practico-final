@@ -65,6 +65,7 @@ public partial class MainWindow : Window
             MinHeight = ShellMinHeight;
             Width = ShellWidth;
             Height = ShellHeight;
+            WindowState = WindowState.Maximized;
         }
         else
         {
@@ -72,10 +73,10 @@ public partial class MainWindow : Window
             MinHeight = LoginMinHeight;
             Width = LoginWidth;
             Height = LoginHeight;
+            WindowState = WindowState.Normal;
         }
 
         WindowStartupLocation = WindowStartupLocation.CenterScreen;
-        WindowState = WindowState.Normal;
         UpdateLayout();
     }
 
