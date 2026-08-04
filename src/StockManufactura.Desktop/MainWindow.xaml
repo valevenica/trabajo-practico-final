@@ -6,7 +6,8 @@
         xmlns:views="clr-namespace:StockManufactura.Desktop.Views"
         xmlns:viewModels="clr-namespace:StockManufactura.Desktop.ViewModels"
         mc:Ignorable="d"
-        Title="{Binding WindowTitle}" Height="760" Width="1240" MinHeight="560" MinWidth="900">
+        Title="{Binding WindowTitle}" Height="620" Width="860" MinHeight="520" MinWidth="760"
+        WindowStartupLocation="CenterScreen">
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter" />
     </Window.Resources>
