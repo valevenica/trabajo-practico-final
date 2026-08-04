@@ -3,9 +3,10 @@ using System.IO;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using StockManufactura.Application.Interfaces;
+using StockManufactura.Application.Services;
 using StockManufactura.Desktop.Infrastructure;
-using StockManufactura.Domain.Entities;
 using StockManufactura.Infrastructure.Db;
+using StockManufactura.Infrastructure.Monetary.Providers;
 using StockManufactura.Infrastructure.Repositories;
 using StockManufactura.Desktop.Services;
 using StockManufactura.Desktop.ViewModels;
@@ -19,6 +20,11 @@ namespace StockManufactura.Desktop.Extensions
             services.AddSingleton<NavigationService>();
             services.AddSingleton<MainWindowViewModel>();
             services.AddTransient<LoginViewModel>();
+            services.AddTransient<ResourceManagementViewModel>();
+            services.AddTransient<MonetaryConfigurationViewModel>();
+            services.AddTransient<AuditLogViewModel>();
+            services.AddTransient<BackupManagementViewModel>();
+            services.AddTransient<ProductCostHistoryViewModel>();
             services.AddSingleton<MainWindow>();
             return services;
         }
@@ -33,7 +39,29 @@ namespace StockManufactura.Desktop.Extensions
             services.AddTransient(typeof(IRepository<>), typeof(Repository<>));
             services.AddTransient<IRolRepository, RolRepository>();
             services.AddTransient<IUsuarioRepository, UsuarioRepository>();
+            services.AddTransient<IProveedorRepository, ProveedorRepository>();
+            services.AddTransient<IRecursoRepository, RecursoRepository>();
+            services.AddTransient<IExchangeRateRepository, ExchangeRateRepository>();
+            services.AddTransient<IResourcePriceHistoryRepository, ResourcePriceHistoryRepository>();
+            services.AddTransient<IProductoRepository, ProductoRepository>();
+            services.AddTransient<IRecetaProductoItemRepository, RecetaProductoItemRepository>();
+            services.AddTransient<IProductCostHistoryRepository, ProductCostHistoryRepository>();
+            services.AddTransient<IProductCostSnapshotRepository, ProductCostSnapshotRepository>();
+            services.AddTransient<IProductCostSnapshotItemRepository, ProductCostSnapshotItemRepository>();
+            services.AddTransient<IAuditLogRepository, AuditLogRepository>();
+            services.AddTransient<IBackupRecordRepository, BackupRecordRepository>();
+            services.AddTransient<IBackupSettingsRepository, BackupSettingsRepository>();
             services.AddTransient<IUnitOfWork, UnitOfWork>();
+
+            services.AddSingleton<IExchangeRateProvider, BluelyticsExchangeRateProvider>();
+            services.AddTransient<IGoogleDriveBackupSyncService, NoOpGoogleDriveBackupSyncService>();
+
+            services.AddTransient<IAuditLogService, AuditLogService>();
+            services.AddTransient<IBackupService, BackupService>();
+            services.AddTransient<IProductCostService, ProductCostService>();
+            services.AddTransient<ICostReportService, CostReportService>();
+            services.AddTransient<IMonetaryConfigurationService, MonetaryConfigurationService>();
+            services.AddTransient<IResourcePricingService, ResourcePricingService>();
             services.AddTransient<DesktopStartupHealthCheck>();
             return services;
         }

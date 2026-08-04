@@ -1,0 +1,86 @@
+<UserControl x:Class="StockManufactura.Desktop.Views.ResourceManagementView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d"
+             d:DesignHeight="700" d:DesignWidth="1200">
+    <Grid Margin="20">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="2*" />
+            <ColumnDefinition Width="2*" />
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="2*" />
+            <RowDefinition Height="2*" />
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.ColumnSpan="2" Text="Recursos" FontSize="24" FontWeight="Bold" />
+
+        <Grid Grid.Row="1" Grid.ColumnSpan="2" Margin="0 14 0 14">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <TextBox Grid.Column="0" Margin="0 0 8 8" Text="{Binding Codigo, UpdateSourceTrigger=PropertyChanged}" />
+            <TextBox Grid.Column="1" Margin="0 0 8 8" Text="{Binding Nombre, UpdateSourceTrigger=PropertyChanged}" />
+            <TextBox Grid.Column="2" Margin="0 0 8 8" Text="{Binding Categoria, UpdateSourceTrigger=PropertyChanged}" />
+            <TextBox Grid.Column="3" Margin="0 0 0 8" Text="{Binding UnidadMedida, UpdateSourceTrigger=PropertyChanged}" />
+
+            <TextBox Grid.Row="1" Grid.Column="0" Margin="0 0 8 8" Text="{Binding Precio, UpdateSourceTrigger=PropertyChanged}" />
+            <TextBox Grid.Row="1" Grid.Column="1" Margin="0 0 8 8" Text="{Binding StockActual, UpdateSourceTrigger=PropertyChanged}" />
+            <TextBox Grid.Row="1" Grid.Column="2" Margin="0 0 8 8" Text="{Binding StockMinimo, UpdateSourceTrigger=PropertyChanged}" />
+
+            <StackPanel Grid.Row="1" Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
+                <RadioButton Content="Pesos" IsChecked="{Binding IsArs}" Command="{Binding SelectArsCommand}" Margin="0 0 12 0" />
+                <RadioButton Content="Dólares" IsChecked="{Binding IsUsd}" Command="{Binding SelectUsdCommand}" />
+            </StackPanel>
+
+            <TextBox Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="4" Margin="0 0 0 8" Text="{Binding Descripcion, UpdateSourceTrigger=PropertyChanged}" />
+            <TextBox Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="4" Text="{Binding Observaciones, UpdateSourceTrigger=PropertyChanged}" />
+        </Grid>
+
+        <DataGrid Grid.Row="2" Grid.Column="0" ItemsSource="{Binding Resources}" SelectedItem="{Binding SelectedResource}" AutoGenerateColumns="False" CanUserAddRows="False" Margin="0 0 10 10">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Código" Binding="{Binding Codigo}" Width="100" />
+                <DataGridTextColumn Header="Nombre" Binding="{Binding Nombre}" Width="*" />
+                <DataGridTextColumn Header="Precio" Binding="{Binding Precio}" Width="100" />
+                <DataGridTextColumn Header="Moneda" Binding="{Binding Moneda}" Width="80" />
+                <DataGridTextColumn Header="Stock" Binding="{Binding StockActual}" Width="80" />
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <StackPanel Grid.Row="2" Grid.Column="1" Margin="10 0 0 10">
+            <TextBlock Text="Cotización vigente:" FontWeight="SemiBold" />
+            <TextBlock Text="{Binding CotizacionVigente}" Margin="0 2 0 10" />
+            <TextBlock Text="Costo equivalente en pesos:" FontWeight="SemiBold" />
+            <TextBlock Text="{Binding CostoEquivalentePesos}" Margin="0 2 0 10" />
+            <Button Content="Recalcular" Command="{Binding RecalculateCommand}" Height="34" Margin="0 0 0 8" />
+            <Button Content="Guardar precio" Command="{Binding SaveCommand}" Height="34" Margin="0 0 0 8" />
+            <TextBlock Text="{Binding StatusMessage}" TextWrapping="Wrap" />
+        </StackPanel>
+
+        <DataGrid Grid.Row="3" Grid.ColumnSpan="2" ItemsSource="{Binding PriceHistory}" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Fecha" Binding="{Binding Fecha}" Width="150" />
+                <DataGridTextColumn Header="Usuario" Binding="{Binding Usuario}" Width="120" />
+                <DataGridTextColumn Header="Precio Anterior" Binding="{Binding PrecioAnterior}" Width="120" />
+                <DataGridTextColumn Header="Precio Nuevo" Binding="{Binding PrecioNuevo}" Width="120" />
+                <DataGridTextColumn Header="Moneda" Binding="{Binding Moneda}" Width="80" />
+                <DataGridTextColumn Header="Cotización" Binding="{Binding CotizacionUtilizada}" Width="100" />
+                <DataGridTextColumn Header="Observaciones" Binding="{Binding Observaciones}" Width="*" />
+            </DataGrid.Columns>
+        </DataGrid>
+    </Grid>
+</UserControl>

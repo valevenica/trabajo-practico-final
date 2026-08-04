@@ -16,6 +16,21 @@
                 <DataTemplate DataType="{x:Type viewModels:DashboardViewModel}">
                     <views:DashboardView />
                 </DataTemplate>
+                <DataTemplate DataType="{x:Type viewModels:ResourceManagementViewModel}">
+                    <views:ResourceManagementView />
+                </DataTemplate>
+                <DataTemplate DataType="{x:Type viewModels:MonetaryConfigurationViewModel}">
+                    <views:MonetaryConfigurationView />
+                </DataTemplate>
+                <DataTemplate DataType="{x:Type viewModels:AuditLogViewModel}">
+                    <views:AuditLogView />
+                </DataTemplate>
+                <DataTemplate DataType="{x:Type viewModels:BackupManagementViewModel}">
+                    <views:BackupManagementView />
+                </DataTemplate>
+                <DataTemplate DataType="{x:Type viewModels:ProductCostHistoryViewModel}">
+                    <views:ProductCostHistoryView />
+                </DataTemplate>
             </ContentControl.Resources>
         </ContentControl>
     </Grid>

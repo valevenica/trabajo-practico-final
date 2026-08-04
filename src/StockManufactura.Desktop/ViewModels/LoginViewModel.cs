@@ -14,15 +14,32 @@ namespace StockManufactura.Desktop.ViewModels
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly NavigationService _navigationService;
+        private readonly IResourcePricingService _resourcePricingService;
+        private readonly IMonetaryConfigurationService _monetaryConfigurationService;
+        private readonly IAuditLogService _auditLogService;
+        private readonly IBackupService _backupService;
+        private readonly IProductCostService _productCostService;
 
         private string _email = string.Empty;
         private string _password = string.Empty;
         private string _statusMessage = string.Empty;
 
-        public LoginViewModel(IUnitOfWork unitOfWork, NavigationService navigationService)
+        public LoginViewModel(
+            IUnitOfWork unitOfWork,
+            NavigationService navigationService,
+            IResourcePricingService resourcePricingService,
+            IMonetaryConfigurationService monetaryConfigurationService,
+            IAuditLogService auditLogService,
+            IBackupService backupService,
+            IProductCostService productCostService)
         {
             _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
             _navigationService = navigationService ?? throw new ArgumentNullException(nameof(navigationService));
+            _resourcePricingService = resourcePricingService ?? throw new ArgumentNullException(nameof(resourcePricingService));
+            _monetaryConfigurationService = monetaryConfigurationService ?? throw new ArgumentNullException(nameof(monetaryConfigurationService));
+            _auditLogService = auditLogService ?? throw new ArgumentNullException(nameof(auditLogService));
+            _backupService = backupService ?? throw new ArgumentNullException(nameof(backupService));
+            _productCostService = productCostService ?? throw new ArgumentNullException(nameof(productCostService));
             LoginCommand = new AsyncRelayCommand(ExecuteLoginAsync);
         }
 
@@ -70,7 +87,15 @@ namespace StockManufactura.Desktop.ViewModels
             }
 
             StatusMessage = "Ingreso exitoso.";
-            _navigationService.NavigateTo(new DashboardViewModel(usuario));
+            _navigationService.NavigateTo(new DashboardViewModel(
+                usuario,
+                _navigationService,
+                _resourcePricingService,
+                _monetaryConfigurationService,
+                _auditLogService,
+                _backupService,
+                _unitOfWork,
+                _productCostService));
         }
     }
 }

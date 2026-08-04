@@ -11,15 +11,51 @@ namespace StockManufactura.Infrastructure.Repositories
         public UnitOfWork(
             StockManufacturaDbContext context,
             IRolRepository rolRepository,
-            IUsuarioRepository usuarioRepository)
+            IUsuarioRepository usuarioRepository,
+            IProveedorRepository proveedorRepository,
+            IRecursoRepository recursoRepository,
+            IExchangeRateRepository exchangeRateRepository,
+            IResourcePriceHistoryRepository resourcePriceHistoryRepository,
+            IProductoRepository productoRepository,
+            IRecetaProductoItemRepository recetaProductoItemRepository,
+            IProductCostHistoryRepository productCostHistoryRepository,
+            IProductCostSnapshotRepository productCostSnapshotRepository,
+            IProductCostSnapshotItemRepository productCostSnapshotItemRepository,
+            IAuditLogRepository auditLogRepository,
+            IBackupRecordRepository backupRecordRepository,
+            IBackupSettingsRepository backupSettingsRepository)
         {
             _context = context;
             Roles = rolRepository;
             Usuarios = usuarioRepository;
+            Proveedores = proveedorRepository;
+            Recursos = recursoRepository;
+            ExchangeRates = exchangeRateRepository;
+            ResourcePriceHistory = resourcePriceHistoryRepository;
+            Productos = productoRepository;
+            RecetaProductoItems = recetaProductoItemRepository;
+            ProductCostHistory = productCostHistoryRepository;
+            ProductCostSnapshots = productCostSnapshotRepository;
+            ProductCostSnapshotItems = productCostSnapshotItemRepository;
+            AuditLogs = auditLogRepository;
+            BackupRecords = backupRecordRepository;
+            BackupSettings = backupSettingsRepository;
         }
 
         public IRolRepository Roles { get; }
         public IUsuarioRepository Usuarios { get; }
+        public IProveedorRepository Proveedores { get; }
+        public IRecursoRepository Recursos { get; }
+        public IExchangeRateRepository ExchangeRates { get; }
+        public IResourcePriceHistoryRepository ResourcePriceHistory { get; }
+        public IProductoRepository Productos { get; }
+        public IRecetaProductoItemRepository RecetaProductoItems { get; }
+        public IProductCostHistoryRepository ProductCostHistory { get; }
+        public IProductCostSnapshotRepository ProductCostSnapshots { get; }
+        public IProductCostSnapshotItemRepository ProductCostSnapshotItems { get; }
+        public IAuditLogRepository AuditLogs { get; }
+        public IBackupRecordRepository BackupRecords { get; }
+        public IBackupSettingsRepository BackupSettings { get; }
 
         public Task<int> SaveChangesAsync() => _context.SaveChangesAsync();
     }

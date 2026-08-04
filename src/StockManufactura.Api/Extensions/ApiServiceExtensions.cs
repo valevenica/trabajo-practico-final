@@ -1,6 +1,6 @@
 using System.Text;
 using AutoMapper;
-using FluentValidation.AspNetCore;
+using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
@@ -11,7 +11,9 @@ using StockManufactura.Api.Middleware;
 using StockManufactura.Application.Interfaces;
 using StockManufactura.Application.Mappings;
 using StockManufactura.Application.Pipelines;
+using StockManufactura.Application.Services;
 using StockManufactura.Infrastructure.Db;
+using StockManufactura.Infrastructure.Monetary.Providers;
 using StockManufactura.Infrastructure.Repositories;
 
 namespace StockManufactura.Api.Extensions
@@ -35,7 +37,28 @@ namespace StockManufactura.Api.Extensions
             services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
             services.AddScoped<IRolRepository, RolRepository>();
             services.AddScoped<IUsuarioRepository, UsuarioRepository>();
+            services.AddScoped<IProveedorRepository, ProveedorRepository>();
+            services.AddScoped<IRecursoRepository, RecursoRepository>();
+            services.AddScoped<IExchangeRateRepository, ExchangeRateRepository>();
+            services.AddScoped<IResourcePriceHistoryRepository, ResourcePriceHistoryRepository>();
+            services.AddScoped<IProductoRepository, ProductoRepository>();
+            services.AddScoped<IRecetaProductoItemRepository, RecetaProductoItemRepository>();
+            services.AddScoped<IProductCostHistoryRepository, ProductCostHistoryRepository>();
+            services.AddScoped<IProductCostSnapshotRepository, ProductCostSnapshotRepository>();
+            services.AddScoped<IProductCostSnapshotItemRepository, ProductCostSnapshotItemRepository>();
+            services.AddScoped<IAuditLogRepository, AuditLogRepository>();
+            services.AddScoped<IBackupRecordRepository, BackupRecordRepository>();
+            services.AddScoped<IBackupSettingsRepository, BackupSettingsRepository>();
             services.AddScoped<IUnitOfWork, UnitOfWork>();
+
+            services.AddScoped<IGoogleDriveBackupSyncService, NoOpGoogleDriveBackupSyncService>();
+            services.AddScoped<IAuditLogService, AuditLogService>();
+            services.AddScoped<IBackupService, BackupService>();
+            services.AddScoped<IProductCostService, ProductCostService>();
+            services.AddScoped<ICostReportService, CostReportService>();
+            services.AddScoped<IMonetaryConfigurationService, MonetaryConfigurationService>();
+            services.AddScoped<IResourcePricingService, ResourcePricingService>();
+            services.AddScoped<IExchangeRateProvider, BluelyticsExchangeRateProvider>();
 
             return services;
         }

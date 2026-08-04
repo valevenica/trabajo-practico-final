@@ -11,6 +11,20 @@ namespace StockManufactura.Infrastructure.Db
 
         public DbSet<Usuario> Usuarios { get; set; } = null!;
         public DbSet<Rol> Roles { get; set; } = null!;
+        public DbSet<Proveedor> Proveedores { get; set; } = null!;
+        public DbSet<Recurso> Recursos { get; set; } = null!;
+        public DbSet<ExchangeRate> ExchangeRates { get; set; } = null!;
+        public DbSet<ResourcePriceHistory> ResourcePriceHistory { get; set; } = null!;
+        public DbSet<ResourceCostCalculation> ResourceCostCalculations { get; set; } = null!;
+        public DbSet<Producto> Productos { get; set; } = null!;
+        public DbSet<RecetaProductoItem> RecetaProductoItems { get; set; } = null!;
+        public DbSet<CostoIndirecto> CostosIndirectos { get; set; } = null!;
+        public DbSet<ProductCostHistory> ProductCostHistory { get; set; } = null!;
+        public DbSet<ProductCostSnapshot> ProductCostSnapshots { get; set; } = null!;
+        public DbSet<ProductCostSnapshotItem> ProductCostSnapshotItems { get; set; } = null!;
+        public DbSet<AuditLog> AuditLogs { get; set; } = null!;
+        public DbSet<BackupRecord> BackupRecords { get; set; } = null!;
+        public DbSet<BackupSettings> BackupSettings { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
