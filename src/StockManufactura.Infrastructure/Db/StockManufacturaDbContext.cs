@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using StockManufactura.Domain.Entities;
 
 namespace StockManufactura.Infrastructure.Db
 {
@@ -8,7 +9,13 @@ namespace StockManufactura.Infrastructure.Db
         {
         }
 
-        // DbSets go here, e.g.:
-        // public DbSet<Product> Products { get; set; }
+        public DbSet<Usuario> Usuarios { get; set; } = null!;
+        public DbSet<Rol> Roles { get; set; } = null!;
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            modelBuilder.ApplyConfigurationsFromAssembly(typeof(StockManufacturaDbContext).Assembly);
+            base.OnModelCreating(modelBuilder);
+        }
     }
 }

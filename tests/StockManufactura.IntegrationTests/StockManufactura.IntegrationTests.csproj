@@ -7,7 +7,7 @@
     <ProjectReference Include="..\..\src\StockManufactura.Api\StockManufactura.Api.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="xunit" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" Version="2.4.2" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.9.0" />
   </ItemGroup>
 </Project>

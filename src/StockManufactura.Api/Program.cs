@@ -1,54 +1,45 @@
-using Microsoft.EntityFrameworkCore;
 using Serilog;
-using StockManufactura.Infrastructure.Db;
+using StockManufactura.Api.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Serilog
+builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+    .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true)
+    .AddEnvironmentVariables();
+
 Log.Logger = new LoggerConfiguration()
-    .WriteTo.Console()
+    .ReadFrom.Configuration(builder.Configuration)
     .CreateLogger();
+
 builder.Host.UseSerilog();
 
-// Configuration
-builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-                     .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true)
-                     .AddEnvironmentVariables();
-
-// Services
 builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddFluentValidationAutoValidation();
+builder.Services.AddFluentValidationClientsideAdapters();
 
-// EF Core
-builder.Services.AddDbContext<StockManufacturaDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-
-// Authentication (JWT)
-builder.Services.AddAuthentication("Bearer")
-    .AddJwtBearer("Bearer", options =>
-    {
-        // Placeholder - configure in appsettings
-    });
-
-// AutoMapper, FluentValidation - placeholders
-builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+builder.Services.AddApplicationServices();
+builder.Services.AddInfrastructureServices(builder.Configuration);
+builder.Services.AddAuthenticationServices(builder.Configuration);
+builder.Services.AddSwaggerServices();
+builder.Services.AddHealthChecksServices();
+builder.Services.AddCorsServices();
+builder.Services.AddApiVersioningServices();
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseDeveloperExceptionPage();
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
-
+app.UseApiExceptionHandling();
 app.UseSerilogRequestLogging();
-
+app.UseHttpsRedirection();
 app.UseRouting();
+app.UseCorsPolicy();
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapControllers();
+if (app.Environment.IsDevelopment())
+{
+    app.UseApiSwagger();
+}
 
+app.MapHealthChecks("/health");
+app.MapControllers();
 app.Run();
