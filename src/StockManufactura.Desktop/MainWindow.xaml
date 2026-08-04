@@ -6,7 +6,7 @@
         xmlns:views="clr-namespace:StockManufactura.Desktop.Views"
         xmlns:viewModels="clr-namespace:StockManufactura.Desktop.ViewModels"
         mc:Ignorable="d"
-        Title="{Binding WindowTitle}" Height="620" Width="860" MinHeight="520" MinWidth="760"
+        Title="{Binding WindowTitle}" Height="760" Width="1120" MinHeight="650" MinWidth="980"
         WindowStartupLocation="CenterScreen">
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter" />
@@ -18,7 +18,7 @@
                 Background="{StaticResource CardSurfaceBrush}"
                 BorderBrush="#DDDDDD"
                 BorderThickness="0,0,0,1"
-                Padding="16,10">
+                Padding="26,18">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
@@ -26,26 +26,28 @@
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
 
-                <Border CornerRadius="8" Background="#FFFFFF" BorderBrush="#DDD" BorderThickness="1" Padding="6" MinWidth="44" MinHeight="44" MaxWidth="64" MaxHeight="64">
+                <Border CornerRadius="0" Background="Transparent" BorderBrush="Transparent" BorderThickness="0" Padding="0" MinWidth="1" MinHeight="1" MaxWidth="1" MaxHeight="1" Visibility="Collapsed">
                     <Viewbox Stretch="Uniform" StretchDirection="Both">
                         <Image x:Name="HeaderLogoImage" Stretch="Uniform" />
                     </Viewbox>
                 </Border>
 
                 <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center">
-                    <TextBlock Text="Integra Manufacturing" FontSize="24" FontFamily="Georgia" FontWeight="Bold" Foreground="{StaticResource PrimaryAccentBrush}" />
-                    <TextBlock Text="Sistema de gestión integral" FontStyle="Italic" Foreground="{StaticResource TextMutedBrush}" />
+                    <TextBlock Text="INTEGRA MANUFACTURING" FontSize="37" FontFamily="Georgia" FontWeight="Bold" Foreground="{StaticResource PrimaryAccentBrush}" />
+                    <TextBlock Text="Sistema de Gestión Integral de Inventario, Producción y Costos" FontSize="20" FontStyle="Italic" Foreground="{StaticResource TextMutedBrush}" />
                 </StackPanel>
 
-                <TextBlock Grid.Column="2"
-                           VerticalAlignment="Center"
-                           FontWeight="SemiBold"
-                           Text="{Binding CurrentUserName, StringFormat=Usuario: {0}}" />
+                <StackPanel Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Right">
+                    <TextBlock FontSize="16" HorizontalAlignment="Right" Text="{Binding CurrentUserName, StringFormat=Usuario: {0}}" />
+                    <Border Margin="0,8,0,0" Padding="10,7" CornerRadius="8" Background="#EEF4E8" BorderBrush="#9A8A50" BorderThickness="1">
+                        <TextBlock Text="Servidor Fábrica: CONECTADO" FontSize="16" Foreground="#1F6D36" FontWeight="Bold" />
+                    </Border>
+                </StackPanel>
             </Grid>
         </Border>
 
         <Border DockPanel.Dock="Left"
-                Width="220"
+                Width="160"
                 Visibility="{Binding IsShellVisible, Converter={StaticResource BoolToVisibilityConverter}}"
                 Background="{StaticResource BackgroundDarkMetalBrush}"
                 BorderBrush="#4A4B50"
