@@ -6,8 +6,7 @@
         xmlns:views="clr-namespace:StockManufactura.Desktop.Views"
         xmlns:viewModels="clr-namespace:StockManufactura.Desktop.ViewModels"
         mc:Ignorable="d"
-        Title="StockManufactura" Height="600" Width="1000"
-        Icon="Assets/app.ico">
+        Title="StockManufactura" Height="600" Width="1000">
     <Grid>
         <ContentControl Content="{Binding CurrentViewModel}">
             <ContentControl.Resources>
