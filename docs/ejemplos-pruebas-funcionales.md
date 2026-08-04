@@ -5,8 +5,9 @@ Esta guia te permite validar funcionalidades clave con datos de ejemplo.
 ## 1) Login y seguridad
 
 ### Caso A: login correcto
-- Usuario: `admin@test.com`
-- Password: `Admin123!` (o la que tengas configurada)
+- Usuario: `Admin`
+- Correo: `admin@test.com`
+- Password: `Admin123` (o la que tengas configurada)
 - Resultado esperado:
 - Accede al dashboard.
 - Se registra auditoria de login exitoso.

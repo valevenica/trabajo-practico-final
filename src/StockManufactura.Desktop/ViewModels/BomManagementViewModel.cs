@@ -91,6 +91,16 @@ namespace StockManufactura.Desktop.ViewModels
             _ = LoadItemsAsync(value?.Id);
         }
 
+        partial void OnSelectedResourceChanged(Recurso? value)
+        {
+            UpdateCalculatedPartialCost();
+        }
+
+        partial void OnCantidadChanged(string value)
+        {
+            UpdateCalculatedPartialCost();
+        }
+
         partial void OnSelectedItemChanged(RecetaProductoItem? value)
         {
             if (value is null)
@@ -184,11 +194,7 @@ namespace StockManufactura.Desktop.ViewModels
                 return;
             }
 
-            if (!decimal.TryParse(CostoParcialManual, NumberStyles.Number, CultureInfo.InvariantCulture, out var costoParcial) || costoParcial < 0)
-            {
-                StatusMessage = "Costo parcial inválido.";
-                return;
-            }
+            var costoParcial = decimal.Round(cantidad * SelectedResource.Precio, 4, MidpointRounding.AwayFromZero);
 
             try
             {
@@ -291,6 +297,24 @@ namespace StockManufactura.Desktop.ViewModels
             CostoParcialManual = "0";
             Observaciones = string.Empty;
             StatusMessage = "Nuevo item de receta.";
+        }
+
+        private void UpdateCalculatedPartialCost()
+        {
+            if (SelectedResource is null)
+            {
+                CostoParcialManual = "0";
+                return;
+            }
+
+            if (!decimal.TryParse(Cantidad, NumberStyles.Number, CultureInfo.InvariantCulture, out var cantidad) || cantidad < 0)
+            {
+                CostoParcialManual = "0";
+                return;
+            }
+
+            var costoParcial = decimal.Round(cantidad * SelectedResource.Precio, 4, MidpointRounding.AwayFromZero);
+            CostoParcialManual = costoParcial.ToString("0.0000", CultureInfo.InvariantCulture);
         }
 
         private void GoBack()

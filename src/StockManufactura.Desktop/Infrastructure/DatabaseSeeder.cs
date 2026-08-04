@@ -9,9 +9,10 @@ namespace StockManufactura.Desktop.Infrastructure
     {
         public const string AdminRoleName = "Administrador";
         public const string OperatorRoleName = "Operador";
-        public const string AdminEmail = "admin@stockmanufactura.local";
-        private const string AdminName = "Administrador";
-        private const string DefaultAdminPassword = "Admin123!";
+        public const string AdminEmail = "admin@test.com";
+        private const string LegacyAdminEmail = "admin@stockmanufactura.local";
+        private const string AdminName = "Admin";
+        private const string DefaultAdminPassword = "Admin123";
 
         internal readonly record struct SeedStatus(bool AdminRoleExists, bool OperatorRoleExists, bool AdminUserExists)
         {
@@ -67,21 +68,50 @@ namespace StockManufactura.Desktop.Infrastructure
                 hasChanges = true;
             }
 
-            var adminUser = dbContext.Usuarios.FirstOrDefault(u => u.Email == AdminEmail);
+            var adminUser = dbContext.Usuarios.FirstOrDefault(u => u.Email == AdminEmail)
+                ?? dbContext.Usuarios.FirstOrDefault(u => u.Email == LegacyAdminEmail);
             if (adminUser is null)
             {
                 var passwordHash = BCrypt.Net.BCrypt.HashPassword(GetAdminPassword());
                 adminUser = new Usuario(AdminName, AdminEmail, passwordHash, adminRole.Id);
                 adminUser.AsignarRol(adminRole);
-                adminUser.ForzarCambioPassword();
                 dbContext.Usuarios.Add(adminUser);
                 hasChanges = true;
             }
-            else if (!adminUser.RequiereCambioPassword)
+            else
             {
-                adminUser.ForzarCambioPassword();
-                dbContext.Usuarios.Update(adminUser);
-                hasChanges = true;
+                var configuredPassword = GetAdminPassword();
+                var adminUserChanged = false;
+                var shouldUpdateIdentity = !string.Equals(adminUser.Email, AdminEmail, StringComparison.OrdinalIgnoreCase)
+                    || !string.Equals(adminUser.Nombre, AdminName, StringComparison.Ordinal);
+                var shouldUpdatePassword = !BCrypt.Net.BCrypt.Verify(configuredPassword, adminUser.PasswordHash);
+                var shouldDisableForcedChange = adminUser.RequiereCambioPassword;
+
+                if (shouldUpdateIdentity)
+                {
+                    adminUser.ActualizarDatos(AdminName, AdminEmail);
+                    adminUserChanged = true;
+                    hasChanges = true;
+                }
+
+                if (shouldUpdatePassword)
+                {
+                    adminUser.CambiarPasswordHash(BCrypt.Net.BCrypt.HashPassword(configuredPassword));
+                    adminUserChanged = true;
+                    hasChanges = true;
+                }
+                else if (shouldDisableForcedChange)
+                {
+                    // Clear forced-password flag without changing hash.
+                    adminUser.CambiarPasswordHash(adminUser.PasswordHash);
+                    adminUserChanged = true;
+                    hasChanges = true;
+                }
+
+                if (adminUserChanged)
+                {
+                    dbContext.Usuarios.Update(adminUser);
+                }
             }
 
             if (hasChanges)

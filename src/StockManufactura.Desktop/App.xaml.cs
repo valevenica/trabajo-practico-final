@@ -79,14 +79,20 @@ public partial class App : global::System.Windows.Application
             splashWindow.Close();
             mainWindow.Show();
         }
-        catch
+        catch (Exception ex)
         {
             if (splashWindow.IsVisible)
             {
                 splashWindow.Close();
             }
 
-            throw;
+            Log.Error(ex, "Desktop startup failed.");
+            MessageBox.Show(
+                "No se pudo iniciar la aplicacion. Revisa el archivo de logs para mas detalle.",
+                "Error de inicio",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+            Shutdown(-1);
         }
     }
 

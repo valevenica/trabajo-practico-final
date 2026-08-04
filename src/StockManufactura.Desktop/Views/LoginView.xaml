@@ -9,40 +9,48 @@
         <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter" />
     </UserControl.Resources>
     <Grid Margin="24" Background="{StaticResource BackgroundSoftLightBrush}">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-        </Grid.RowDefinitions>
+        <Viewbox Stretch="Uniform" StretchDirection="DownOnly" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <StackPanel Width="380">
+                <Image x:Name="LoginLogoImage"
+                       Height="150"
+                       Stretch="Uniform"
+                       HorizontalAlignment="Center"
+                       Margin="0 0 0 14" />
 
-        <TextBlock Text="INTEGRA MANUFACTURING" Style="{StaticResource ScreenTitleStyle}" Margin="0 0 0 24" />
-        <TextBlock Text="Acceso al sistema" FontSize="16" FontFamily="Georgia" FontStyle="Italic" Foreground="{StaticResource TextMutedBrush}" Margin="0 0 0 32" Grid.Row="1" />
+                <TextBlock Text="Acceso al sistema"
+                           FontSize="14"
+                           FontFamily="Georgia"
+                           FontStyle="Italic"
+                           Foreground="{StaticResource TextMutedBrush}"
+                           Margin="0 0 0 20"
+                           HorizontalAlignment="Center" />
 
-        <Border Grid.Row="2" Style="{StaticResource CardBorderStyle}">
-            <StackPanel Orientation="Vertical" Margin="0 4 0 0">
-            <TextBlock Text="Email" Margin="0 0 0 4" />
-            <TextBox Text="{Binding Email, UpdateSourceTrigger=PropertyChanged}" Height="35" />
+                <Border Style="{StaticResource CardBorderStyle}">
+                    <StackPanel Orientation="Vertical" Margin="0 2 0 0">
+                        <TextBlock Text="Usuario" Margin="0 0 0 4" />
+                        <TextBox Text="{Binding Usuario, UpdateSourceTrigger=PropertyChanged}" Height="32" KeyDown="OnLoginEnterPressed" />
 
-            <TextBlock Text="Contraseña" Margin="0 16 0 4" />
-            <PasswordBox x:Name="PasswordBox" Height="35" PasswordChanged="OnPasswordChanged" />
+                        <TextBlock Text="Contraseña" Margin="0 16 0 4" />
+                        <PasswordBox x:Name="PasswordBox" Height="32" PasswordChanged="OnPasswordChanged" KeyDown="OnLoginEnterPressed" />
 
-            <StackPanel Visibility="{Binding RequiresPasswordChange, Converter={StaticResource BoolToVisibilityConverter}}" Margin="0 16 0 0">
-                <TextBlock Text="Nueva contraseña" Margin="0 0 0 4" />
-                <PasswordBox x:Name="NewPasswordBox" Height="35" PasswordChanged="OnNewPasswordChanged" />
+                        <StackPanel Visibility="{Binding RequiresPasswordChange, Converter={StaticResource BoolToVisibilityConverter}}" Margin="0 16 0 0">
+                            <TextBlock Text="Nueva contraseña" Margin="0 0 0 4" />
+                            <PasswordBox x:Name="NewPasswordBox" Height="32" PasswordChanged="OnNewPasswordChanged" />
 
-                <TextBlock Text="Confirmar nueva contraseña" Margin="0 12 0 4" />
-                <PasswordBox x:Name="ConfirmPasswordBox" Height="35" PasswordChanged="OnConfirmNewPasswordChanged" />
+                            <TextBlock Text="Confirmar nueva contraseña" Margin="0 12 0 4" />
+                            <PasswordBox x:Name="ConfirmPasswordBox" Height="32" PasswordChanged="OnConfirmNewPasswordChanged" />
 
-                <Button Content="Cambiar contraseña"
-                        Command="{Binding ChangePasswordCommand}"
-                        Margin="0 12 0 0"
-                        Style="{StaticResource PrimaryButtonStyle}" />
+                            <Button Content="Cambiar contraseña"
+                                    Command="{Binding ChangePasswordCommand}"
+                                    Margin="0 12 0 0"
+                                    Style="{StaticResource PrimaryButtonStyle}" />
+                        </StackPanel>
+
+                        <Button Content="Ingresar" Command="{Binding LoginCommand}" Height="36" Margin="0 20 0 0" Style="{StaticResource PrimaryButtonStyle}" />
+                        <TextBlock Text="{Binding StatusMessage}" Margin="0 12 0 0" Style="{StaticResource StatusMessageStyle}" />
+                    </StackPanel>
+                </Border>
             </StackPanel>
-
-            <Button Content="Ingresar" Command="{Binding LoginCommand}" Height="40" Margin="0 24 0 0" Style="{StaticResource PrimaryButtonStyle}" />
-            <TextBlock Text="{Binding StatusMessage}" Margin="0 12 0 0" Style="{StaticResource StatusMessageStyle}" />
-            </StackPanel>
-        </Border>
+        </Viewbox>
     </Grid>
 </UserControl>

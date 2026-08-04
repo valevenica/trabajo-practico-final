@@ -16,6 +16,15 @@ namespace StockManufactura.Desktop.ViewModels
         private readonly DashboardViewModel _dashboardViewModel;
 
         [ObservableProperty]
+        private int _selectedTabIndex;
+
+        [ObservableProperty]
+        private string _myNombre = string.Empty;
+
+        [ObservableProperty]
+        private string _myEmail = string.Empty;
+
+        [ObservableProperty]
         private UsuarioDto? _selectedUser;
 
         [ObservableProperty]
@@ -58,7 +67,13 @@ namespace StockManufactura.Desktop.ViewModels
             ToggleActiveCommand = new AsyncRelayCommand(ToggleActiveAsync);
             ResetPasswordCommand = new AsyncRelayCommand(ResetPasswordAsync);
             NewUserCommand = new RelayCommand(StartNewUser);
+            SaveMyDataCommand = new AsyncRelayCommand(SaveMyDataAsync);
+            OpenUserAdminTabCommand = new RelayCommand(OpenUserAdminTab);
             BackCommand = new RelayCommand(GoBack);
+
+            SelectedTabIndex = 0;
+            MyNombre = AuthSession.Current?.Usuario?.Nombre ?? string.Empty;
+            MyEmail = AuthSession.Current?.Usuario?.Email ?? string.Empty;
 
             _ = LoadAsync();
         }
@@ -71,6 +86,8 @@ namespace StockManufactura.Desktop.ViewModels
         public ICommand ToggleActiveCommand { get; }
         public ICommand ResetPasswordCommand { get; }
         public ICommand NewUserCommand { get; }
+        public ICommand SaveMyDataCommand { get; }
+        public ICommand OpenUserAdminTabCommand { get; }
         public ICommand BackCommand { get; }
 
         public bool CanManageUsers => AuthSession.Current?.TienePermiso("USUARIOS_ADMIN") == true;
@@ -222,6 +239,7 @@ namespace StockManufactura.Desktop.ViewModels
 
         private void StartNewUser()
         {
+            SelectedTabIndex = 1;
             EsNuevo = true;
             SelectedUser = null;
             Nombre = string.Empty;
@@ -235,6 +253,56 @@ namespace StockManufactura.Desktop.ViewModels
             }
 
             StatusMessage = "Alta de usuario nueva.";
+        }
+
+        private async Task SaveMyDataAsync()
+        {
+            var currentUser = AuthSession.Current?.Usuario;
+            if (currentUser is null)
+            {
+                StatusMessage = "No hay sesión activa.";
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(MyNombre) || string.IsNullOrWhiteSpace(MyEmail))
+            {
+                StatusMessage = "Nombre y email son requeridos.";
+                return;
+            }
+
+            try
+            {
+                var actor = currentUser.Email;
+                var request = new UpsertUsuarioRequest
+                {
+                    Nombre = MyNombre.Trim(),
+                    Email = MyEmail.Trim(),
+                    RolId = currentUser.RolId,
+                    EsActivo = currentUser.EsActivo
+                };
+
+                var updated = await _userManagementService.UpdateAsync(currentUser.Id, request, actor);
+
+                currentUser.ActualizarDatos(updated.Nombre, updated.Email);
+                MyNombre = updated.Nombre;
+                MyEmail = updated.Email;
+                StatusMessage = "Mis datos fueron actualizados.";
+
+                if (CanManageUsers)
+                {
+                    await LoadAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = ex.Message;
+            }
+        }
+
+        private void OpenUserAdminTab()
+        {
+            SelectedTabIndex = 1;
+            StatusMessage = "Gestión de usuarios.";
         }
 
         private void GoBack()

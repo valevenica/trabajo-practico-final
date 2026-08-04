@@ -62,9 +62,8 @@ namespace StockManufactura.Application.Services
                 var previousCost = product.CostoFabricacionActual;
                 var previousSuggested = product.PrecioSugeridoActual;
 
-                var total = recipeItems.Sum(x => x.CostoParcialManual);
-                var indirect = total * 0.1m;
-                var newCost = total + indirect;
+                var total = recipeItems.Sum(x => x.Cantidad * x.Recurso.Precio);
+                var newCost = total;
                 var newSuggested = newCost * (1 + product.MargenActual);
 
                 product.CostoFabricacionActual = newCost;
@@ -112,7 +111,7 @@ namespace StockManufactura.Application.Services
                         CantidadUtilizada = item.Cantidad,
                         PrecioRecurso = item.Recurso.Precio,
                         CotizacionUtilizada = exchangeRateValue,
-                        CostoParcial = item.CostoParcialManual
+                        CostoParcial = item.Cantidad * item.Recurso.Precio
                     };
 
                     await _snapshotItemRepository.AddAsync(snapshotItem);

@@ -57,8 +57,8 @@
                 <TextBlock Text="Cantidad" />
                 <TextBox Text="{Binding Cantidad, UpdateSourceTrigger=PropertyChanged}" Height="32" Margin="0 4 0 8" />
 
-                <TextBlock Text="Costo parcial manual" />
-                <TextBox Text="{Binding CostoParcialManual, UpdateSourceTrigger=PropertyChanged}" Height="32" Margin="0 4 0 8" />
+                <TextBlock Text="Costo parcial (auto: cantidad x precio unitario)" />
+                <TextBox Text="{Binding CostoParcialManual}" Height="32" Margin="0 4 0 8" IsReadOnly="True" />
 
                 <TextBlock Text="Observaciones" />
                 <TextBox Text="{Binding Observaciones, UpdateSourceTrigger=PropertyChanged}" Height="62" Margin="0 4 0 8" TextWrapping="Wrap" AcceptsReturn="True" />

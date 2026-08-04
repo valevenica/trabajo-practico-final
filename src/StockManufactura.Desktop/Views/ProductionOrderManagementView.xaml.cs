@@ -1,4 +1,5 @@
 using System.Windows.Controls;
+using StockManufactura.Desktop.Infrastructure;
 
 namespace StockManufactura.Desktop.Views
 {
@@ -7,6 +8,12 @@ namespace StockManufactura.Desktop.Views
         public ProductionOrderManagementView()
         {
             InitializeComponent();
+
+            var logo = DesktopAssetLoader.TryLoadLogoImage();
+            if (logo is not null)
+            {
+                SidebarLogoImage.Source = logo;
+            }
         }
     }
 }

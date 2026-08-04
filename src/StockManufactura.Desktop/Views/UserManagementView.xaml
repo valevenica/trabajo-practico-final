@@ -6,55 +6,97 @@
              mc:Ignorable="d"
              d:DesignHeight="420" d:DesignWidth="860">
     <Grid Margin="20">
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="2*" />
-            <ColumnDefinition Width="3*" />
-        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
 
-        <StackPanel Grid.Column="0" Margin="0 0 16 0">
-            <TextBlock Text="Usuarios" FontSize="20" FontWeight="SemiBold" Margin="0 0 0 12" />
-            <ListBox ItemsSource="{Binding Users}" SelectedItem="{Binding SelectedUser}" Height="320">
-                <ListBox.ItemTemplate>
-                    <DataTemplate>
-                        <StackPanel>
-                            <TextBlock Text="{Binding Nombre}" FontWeight="SemiBold" />
-                            <TextBlock Text="{Binding Email}" />
-                            <TextBlock Text="{Binding RolNombre, StringFormat=Rol: {0}}" />
+        <TabControl SelectedIndex="{Binding SelectedTabIndex}">
+            <TabItem Header="Mis datos">
+                <Grid Margin="10">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Text="Mi perfil" FontSize="20" FontWeight="SemiBold" Margin="0 0 0 12" />
+
+                    <StackPanel Grid.Row="1" Margin="0 0 0 8">
+                        <TextBlock Text="Nombre" />
+                        <TextBox Text="{Binding MyNombre, UpdateSourceTrigger=PropertyChanged}" Height="32" Margin="0 4 0 0" />
+                    </StackPanel>
+
+                    <StackPanel Grid.Row="2" Margin="0 0 0 8">
+                        <TextBlock Text="Email" />
+                        <TextBox Text="{Binding MyEmail, UpdateSourceTrigger=PropertyChanged}" Height="32" Margin="0 4 0 0" />
+                    </StackPanel>
+
+                    <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0 8 0 0">
+                        <Button Content="Guardar mis datos" Command="{Binding SaveMyDataCommand}" Width="170" Height="34" Margin="0 0 10 0" />
+                        <Button Content="Ir a gestión de usuarios" Command="{Binding OpenUserAdminTabCommand}" Width="210" Height="34" />
+                    </StackPanel>
+                </Grid>
+            </TabItem>
+
+            <TabItem Header="Administrar usuarios">
+                <Grid Margin="10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="2*" />
+                        <ColumnDefinition Width="3*" />
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0" Margin="0 0 16 0">
+                        <TextBlock Text="Usuarios" FontSize="20" FontWeight="SemiBold" Margin="0 0 0 12" />
+                        <ListBox ItemsSource="{Binding Users}" SelectedItem="{Binding SelectedUser}" Height="320">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding Nombre}" FontWeight="SemiBold" />
+                                        <TextBlock Text="{Binding Email}" />
+                                        <TextBlock Text="{Binding RolNombre, StringFormat=Rol: {0}}" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                        <Button Content="Nuevo usuario" Command="{Binding NewUserCommand}" Margin="0 12 0 0" Height="34" />
+                        <Button Content="Activar / Desactivar" Command="{Binding ToggleActiveCommand}" Margin="0 8 0 0" Height="34" />
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="1">
+                        <TextBlock Text="Gestión de usuario" FontSize="20" FontWeight="SemiBold" Margin="0 0 0 12" />
+
+                        <TextBlock Text="Nombre" />
+                        <TextBox Text="{Binding Nombre, UpdateSourceTrigger=PropertyChanged}" Height="32" Margin="0 4 0 8" />
+
+                        <TextBlock Text="Email" />
+                        <TextBox Text="{Binding Email, UpdateSourceTrigger=PropertyChanged}" Height="32" Margin="0 4 0 8" />
+
+                        <TextBlock Text="Rol" />
+                        <ComboBox ItemsSource="{Binding Roles}" SelectedItem="{Binding SelectedRole}" DisplayMemberPath="Nombre" Height="32" Margin="0 4 0 8" />
+
+                        <CheckBox Content="Usuario activo" IsChecked="{Binding EsActivo}" Margin="0 2 0 8" />
+
+                        <TextBlock Text="Contraseña (alta)" />
+                        <PasswordBox x:Name="CreatePasswordBox" PasswordChanged="OnCreatePasswordChanged" Height="32" Margin="0 4 0 8" />
+
+                        <TextBlock Text="Nueva contraseña temporal" />
+                        <PasswordBox x:Name="ResetPasswordBox" PasswordChanged="OnResetPasswordChanged" Height="32" Margin="0 4 0 8" />
+
+                        <StackPanel Orientation="Horizontal" Margin="0 10 0 0">
+                            <Button Content="Guardar" Command="{Binding SaveCommand}" Width="140" Height="34" Margin="0 0 8 0" />
+                            <Button Content="Resetear contraseña" Command="{Binding ResetPasswordCommand}" Width="180" Height="34" />
                         </StackPanel>
-                    </DataTemplate>
-                </ListBox.ItemTemplate>
-            </ListBox>
-            <Button Content="Nuevo usuario" Command="{Binding NewUserCommand}" Margin="0 12 0 0" Height="34" />
-            <Button Content="Activar / Desactivar" Command="{Binding ToggleActiveCommand}" Margin="0 8 0 0" Height="34" />
-            <Button Content="Volver" Command="{Binding BackCommand}" Margin="0 8 0 0" Height="34" />
-        </StackPanel>
+                    </StackPanel>
+                </Grid>
+            </TabItem>
+        </TabControl>
 
-        <StackPanel Grid.Column="1">
-            <TextBlock Text="Gestión de usuario" FontSize="20" FontWeight="SemiBold" Margin="0 0 0 12" />
-
-            <TextBlock Text="Nombre" />
-            <TextBox Text="{Binding Nombre, UpdateSourceTrigger=PropertyChanged}" Height="32" Margin="0 4 0 8" />
-
-            <TextBlock Text="Email" />
-            <TextBox Text="{Binding Email, UpdateSourceTrigger=PropertyChanged}" Height="32" Margin="0 4 0 8" />
-
-            <TextBlock Text="Rol" />
-            <ComboBox ItemsSource="{Binding Roles}" SelectedItem="{Binding SelectedRole}" DisplayMemberPath="Nombre" Height="32" Margin="0 4 0 8" />
-
-            <CheckBox Content="Usuario activo" IsChecked="{Binding EsActivo}" Margin="0 2 0 8" />
-
-            <TextBlock Text="Contraseña (alta)" />
-            <PasswordBox x:Name="CreatePasswordBox" PasswordChanged="OnCreatePasswordChanged" Height="32" Margin="0 4 0 8" />
-
-            <TextBlock Text="Nueva contraseña temporal" />
-            <PasswordBox x:Name="ResetPasswordBox" PasswordChanged="OnResetPasswordChanged" Height="32" Margin="0 4 0 8" />
-
-            <StackPanel Orientation="Horizontal" Margin="0 10 0 0">
-                <Button Content="Guardar" Command="{Binding SaveCommand}" Width="140" Height="34" Margin="0 0 8 0" />
-                <Button Content="Resetear contraseña" Command="{Binding ResetPasswordCommand}" Width="180" Height="34" />
-            </StackPanel>
-
-            <TextBlock Text="{Binding StatusMessage}" Margin="0 12 0 0" Foreground="#B54708" TextWrapping="Wrap" />
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0 12 0 0">
+            <Button Content="Volver" Command="{Binding BackCommand}" Height="34" Width="120" />
+            <TextBlock Text="{Binding StatusMessage}" Margin="12 8 0 0" Foreground="#B54708" TextWrapping="Wrap" />
         </StackPanel>
     </Grid>
 </UserControl>
