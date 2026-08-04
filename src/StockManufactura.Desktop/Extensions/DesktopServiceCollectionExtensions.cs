@@ -3,6 +3,7 @@ using System.IO;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using StockManufactura.Application.Interfaces;
+using StockManufactura.Application.Mappings;
 using StockManufactura.Application.Services;
 using StockManufactura.Desktop.Infrastructure;
 using StockManufactura.Infrastructure.Db;
@@ -36,6 +37,7 @@ namespace StockManufactura.Desktop.Extensions
             var connectionString = $"Data Source={Path.Combine(dataDirectory, "StockManufactura.db")}";
 
             services.AddDbContext<StockManufacturaDbContext>(options => options.UseSqlite(connectionString), ServiceLifetime.Transient);
+            services.AddAutoMapper(cfg => cfg.AddProfile<StockManufacturaMappingProfile>());
             services.AddTransient(typeof(IRepository<>), typeof(Repository<>));
             services.AddTransient<IRolRepository, RolRepository>();
             services.AddTransient<IUsuarioRepository, UsuarioRepository>();
@@ -59,11 +61,13 @@ namespace StockManufactura.Desktop.Extensions
 
             services.AddTransient<IAuditLogService, AuditLogService>();
             services.AddTransient<IBackupService, BackupService>();
+            services.AddTransient<IAuthenticationService, AuthenticationService>();
             services.AddTransient<IProductCostService, ProductCostService>();
             services.AddTransient<ICostReportService, CostReportService>();
             services.AddTransient<IMonetaryConfigurationService, MonetaryConfigurationService>();
             services.AddTransient<ISystemStatusService, SystemStatusService>();
             services.AddTransient<IResourcePricingService, ResourcePricingService>();
+            services.AddTransient<IUserManagementService, UserManagementService>();
             services.AddTransient<DesktopStartupHealthCheck>();
             return services;
         }

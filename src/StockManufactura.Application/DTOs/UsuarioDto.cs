@@ -10,6 +10,8 @@ namespace StockManufactura.Application.DTOs
         public Guid RolId { get; init; }
         public string RolNombre { get; init; } = string.Empty;
         public bool EsActivo { get; init; }
+        public bool RequiereCambioPassword { get; init; }
+        public DateTime? UltimoAcceso { get; init; }
         public DateTime CreatedAt { get; init; }
         public DateTime UpdatedAt { get; init; }
         public bool IsDeleted { get; init; }

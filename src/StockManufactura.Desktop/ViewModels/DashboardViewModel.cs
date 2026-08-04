@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using StockManufactura.Application.Interfaces;
 using StockManufactura.Application.Services;
+using StockManufactura.Desktop.Infrastructure;
 using StockManufactura.Desktop.Services;
 using StockManufactura.Domain.Entities;
 
@@ -20,6 +21,7 @@ namespace StockManufactura.Desktop.ViewModels
         private readonly IUnitOfWork _unitOfWork;
         private readonly IProductCostService _productCostService;
         private readonly ISystemStatusService _systemStatusService;
+        private readonly IUserManagementService _userManagementService;
         private SystemStatusSnapshot? _status;
         private string _statusMessage = string.Empty;
 
@@ -32,7 +34,8 @@ namespace StockManufactura.Desktop.ViewModels
             IBackupService backupService,
             IUnitOfWork unitOfWork,
             IProductCostService productCostService,
-            ISystemStatusService systemStatusService)
+            ISystemStatusService systemStatusService,
+            IUserManagementService userManagementService)
         {
             Usuario = usuario;
             _navigationService = navigationService;
@@ -43,11 +46,13 @@ namespace StockManufactura.Desktop.ViewModels
             _unitOfWork = unitOfWork;
             _productCostService = productCostService;
             _systemStatusService = systemStatusService ?? throw new ArgumentNullException(nameof(systemStatusService));
+            _userManagementService = userManagementService ?? throw new ArgumentNullException(nameof(userManagementService));
             NavigateToResourcesCommand = new RelayCommand(NavigateToResources);
             NavigateToMonetaryConfigurationCommand = new RelayCommand(NavigateToMonetaryConfiguration);
             NavigateToAuditLogCommand = new RelayCommand(NavigateToAuditLog);
             NavigateToBackupsCommand = new RelayCommand(NavigateToBackups);
             NavigateToProductCostHistoryCommand = new RelayCommand(NavigateToProductCostHistory);
+            NavigateToUserManagementCommand = new RelayCommand(NavigateToUserManagement);
             RefreshStatusCommand = new AsyncRelayCommand(LoadStatusAsync);
             _ = LoadStatusAsync();
         }
@@ -59,7 +64,9 @@ namespace StockManufactura.Desktop.ViewModels
         public ICommand NavigateToAuditLogCommand { get; }
         public ICommand NavigateToBackupsCommand { get; }
         public ICommand NavigateToProductCostHistoryCommand { get; }
+        public ICommand NavigateToUserManagementCommand { get; }
         public ICommand RefreshStatusCommand { get; }
+        public bool CanManageUsers => AuthSession.Current?.TienePermiso("USUARIOS_ADMIN") == true;
 
         public SystemStatusSnapshot? Status
         {
@@ -112,6 +119,17 @@ namespace StockManufactura.Desktop.ViewModels
         private void NavigateToProductCostHistory()
         {
             _navigationService.NavigateTo(new ProductCostHistoryViewModel(_unitOfWork, _productCostService));
+        }
+
+        private void NavigateToUserManagement()
+        {
+            if (!CanManageUsers)
+            {
+                StatusMessage = "No tiene permisos para administrar usuarios.";
+                return;
+            }
+
+            _navigationService.NavigateTo(new UserManagementViewModel(_userManagementService, _navigationService, this));
         }
 
         private async Task LoadStatusAsync()

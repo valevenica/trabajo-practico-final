@@ -28,6 +28,18 @@ namespace StockManufactura.Infrastructure.Db.Configurations
                 .IsRequired()
                 .HasDefaultValue(true);
 
+            builder.Property(u => u.UltimoAcceso);
+
+            builder.Property(u => u.RequiereCambioPassword)
+                .IsRequired()
+                .HasDefaultValue(false);
+
+            builder.Property(u => u.IntentosFallidosLogin)
+                .IsRequired()
+                .HasDefaultValue(0);
+
+            builder.Property(u => u.BloqueadoHastaUtc);
+
             builder.Property(u => u.CreatedAt)
                 .IsRequired();
 

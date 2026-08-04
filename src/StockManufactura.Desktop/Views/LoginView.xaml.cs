@@ -17,5 +17,21 @@ namespace StockManufactura.Desktop.Views
                 viewModel.Password = passwordBox.Password;
             }
         }
+
+        private void OnNewPasswordChanged(object sender, System.Windows.RoutedEventArgs e)
+        {
+            if (DataContext is LoginViewModel viewModel && sender is PasswordBox passwordBox)
+            {
+                viewModel.NewPassword = passwordBox.Password;
+            }
+        }
+
+        private void OnConfirmNewPasswordChanged(object sender, System.Windows.RoutedEventArgs e)
+        {
+            if (DataContext is LoginViewModel viewModel && sender is PasswordBox passwordBox)
+            {
+                viewModel.ConfirmNewPassword = passwordBox.Password;
+            }
+        }
     }
 }

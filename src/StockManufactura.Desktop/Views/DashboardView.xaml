@@ -101,6 +101,13 @@
                 Margin="0 0 12 0"
                 HorizontalAlignment="Left"
                 Command="{Binding NavigateToAuditLogCommand}" />
+            <Button Content="Usuarios"
+                Width="140"
+                Height="36"
+                Margin="0 0 12 0"
+                HorizontalAlignment="Left"
+                IsEnabled="{Binding CanManageUsers}"
+                Command="{Binding NavigateToUserManagementCommand}" />
             <Button Content="Backups"
                 Width="160"
                 Height="36"

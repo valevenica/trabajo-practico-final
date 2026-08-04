@@ -11,7 +11,7 @@ namespace StockManufactura.Desktop.Infrastructure
         public const string OperatorRoleName = "Operador";
         public const string AdminEmail = "admin@stockmanufactura.local";
         private const string AdminName = "Administrador";
-        private const string AdminPassword = "Admin123!";
+        private const string DefaultAdminPassword = "Admin123!";
 
         internal readonly record struct SeedStatus(bool AdminRoleExists, bool OperatorRoleExists, bool AdminUserExists)
         {
@@ -43,6 +43,13 @@ namespace StockManufactura.Desktop.Infrastructure
             if (adminRole is null)
             {
                 adminRole = new Rol(AdminRoleName, "Rol con acceso completo al sistema.");
+                adminRole.AsignarPermisos(new[]
+                {
+                    "PRODUCTOS_VER", "PRODUCTOS_CREAR", "PRODUCTOS_EDITAR",
+                    "STOCK_VER", "STOCK_AJUSTAR",
+                    "COSTOS_VER",
+                    "USUARIOS_ADMIN"
+                });
                 dbContext.Roles.Add(adminRole);
                 hasChanges = true;
             }
@@ -51,6 +58,11 @@ namespace StockManufactura.Desktop.Infrastructure
             if (operatorRole is null)
             {
                 operatorRole = new Rol(OperatorRoleName, "Rol operativo con permisos limitados.");
+                operatorRole.AsignarPermisos(new[]
+                {
+                    "PRODUCTOS_VER",
+                    "STOCK_VER"
+                });
                 dbContext.Roles.Add(operatorRole);
                 hasChanges = true;
             }
@@ -58,10 +70,17 @@ namespace StockManufactura.Desktop.Infrastructure
             var adminUser = dbContext.Usuarios.FirstOrDefault(u => u.Email == AdminEmail);
             if (adminUser is null)
             {
-                var passwordHash = BCrypt.Net.BCrypt.HashPassword(AdminPassword);
+                var passwordHash = BCrypt.Net.BCrypt.HashPassword(GetAdminPassword());
                 adminUser = new Usuario(AdminName, AdminEmail, passwordHash, adminRole.Id);
                 adminUser.AsignarRol(adminRole);
+                adminUser.ForzarCambioPassword();
                 dbContext.Usuarios.Add(adminUser);
+                hasChanges = true;
+            }
+            else if (!adminUser.RequiereCambioPassword)
+            {
+                adminUser.ForzarCambioPassword();
+                dbContext.Usuarios.Update(adminUser);
                 hasChanges = true;
             }
 
@@ -73,6 +92,12 @@ namespace StockManufactura.Desktop.Infrastructure
             var after = GetSeedStatus(dbContext);
             var wasRecreated = !before.IsComplete && after.IsComplete;
             return new SeedResult(before, after, wasRecreated);
+        }
+
+        private static string GetAdminPassword()
+        {
+            var configured = Environment.GetEnvironmentVariable("STOCKMANUFACTURA_ADMIN_PASSWORD");
+            return string.IsNullOrWhiteSpace(configured) ? DefaultAdminPassword : configured;
         }
     }
 }

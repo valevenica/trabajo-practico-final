@@ -5,6 +5,9 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              mc:Ignorable="d"
              d:DesignHeight="360" d:DesignWidth="520">
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter" />
+    </UserControl.Resources>
     <Grid Margin="24">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -20,8 +23,21 @@
             <TextBlock Text="Email" Margin="0 0 0 4" />
             <TextBox Text="{Binding Email, UpdateSourceTrigger=PropertyChanged}" Height="35" />
 
-            <TextBlock Text="Contraseña" Margin="0 16 0 0 4" />
+            <TextBlock Text="Contraseña" Margin="0 16 0 4" />
             <PasswordBox x:Name="PasswordBox" Height="35" PasswordChanged="OnPasswordChanged" />
+
+            <StackPanel Visibility="{Binding RequiresPasswordChange, Converter={StaticResource BoolToVisibilityConverter}}" Margin="0 16 0 0">
+                <TextBlock Text="Nueva contraseña" Margin="0 0 0 4" />
+                <PasswordBox x:Name="NewPasswordBox" Height="35" PasswordChanged="OnNewPasswordChanged" />
+
+                <TextBlock Text="Confirmar nueva contraseña" Margin="0 12 0 4" />
+                <PasswordBox x:Name="ConfirmPasswordBox" Height="35" PasswordChanged="OnConfirmNewPasswordChanged" />
+
+                <Button Content="Cambiar contraseña"
+                        Command="{Binding ChangePasswordCommand}"
+                        Height="36"
+                        Margin="0 12 0 0" />
+            </StackPanel>
 
             <Button Content="Ingresar" Command="{Binding LoginCommand}" Height="40" Margin="0 24 0 0" />
             <TextBlock Text="{Binding StatusMessage}" Foreground="Red" Margin="0 12 0 0" />
