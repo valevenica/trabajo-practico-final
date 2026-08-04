@@ -10,7 +10,7 @@ namespace StockManufactura.Domain.Entities
             ProductoId = productoId;
             CantidadPlaneada = cantidadPlaneada;
             Observaciones = observaciones;
-            Estado = EstadoOrdenProduccion.Pendiente;
+            Estado = EstadoOrdenProduccion.Borrador;
         }
 
         private OrdenProduccion() { }
@@ -24,11 +24,27 @@ namespace StockManufactura.Domain.Entities
         public DateTime? FechaInicio { get; private set; }
         public DateTime? FechaFin { get; private set; }
 
+        public void Planificar()
+        {
+            if (Estado == EstadoOrdenProduccion.Finalizada || Estado == EstadoOrdenProduccion.Cancelada)
+            {
+                throw new InvalidOperationException("No se puede planificar una orden finalizada o cancelada.");
+            }
+
+            Estado = EstadoOrdenProduccion.Planificada;
+            UpdateTimestamp();
+        }
+
         public void MarcarEnProgreso()
         {
-            if (Estado == EstadoOrdenProduccion.Completada)
+            if (Estado == EstadoOrdenProduccion.Finalizada)
             {
                 throw new InvalidOperationException("No se puede reabrir una orden completada.");
+            }
+
+            if (Estado == EstadoOrdenProduccion.Cancelada)
+            {
+                throw new InvalidOperationException("No se puede iniciar una orden cancelada.");
             }
 
             Estado = EstadoOrdenProduccion.EnProceso;
@@ -38,12 +54,17 @@ namespace StockManufactura.Domain.Entities
 
         public void RegistrarProduccion(decimal cantidad)
         {
-            if (Estado == EstadoOrdenProduccion.Completada)
+            if (Estado == EstadoOrdenProduccion.Finalizada)
             {
                 throw new InvalidOperationException("No se puede registrar producción en una orden completada.");
             }
 
-            if (Estado == EstadoOrdenProduccion.Pendiente)
+            if (Estado == EstadoOrdenProduccion.Cancelada)
+            {
+                throw new InvalidOperationException("No se puede registrar producción en una orden cancelada.");
+            }
+
+            if (Estado == EstadoOrdenProduccion.Borrador || Estado == EstadoOrdenProduccion.Planificada)
             {
                 MarcarEnProgreso();
             }
@@ -54,21 +75,68 @@ namespace StockManufactura.Domain.Entities
 
         public void Completar()
         {
-            if (Estado == EstadoOrdenProduccion.Pendiente)
+            if (Estado == EstadoOrdenProduccion.Cancelada)
+            {
+                throw new InvalidOperationException("No se puede completar una orden cancelada.");
+            }
+
+            if (Estado == EstadoOrdenProduccion.Borrador || Estado == EstadoOrdenProduccion.Planificada)
             {
                 MarcarEnProgreso();
             }
 
-            Estado = EstadoOrdenProduccion.Completada;
+            Estado = EstadoOrdenProduccion.Finalizada;
             FechaFin ??= DateTime.UtcNow;
+            UpdateTimestamp();
+        }
+
+        public void Cancelar(string motivo)
+        {
+            if (Estado == EstadoOrdenProduccion.Finalizada)
+            {
+                throw new InvalidOperationException("No se puede cancelar una orden finalizada.");
+            }
+
+            Estado = EstadoOrdenProduccion.Cancelada;
+            if (!string.IsNullOrWhiteSpace(motivo))
+            {
+                Observaciones = string.IsNullOrWhiteSpace(Observaciones)
+                    ? motivo.Trim()
+                    : $"{Observaciones}{Environment.NewLine}[Cancelada] {motivo.Trim()}";
+            }
+
+            FechaFin ??= DateTime.UtcNow;
+            UpdateTimestamp();
+        }
+
+        public void VolverABorrador()
+        {
+            if (Estado == EstadoOrdenProduccion.Finalizada)
+            {
+                throw new InvalidOperationException("No se puede volver a borrador una orden finalizada.");
+            }
+
+            Estado = EstadoOrdenProduccion.Borrador;
+            FechaInicio = null;
+            FechaFin = null;
+            UpdateTimestamp();
+        }
+
+        public void ActualizarObservaciones(string observaciones)
+        {
+            Observaciones = observaciones ?? string.Empty;
             UpdateTimestamp();
         }
     }
 
     public enum EstadoOrdenProduccion
     {
-        Pendiente = 1,
-        EnProceso = 2,
-        Completada = 3
+        Borrador = 1,
+        Planificada = 2,
+        EnProceso = 3,
+        Finalizada = 4,
+        Cancelada = 5,
+        Pendiente = Borrador,
+        Completada = Finalizada
     }
 }

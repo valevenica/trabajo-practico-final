@@ -17,6 +17,7 @@ namespace StockManufactura.Infrastructure.Repositories
             IExchangeRateRepository exchangeRateRepository,
             IResourcePriceHistoryRepository resourcePriceHistoryRepository,
             IProductoRepository productoRepository,
+            IOrdenProduccionRepository ordenProduccionRepository,
             IRecetaProductoItemRepository recetaProductoItemRepository,
             IStockRepository stockRepository,
             IProductCostHistoryRepository productCostHistoryRepository,
@@ -34,6 +35,7 @@ namespace StockManufactura.Infrastructure.Repositories
             ExchangeRates = exchangeRateRepository;
             ResourcePriceHistory = resourcePriceHistoryRepository;
             Productos = productoRepository;
+            OrdenesProduccion = ordenProduccionRepository;
             RecetaProductoItems = recetaProductoItemRepository;
             Stocks = stockRepository;
             ProductCostHistory = productCostHistoryRepository;
@@ -51,6 +53,7 @@ namespace StockManufactura.Infrastructure.Repositories
         public IExchangeRateRepository ExchangeRates { get; }
         public IResourcePriceHistoryRepository ResourcePriceHistory { get; }
         public IProductoRepository Productos { get; }
+        public IOrdenProduccionRepository OrdenesProduccion { get; }
         public IRecetaProductoItemRepository RecetaProductoItems { get; }
         public IStockRepository Stocks { get; }
         public IProductCostHistoryRepository ProductCostHistory { get; }

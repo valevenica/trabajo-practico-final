@@ -6,11 +6,12 @@ using StockManufactura.Application.Interfaces;
 using StockManufactura.Application.Mappings;
 using StockManufactura.Application.Services;
 using StockManufactura.Desktop.Infrastructure;
+using StockManufactura.Desktop.Services;
 using StockManufactura.Infrastructure.Db;
 using StockManufactura.Infrastructure.Monetary.Providers;
 using StockManufactura.Infrastructure.Repositories;
-using StockManufactura.Desktop.Services;
 using StockManufactura.Desktop.ViewModels;
+using StockManufactura.Shared;
 
 namespace StockManufactura.Desktop.Extensions
 {
@@ -32,9 +33,9 @@ namespace StockManufactura.Desktop.Extensions
 
         public static IServiceCollection AddDesktopInfrastructure(this IServiceCollection services)
         {
-            var dataDirectory = Path.Combine(AppContext.BaseDirectory, "Data");
+            var dataDirectory = AppPaths.DataDirectory;
             Directory.CreateDirectory(dataDirectory);
-            var connectionString = $"Data Source={Path.Combine(dataDirectory, "StockManufactura.db")}";
+            var connectionString = $"Data Source={AppPaths.DatabaseFilePath}";
 
             services.AddDbContext<StockManufacturaDbContext>(options => options.UseSqlite(connectionString), ServiceLifetime.Transient);
             services.AddAutoMapper(cfg => cfg.AddProfile<StockManufacturaMappingProfile>());
@@ -46,6 +47,7 @@ namespace StockManufactura.Desktop.Extensions
             services.AddTransient<IExchangeRateRepository, ExchangeRateRepository>();
             services.AddTransient<IResourcePriceHistoryRepository, ResourcePriceHistoryRepository>();
             services.AddTransient<IProductoRepository, ProductoRepository>();
+            services.AddTransient<IOrdenProduccionRepository, OrdenProduccionRepository>();
             services.AddTransient<IRecetaProductoItemRepository, RecetaProductoItemRepository>();
             services.AddTransient<IStockRepository, StockRepository>();
             services.AddTransient<IProductCostHistoryRepository, ProductCostHistoryRepository>();

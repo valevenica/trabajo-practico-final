@@ -52,6 +52,10 @@ namespace StockManufactura.Desktop.ViewModels
             NavigateToAuditLogCommand = new RelayCommand(NavigateToAuditLog);
             NavigateToBackupsCommand = new RelayCommand(NavigateToBackups);
             NavigateToProductCostHistoryCommand = new RelayCommand(NavigateToProductCostHistory);
+            NavigateToProductsCommand = new RelayCommand(NavigateToProducts);
+            NavigateToBomCommand = new RelayCommand(NavigateToBom);
+            NavigateToProvidersCommand = new RelayCommand(NavigateToProviders);
+            NavigateToProductionOrdersCommand = new RelayCommand(NavigateToProductionOrders);
             NavigateToUserManagementCommand = new RelayCommand(NavigateToUserManagement);
             RefreshStatusCommand = new AsyncRelayCommand(LoadStatusAsync);
             _ = LoadStatusAsync();
@@ -64,9 +68,20 @@ namespace StockManufactura.Desktop.ViewModels
         public ICommand NavigateToAuditLogCommand { get; }
         public ICommand NavigateToBackupsCommand { get; }
         public ICommand NavigateToProductCostHistoryCommand { get; }
+        public ICommand NavigateToProductsCommand { get; }
+        public ICommand NavigateToBomCommand { get; }
+        public ICommand NavigateToProvidersCommand { get; }
+        public ICommand NavigateToProductionOrdersCommand { get; }
         public ICommand NavigateToUserManagementCommand { get; }
         public ICommand RefreshStatusCommand { get; }
         public bool CanManageUsers => AuthSession.Current?.TienePermiso("USUARIOS_ADMIN") == true;
+        public bool CanViewProducts => AuthSession.Current?.TienePermiso("PRODUCTOS_VER") == true
+            || AuthSession.Current?.TienePermiso("PRODUCTOS_CREAR") == true
+            || AuthSession.Current?.TienePermiso("PRODUCTOS_EDITAR") == true;
+        public bool CanEditBom => AuthSession.Current?.TienePermiso("PRODUCTOS_EDITAR") == true;
+        public bool CanManageProviders => AuthSession.Current?.TienePermiso("USUARIOS_ADMIN") == true
+            || AuthSession.Current?.TienePermiso("PRODUCTOS_EDITAR") == true;
+        public bool CanManageProductionOrders => AuthSession.Current?.TienePermiso("PRODUCTOS_EDITAR") == true;
 
         public SystemStatusSnapshot? Status
         {
@@ -119,6 +134,50 @@ namespace StockManufactura.Desktop.ViewModels
         private void NavigateToProductCostHistory()
         {
             _navigationService.NavigateTo(new ProductCostHistoryViewModel(_unitOfWork, _productCostService));
+        }
+
+        private void NavigateToProducts()
+        {
+            if (!CanViewProducts)
+            {
+                StatusMessage = "No tiene permisos para gestionar productos.";
+                return;
+            }
+
+            _navigationService.NavigateTo(new ProductManagementViewModel(_unitOfWork, _auditLogService, _navigationService, this));
+        }
+
+        private void NavigateToBom()
+        {
+            if (!CanEditBom)
+            {
+                StatusMessage = "No tiene permisos para editar recetas BOM.";
+                return;
+            }
+
+            _navigationService.NavigateTo(new BomManagementViewModel(_unitOfWork, _auditLogService, _productCostService, _navigationService, this));
+        }
+
+        private void NavigateToProviders()
+        {
+            if (!CanManageProviders)
+            {
+                StatusMessage = "No tiene permisos para gestionar proveedores.";
+                return;
+            }
+
+            _navigationService.NavigateTo(new ProviderManagementViewModel(_unitOfWork, _auditLogService, _navigationService, this));
+        }
+
+        private void NavigateToProductionOrders()
+        {
+            if (!CanManageProductionOrders)
+            {
+                StatusMessage = "No tiene permisos para gestionar órdenes de producción.";
+                return;
+            }
+
+            _navigationService.NavigateTo(new ProductionOrderManagementViewModel(_unitOfWork, _auditLogService, _navigationService, this));
         }
 
         private void NavigateToUserManagement()

@@ -22,7 +22,7 @@ namespace StockManufactura.Api.Extensions
     {
         public static IServiceCollection AddApplicationServices(this IServiceCollection services)
         {
-            services.AddAutoMapper(typeof(StockManufacturaMappingProfile).Assembly);
+            services.AddAutoMapper(cfg => cfg.AddProfile<StockManufacturaMappingProfile>());
             services.AddMediatR(typeof(StockManufacturaMappingProfile).Assembly);
             services.AddValidatorsFromAssembly(typeof(StockManufacturaMappingProfile).Assembly);
             services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
@@ -42,6 +42,7 @@ namespace StockManufactura.Api.Extensions
             services.AddScoped<IExchangeRateRepository, ExchangeRateRepository>();
             services.AddScoped<IResourcePriceHistoryRepository, ResourcePriceHistoryRepository>();
             services.AddScoped<IProductoRepository, ProductoRepository>();
+            services.AddScoped<IOrdenProduccionRepository, OrdenProduccionRepository>();
             services.AddScoped<IRecetaProductoItemRepository, RecetaProductoItemRepository>();
             services.AddScoped<IProductCostHistoryRepository, ProductCostHistoryRepository>();
             services.AddScoped<IProductCostSnapshotRepository, ProductCostSnapshotRepository>();

@@ -50,6 +50,7 @@ public class SystemStatusServiceTests
         public IExchangeRateRepository ExchangeRates { get; } = new StubExchangeRateRepository();
         public IResourcePriceHistoryRepository ResourcePriceHistory { get; } = new StubResourcePriceHistoryRepository();
         public IProductoRepository Productos { get; } = new StubProductoRepository();
+        public IOrdenProduccionRepository OrdenesProduccion { get; } = new StubOrdenProduccionRepository();
         public IRecetaProductoItemRepository RecetaProductoItems { get; } = new StubRecetaProductoItemRepository();
         public IStockRepository Stocks { get; } = new StubStockRepository();
         public IProductCostHistoryRepository ProductCostHistory { get; } = new StubProductCostHistoryRepository();
@@ -141,6 +142,14 @@ public class SystemStatusServiceTests
             new Producto(),
             new Producto()
         });
+    }
+
+    private sealed class StubOrdenProduccionRepository : StubRepository<OrdenProduccion>, IOrdenProduccionRepository
+    {
+        public Task<OrdenProduccion?> GetByCodigoAsync(string codigo) => Task.FromResult<OrdenProduccion?>(null);
+
+        public Task<IReadOnlyList<OrdenProduccion>> ListByCreatedDescAsync()
+            => Task.FromResult<IReadOnlyList<OrdenProduccion>>(Array.Empty<OrdenProduccion>());
     }
 
     private sealed class StubRecursoRepository : StubRepository<Recurso>, IRecursoRepository
