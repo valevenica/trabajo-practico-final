@@ -28,8 +28,10 @@ namespace StockManufactura.Desktop.ViewModels
 
             NavigateDashboardCommand = new RelayCommand(NavigateDashboard);
             NavigateProductsCommand = new RelayCommand(NavigateProducts);
+            NavigateNewProductCommand = new RelayCommand(NavigateNewProduct);
             NavigateBomCommand = new RelayCommand(NavigateBom);
             NavigateResourcesCommand = new RelayCommand(NavigateResources);
+            NavigateNewResourceCommand = new RelayCommand(NavigateNewResource);
             NavigateProvidersCommand = new RelayCommand(NavigateProviders);
             NavigateProductionOrdersCommand = new RelayCommand(NavigateProductionOrders);
             NavigateMonetaryCommand = new RelayCommand(NavigateMonetary);
@@ -55,8 +57,10 @@ namespace StockManufactura.Desktop.ViewModels
 
         public ICommand NavigateDashboardCommand { get; }
         public ICommand NavigateProductsCommand { get; }
+        public ICommand NavigateNewProductCommand { get; }
         public ICommand NavigateBomCommand { get; }
         public ICommand NavigateResourcesCommand { get; }
+        public ICommand NavigateNewResourceCommand { get; }
         public ICommand NavigateProvidersCommand { get; }
         public ICommand NavigateProductionOrdersCommand { get; }
         public ICommand NavigateMonetaryCommand { get; }
@@ -159,6 +163,19 @@ namespace StockManufactura.Desktop.ViewModels
             }
         }
 
+        private void NavigateNewProduct()
+        {
+            if (EnsureDashboardAvailable(out var dashboard))
+            {
+                _navigationService.NavigateTo(new ProductManagementViewModel(
+                    _serviceProvider.GetRequiredService<IUnitOfWork>(),
+                    _serviceProvider.GetRequiredService<IAuditLogService>(),
+                    _navigationService,
+                    dashboard,
+                    startInCreateMode: true));
+            }
+        }
+
         private void NavigateBom()
         {
             if (EnsureDashboardAvailable(out var dashboard))
@@ -180,6 +197,11 @@ namespace StockManufactura.Desktop.ViewModels
                     _serviceProvider.GetRequiredService<IResourcePricingService>(),
                     _serviceProvider.GetRequiredService<IMonetaryConfigurationService>()));
             }
+        }
+
+        private void NavigateNewResource()
+        {
+            NavigateResources();
         }
 
         private void NavigateProviders()

@@ -17,7 +17,7 @@
             <RowDefinition Height="2*" />
         </Grid.RowDefinitions>
 
-        <TextBlock Grid.ColumnSpan="2" Text="Recursos" FontSize="24" FontWeight="Bold" />
+        <TextBlock Grid.ColumnSpan="2" Text="Insumos" FontSize="24" FontWeight="Bold" />
 
         <Grid Grid.Row="1" Grid.ColumnSpan="2" Margin="0 14 0 14">
             <Grid.ColumnDefinitions>

@@ -54,7 +54,8 @@ namespace StockManufactura.Desktop.ViewModels
             IUnitOfWork unitOfWork,
             IAuditLogService auditLogService,
             NavigationService navigationService,
-            DashboardViewModel dashboardViewModel)
+            DashboardViewModel dashboardViewModel,
+            bool startInCreateMode = false)
         {
             _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
             _auditLogService = auditLogService ?? throw new ArgumentNullException(nameof(auditLogService));
@@ -68,6 +69,11 @@ namespace StockManufactura.Desktop.ViewModels
             BackCommand = new RelayCommand(GoBack);
 
             _ = LoadAsync();
+
+            if (startInCreateMode)
+            {
+                StartNewProduct();
+            }
         }
 
         public ObservableCollection<Producto> Products { get; }

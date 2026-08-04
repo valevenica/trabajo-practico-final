@@ -60,17 +60,58 @@
             </Border.Resources>
             <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                 <StackPanel>
-                    <Button Content="Dashboard" Margin="0,0,0,8" Command="{Binding NavigateDashboardCommand}" Style="{StaticResource SidebarMenuButtonStyle}" />
-                    <Button Content="Productos" Margin="0,0,0,8" Command="{Binding NavigateProductsCommand}" Style="{StaticResource SidebarMenuButtonStyle}" />
-                    <Button Content="Recetas BOM" Margin="0,0,0,8" Command="{Binding NavigateBomCommand}" Style="{StaticResource SidebarMenuButtonStyle}" />
-                    <Button Content="Recursos" Margin="0,0,0,8" Command="{Binding NavigateResourcesCommand}" Style="{StaticResource SidebarMenuButtonStyle}" />
-                    <Button Content="Proveedores" Margin="0,0,0,8" Command="{Binding NavigateProvidersCommand}" Style="{StaticResource SidebarMenuButtonStyle}" />
-                    <Button Content="Órdenes" Margin="0,0,0,8" Command="{Binding NavigateProductionOrdersCommand}" Style="{StaticResource SidebarMenuButtonStyle}" />
-                    <Button Content="Monetaria" Margin="0,0,0,8" Command="{Binding NavigateMonetaryCommand}" Style="{StaticResource SidebarMenuButtonStyle}" />
-                    <Button Content="Bitácora" Margin="0,0,0,8" Command="{Binding NavigateAuditCommand}" Style="{StaticResource SidebarMenuButtonStyle}" />
-                    <Button Content="Backups" Margin="0,0,0,8" Command="{Binding NavigateBackupsCommand}" Style="{StaticResource SidebarMenuButtonStyle}" />
-                    <Button Content="Historial Costos" Margin="0,0,0,8" Command="{Binding NavigateCostsCommand}" Style="{StaticResource SidebarMenuButtonStyle}" />
-                    <Button Content="Usuarios" Margin="0,0,0,8" Command="{Binding NavigateUsersCommand}" Style="{StaticResource SidebarMenuButtonStyle}" />
+                    <Expander IsExpanded="True" Margin="0,0,0,8">
+                        <Expander.Header>
+                            <TextBlock Text="Dashboard" Foreground="White" FontWeight="Bold" />
+                        </Expander.Header>
+                        <StackPanel Margin="0,6,0,0">
+                            <Button Content="Panel principal" Margin="0,0,0,6" Command="{Binding NavigateDashboardCommand}" Style="{StaticResource SidebarMenuButtonStyle}" />
+                        </StackPanel>
+                    </Expander>
+
+                    <Expander IsExpanded="True" Margin="0,0,0,8">
+                        <Expander.Header>
+                            <TextBlock Text="Stock" Foreground="White" FontWeight="Bold" />
+                        </Expander.Header>
+                        <StackPanel Margin="0,6,0,0">
+                            <Button Content="Productos" Margin="0,0,0,6" Command="{Binding NavigateProductsCommand}" Style="{StaticResource SidebarMenuButtonStyle}" />
+                            <Button Content="Insumos" Margin="0,0,0,6" Command="{Binding NavigateResourcesCommand}" Style="{StaticResource SidebarMenuButtonStyle}" />
+                            <Button Content="Nuevo producto" Margin="0,0,0,6" Command="{Binding NavigateNewProductCommand}" Style="{StaticResource SidebarMenuButtonStyle}" />
+                            <Button Content="Nuevo stock/insumo" Margin="0,0,0,6" Command="{Binding NavigateNewResourceCommand}" Style="{StaticResource SidebarMenuButtonStyle}" />
+                            <Button Content="Proveedores" Margin="0,0,0,6" Command="{Binding NavigateProvidersCommand}" Style="{StaticResource SidebarMenuButtonStyle}" />
+                        </StackPanel>
+                    </Expander>
+
+                    <Expander IsExpanded="False" Margin="0,0,0,8">
+                        <Expander.Header>
+                            <TextBlock Text="Producción" Foreground="White" FontWeight="Bold" />
+                        </Expander.Header>
+                        <StackPanel Margin="0,6,0,0">
+                            <Button Content="Órdenes" Margin="0,0,0,6" Command="{Binding NavigateProductionOrdersCommand}" Style="{StaticResource SidebarMenuButtonStyle}" />
+                            <Button Content="Recetas BOM" Margin="0,0,0,6" Command="{Binding NavigateBomCommand}" Style="{StaticResource SidebarMenuButtonStyle}" />
+                            <Button Content="Historial costos" Margin="0,0,0,6" Command="{Binding NavigateCostsCommand}" Style="{StaticResource SidebarMenuButtonStyle}" />
+                        </StackPanel>
+                    </Expander>
+
+                    <Expander IsExpanded="False" Margin="0,0,0,8">
+                        <Expander.Header>
+                            <TextBlock Text="Finanzas" Foreground="White" FontWeight="Bold" />
+                        </Expander.Header>
+                        <StackPanel Margin="0,6,0,0">
+                            <Button Content="Configuración monetaria" Margin="0,0,0,6" Command="{Binding NavigateMonetaryCommand}" Style="{StaticResource SidebarMenuButtonStyle}" />
+                            <Button Content="Backups" Margin="0,0,0,6" Command="{Binding NavigateBackupsCommand}" Style="{StaticResource SidebarMenuButtonStyle}" />
+                        </StackPanel>
+                    </Expander>
+
+                    <Expander IsExpanded="False" Margin="0,0,0,8">
+                        <Expander.Header>
+                            <TextBlock Text="Administración" Foreground="White" FontWeight="Bold" />
+                        </Expander.Header>
+                        <StackPanel Margin="0,6,0,0">
+                            <Button Content="Usuarios" Margin="0,0,0,6" Command="{Binding NavigateUsersCommand}" Style="{StaticResource SidebarMenuButtonStyle}" />
+                            <Button Content="Bitácora" Margin="0,0,0,6" Command="{Binding NavigateAuditCommand}" Style="{StaticResource SidebarMenuButtonStyle}" />
+                        </StackPanel>
+                    </Expander>
                 </StackPanel>
             </ScrollViewer>
         </Border>
