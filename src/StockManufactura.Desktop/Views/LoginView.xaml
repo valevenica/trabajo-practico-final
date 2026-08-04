@@ -11,7 +11,7 @@
     <Grid Margin="24" Background="{StaticResource BackgroundSoftLightBrush}">
         <Viewbox Stretch="Uniform" StretchDirection="DownOnly" HorizontalAlignment="Center" VerticalAlignment="Center">
             <StackPanel Width="380">
-                <Image Source="Assets/logo 2.png"
+                <Image x:Name="LoginLogoImage"
                        Height="150"
                        Stretch="Uniform"
                        HorizontalAlignment="Center"
