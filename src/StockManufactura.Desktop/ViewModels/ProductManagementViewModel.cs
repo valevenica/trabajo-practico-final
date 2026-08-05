@@ -50,6 +50,16 @@ namespace StockManufactura.Desktop.ViewModels
         [ObservableProperty]
         private bool _esNuevo = true;
 
+        [ObservableProperty]
+        private bool _isDirty;
+        [ObservableProperty]
+        private string _searchText = string.Empty;
+        private bool _loading;
+
+        public ObservableCollection<ProductRecipeRow> RecipeItems { get; } = new();
+
+        public string CostoFabricacionCalculado => RecipeItems.Sum(x => x.CostoTotal).ToString("0.0000", CultureInfo.InvariantCulture);
+
         public ProductManagementViewModel(
             IUnitOfWork unitOfWork,
             IAuditLogService auditLogService,
@@ -63,6 +73,7 @@ namespace StockManufactura.Desktop.ViewModels
             _dashboardViewModel = dashboardViewModel ?? throw new ArgumentNullException(nameof(dashboardViewModel));
 
             Products = new ObservableCollection<Producto>();
+            FilteredProducts = new ObservableCollection<Producto>();
             LoadCommand = new AsyncRelayCommand(LoadAsync);
             SaveCommand = new AsyncRelayCommand(SaveAsync);
             NewProductCommand = new RelayCommand(StartNewProduct);
@@ -77,6 +88,7 @@ namespace StockManufactura.Desktop.ViewModels
         }
 
         public ObservableCollection<Producto> Products { get; }
+        public ObservableCollection<Producto> FilteredProducts { get; }
 
         public ICommand LoadCommand { get; }
         public ICommand SaveCommand { get; }
@@ -87,23 +99,50 @@ namespace StockManufactura.Desktop.ViewModels
         public bool CanCreateProducts => AuthSession.Current?.TienePermiso("PRODUCTOS_CREAR") == true;
         public bool CanEditProducts => AuthSession.Current?.TienePermiso("PRODUCTOS_EDITAR") == true;
 
+        partial void OnSearchTextChanged(string value)
+        {
+            UpdateFilteredProducts();
+        }
+
         partial void OnSelectedProductChanged(Producto? value)
         {
-            if (value is null)
+            _loading = true;
+            try
             {
-                return;
-            }
+                if (value is null)
+                {
+                    RecipeItems.Clear();
+                    CostoFabricacion = "0.0000";
+                    OnPropertyChanged(nameof(CostoFabricacionCalculado));
+                    return;
+                }
 
-            EsNuevo = false;
-            Codigo = value.Codigo;
-            Nombre = value.Nombre;
-            Descripcion = value.Descripcion;
-            CostoFabricacion = value.CostoFabricacionActual.ToString("0.0000", CultureInfo.InvariantCulture);
-            Margen = value.MargenActual.ToString("0.0000", CultureInfo.InvariantCulture);
-            PrecioSugerido = value.PrecioSugeridoActual.ToString("0.0000", CultureInfo.InvariantCulture);
-            Activo = value.Activo;
-            Observaciones = value.Observaciones;
+                EsNuevo = false;
+                Codigo = value.Codigo;
+                Nombre = value.Nombre;
+                Descripcion = value.Descripcion;
+                CostoFabricacion = value.CostoFabricacionActual.ToString("0.0000", CultureInfo.InvariantCulture);
+                Margen = value.MargenActual.ToString("0.0000", CultureInfo.InvariantCulture);
+                PrecioSugerido = value.PrecioSugeridoActual.ToString("0.0000", CultureInfo.InvariantCulture);
+                Activo = value.Activo;
+                Observaciones = value.Observaciones;
+
+                _ = LoadRecipeItemsAsync(value.Id);
+            }
+            finally
+            {
+                _loading = false;
+                IsDirty = false;
+            }
         }
+
+        partial void OnCodigoChanged(string value) { if (!_loading) IsDirty = true; }
+        partial void OnNombreChanged(string value) { if (!_loading) IsDirty = true; }
+        partial void OnDescripcionChanged(string value) { if (!_loading) IsDirty = true; }
+        partial void OnMargenChanged(string value) { if (!_loading) IsDirty = true; }
+        partial void OnPrecioSugeridoChanged(string value) { if (!_loading) IsDirty = true; }
+        partial void OnActivoChanged(bool value) { if (!_loading) IsDirty = true; }
+        partial void OnObservacionesChanged(string value) { if (!_loading) IsDirty = true; }
 
         private async Task LoadAsync()
         {
@@ -113,14 +152,43 @@ namespace StockManufactura.Desktop.ViewModels
                 return;
             }
 
-            var products = (await _unitOfWork.Productos.ListAsync()).OrderBy(x => x.Nombre).ToArray();
-            Products.Clear();
-            foreach (var product in products)
+            try
             {
-                Products.Add(product);
-            }
+                var products = await Task.Run(async () =>
+                    (await _unitOfWork.Productos.ListAsync()).OrderBy(x => x.Nombre).ToArray());
 
-            StatusMessage = "Productos cargados.";
+                Products.Clear();
+                foreach (var product in products)
+                {
+                    Products.Add(product);
+                }
+
+                UpdateFilteredProducts();
+                StatusMessage = "Productos cargados.";
+
+                if (SelectedProduct is null)
+                {
+                    RecipeItems.Clear();
+                    CostoFabricacion = "0.0000";
+                    OnPropertyChanged(nameof(CostoFabricacionCalculado));
+                }
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"Error al cargar productos: {ex.Message}";
+            }
+        }
+
+        private void UpdateFilteredProducts()
+        {
+            var search = SearchText.ToLower().Trim();
+            var filtered = string.IsNullOrEmpty(search)
+                ? Products
+                : Products.Where(p => p.Codigo.ToLower().Contains(search) || p.Nombre.ToLower().Contains(search));
+
+            FilteredProducts.Clear();
+            foreach (var product in filtered)
+                FilteredProducts.Add(product);
         }
 
         private async Task SaveAsync()
@@ -143,12 +211,6 @@ namespace StockManufactura.Desktop.ViewModels
                 return;
             }
 
-            if (!decimal.TryParse(CostoFabricacion, NumberStyles.Number, CultureInfo.InvariantCulture, out var costo))
-            {
-                StatusMessage = "Costo de fabricación inválido.";
-                return;
-            }
-
             if (!decimal.TryParse(Margen, NumberStyles.Number, CultureInfo.InvariantCulture, out var margen))
             {
                 StatusMessage = "Margen inválido.";
@@ -166,6 +228,7 @@ namespace StockManufactura.Desktop.ViewModels
             try
             {
                 Producto product;
+                var costoCalculado = ParseCostoCalculado();
                 if (EsNuevo)
                 {
                     var existing = await _unitOfWork.Productos.GetByCodigoAsync(codigoNormalizado);
@@ -180,7 +243,7 @@ namespace StockManufactura.Desktop.ViewModels
                         Codigo = codigoNormalizado,
                         Nombre = Nombre.Trim(),
                         Descripcion = Descripcion.Trim(),
-                        CostoFabricacionActual = costo,
+                        CostoFabricacionActual = costoCalculado,
                         MargenActual = margen,
                         PrecioSugeridoActual = precioSugerido,
                         Activo = Activo,
@@ -212,7 +275,7 @@ namespace StockManufactura.Desktop.ViewModels
                     product.Codigo = codigoNormalizado;
                     product.Nombre = Nombre.Trim();
                     product.Descripcion = Descripcion.Trim();
-                    product.CostoFabricacionActual = costo;
+                    product.CostoFabricacionActual = costoCalculado;
                     product.MargenActual = margen;
                     product.PrecioSugeridoActual = precioSugerido;
                     product.Activo = Activo;
@@ -228,6 +291,7 @@ namespace StockManufactura.Desktop.ViewModels
 
                 await LoadAsync();
                 SelectedProduct = Products.FirstOrDefault(x => x.Id == product.Id);
+                IsDirty = false;
             }
             catch (Exception ex)
             {
@@ -237,17 +301,58 @@ namespace StockManufactura.Desktop.ViewModels
 
         private void StartNewProduct()
         {
-            EsNuevo = true;
-            SelectedProduct = null;
-            Codigo = string.Empty;
-            Nombre = string.Empty;
-            Descripcion = string.Empty;
-            CostoFabricacion = "0";
-            Margen = "0";
-            PrecioSugerido = "0";
-            Activo = true;
-            Observaciones = string.Empty;
-            StatusMessage = "Alta de producto nueva.";
+            _loading = true;
+            try
+            {
+                EsNuevo = true;
+                SelectedProduct = null;
+                Codigo = string.Empty;
+                Nombre = string.Empty;
+                Descripcion = string.Empty;
+                CostoFabricacion = "0";
+                Margen = "0";
+                PrecioSugerido = "0";
+                Activo = true;
+                Observaciones = string.Empty;
+                RecipeItems.Clear();
+                OnPropertyChanged(nameof(CostoFabricacionCalculado));
+                StatusMessage = "Alta de producto nueva.";
+            }
+            finally
+            {
+                _loading = false;
+                IsDirty = true;
+            }
+        }
+
+        private async Task LoadRecipeItemsAsync(Guid productId)
+        {
+            var items = await Task.Run(async () =>
+                await _unitOfWork.RecetaProductoItems.ListByProductIdAsync(productId));
+
+            RecipeItems.Clear();
+
+            foreach (var item in items.OrderBy(x => x.Recurso.Nombre))
+            {
+                var unitCost = item.Recurso.Precio;
+                var subtotal = decimal.Round(item.Cantidad * unitCost, 4, MidpointRounding.AwayFromZero);
+                RecipeItems.Add(new ProductRecipeRow(
+                    item.Recurso.Nombre,
+                    item.Recurso.UnidadMedida,
+                    item.Cantidad,
+                    unitCost,
+                    subtotal));
+            }
+
+            CostoFabricacion = CostoFabricacionCalculado;
+            OnPropertyChanged(nameof(CostoFabricacionCalculado));
+        }
+
+        private decimal ParseCostoCalculado()
+        {
+            return decimal.TryParse(CostoFabricacionCalculado, NumberStyles.Number, CultureInfo.InvariantCulture, out var cost)
+                ? cost
+                : 0m;
         }
 
         private void GoBack()
@@ -269,4 +374,11 @@ namespace StockManufactura.Desktop.ViewModels
             });
         }
     }
+
+    public sealed record ProductRecipeRow(
+        string Recurso,
+        string Unidad,
+        decimal Cantidad,
+        decimal CostoUnitario,
+        decimal CostoTotal);
 }

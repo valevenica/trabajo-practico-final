@@ -26,6 +26,20 @@ namespace StockManufactura.Infrastructure.Repositories
                 .ToListAsync();
         }
 
+        public async Task<IReadOnlyList<RecetaProductoItem>> ListByProductIdsAsync(IEnumerable<Guid> productIds)
+        {
+            var ids = productIds as Guid[] ?? productIds.ToArray();
+            if (ids.Length == 0)
+            {
+                return Array.Empty<RecetaProductoItem>();
+            }
+
+            return await _context.RecetaProductoItems
+                .Include(x => x.Recurso)
+                .Where(x => ids.Contains(x.ProductoId))
+                .ToListAsync();
+        }
+
         public async Task<IReadOnlyList<RecetaProductoItem>> ListByResourceIdAsync(Guid resourceId)
         {
             return await _context.RecetaProductoItems

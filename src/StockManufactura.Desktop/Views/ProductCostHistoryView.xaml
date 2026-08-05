@@ -4,8 +4,8 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              mc:Ignorable="d"
-             d:DesignHeight="700" d:DesignWidth="1200">
-    <Grid Margin="20">
+             d:DesignHeight="600" d:DesignWidth="1000">
+    <Grid Margin="20" Background="{StaticResource BackgroundSoftLightBrush}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
@@ -13,35 +13,57 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <TextBlock Text="Historial de Costos por Producto" FontSize="24" FontWeight="Bold" />
+        <!-- Encabezado -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0 0 0 12">
+            <TextBlock Text="HISTORIAL DE PRODUCTO" Style="{StaticResource SectionTitleStyle}" VerticalAlignment="Center" />
+            <Button Content="Volver" Command="{Binding BackCommand}" Width="100" Height="32" Margin="16 0 0 0" Style="{StaticResource SecondaryButtonStyle}" />
+        </StackPanel>
 
-        <Grid Grid.Row="1" Margin="0 12 0 12">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="2*" />
-                <ColumnDefinition Width="2*" />
-                <ColumnDefinition Width="2*" />
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
-            <ComboBox Grid.Column="0" Margin="0 0 8 0" ItemsSource="{Binding Products}" SelectedItem="{Binding SelectedProduct}" DisplayMemberPath="Nombre" Height="34" />
-            <ComboBox Grid.Column="1" Margin="0 0 8 0" ItemsSource="{Binding History}" SelectedItem="{Binding SelectedOlder}" DisplayMemberPath="Fecha" Height="34" />
-            <ComboBox Grid.Column="2" Margin="0 0 8 0" ItemsSource="{Binding History}" SelectedItem="{Binding SelectedNewer}" DisplayMemberPath="Fecha" Height="34" />
-            <Button Grid.Column="3" Margin="0 0 8 0" Content="Cargar" Command="{Binding LoadHistoryCommand}" Height="34" />
-            <Button Grid.Column="4" Content="Comparar" Command="{Binding CompareCommand}" Height="34" />
-        </Grid>
+        <!-- Selector de producto -->
+        <Border Grid.Row="1" Style="{StaticResource CardBorderStyle}" Margin="0 0 0 12" Padding="12 8">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="Producto:" VerticalAlignment="Center" FontWeight="SemiBold" Margin="0 0 10 0" />
+                <ComboBox ItemsSource="{Binding Products}"
+                          SelectedItem="{Binding SelectedProduct}"
+                          DisplayMemberPath="Nombre"
+                          Width="380" Height="32" />
+                <TextBlock Text="{Binding SelectedProduct.Codigo, StringFormat=  [{0}]}"
+                           VerticalAlignment="Center" Margin="8 0 0 0"
+                           Foreground="{StaticResource SecondaryAccentBrush}" />
+            </StackPanel>
+        </Border>
 
-        <DataGrid Grid.Row="2" ItemsSource="{Binding History}" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False">
-            <DataGrid.Columns>
-                <DataGridTextColumn Header="Fecha" Binding="{Binding Fecha}" Width="150" />
-                <DataGridTextColumn Header="Costo" Binding="{Binding CostoNuevo}" Width="120" />
-                <DataGridTextColumn Header="Margen" Binding="{Binding MargenUtilizado}" Width="100" />
-                <DataGridTextColumn Header="Precio Sugerido" Binding="{Binding PrecioSugeridoNuevo}" Width="140" />
-                <DataGridTextColumn Header="Usuario" Binding="{Binding Usuario}" Width="120" />
-                <DataGridTextColumn Header="Motivo" Binding="{Binding MotivoRecalculo}" Width="220" />
-                <DataGridTextColumn Header="Cotización" Binding="{Binding CotizacionUtilizada}" Width="100" />
-            </DataGrid.Columns>
-        </DataGrid>
+        <!-- Timeline -->
+        <Border Grid.Row="2" Style="{StaticResource CardBorderStyle}">
+            <DockPanel>
+                <Border DockPanel.Dock="Top" Background="{StaticResource BackgroundDarkMetalBrush}" Padding="8" CornerRadius="4" Margin="0 0 0 8">
+                    <TextBlock Text="Línea de tiempo — todos los cambios del producto" Foreground="{StaticResource SecondaryAccentBrush}" FontWeight="SemiBold" />
+                </Border>
+                <DataGrid ItemsSource="{Binding Timeline}"
+                          AutoGenerateColumns="False"
+                          CanUserAddRows="False"
+                          CanUserDeleteRows="False"
+                          IsReadOnly="True"
+                          HeadersVisibility="Column"
+                          GridLinesVisibility="Horizontal"
+                          AlternatingRowBackground="#F5F5F5">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Fecha" Binding="{Binding Fecha}" Width="145" />
+                        <DataGridTextColumn Header="Tipo de evento" Binding="{Binding TipoEvento}" Width="155" />
+                        <DataGridTextColumn Header="Descripción" Binding="{Binding Descripcion}" Width="*">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="TextWrapping" Value="Wrap" />
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
+                        <DataGridTextColumn Header="Usuario" Binding="{Binding Usuario}" Width="130" />
+                        <DataGridTextColumn Header="Costo nuevo" Binding="{Binding CostoNuevo}" Width="110" />
+                    </DataGrid.Columns>
+                </DataGrid>
+            </DockPanel>
+        </Border>
 
-        <TextBlock Grid.Row="3" Text="{Binding ComparisonSummary}" FontWeight="SemiBold" Margin="0 10 0 0" TextWrapping="Wrap" />
+        <TextBlock Grid.Row="3" Text="{Binding StatusMessage}" Margin="0 10 0 0" Style="{StaticResource StatusMessageStyle}" />
     </Grid>
 </UserControl>

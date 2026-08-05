@@ -19,5 +19,8 @@ namespace StockManufactura.Application.Services
         public string BackupStatus { get; set; } = "Sin datos";
         public string CloudProvider { get; set; } = "No configurado";
         public string StatusTone { get; set; } = "Neutral";
+        public int CriticalStockCount { get; set; }
+        public int OrdersInProcessCount { get; set; }
+        public decimal MonthlyCostTotal { get; set; }
     }
 }

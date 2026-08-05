@@ -18,6 +18,16 @@ namespace StockManufactura.Infrastructure.Repositories
             _context = context;
         }
 
+        public async Task<IReadOnlyList<AuditLog>> ListByProductIdAsync(Guid productId)
+        {
+            var id = productId.ToString();
+            return await _context.AuditLogs
+                .AsNoTracking()
+                .Where(x => x.IdEntidad == id)
+                .OrderByDescending(x => x.FechaHora)
+                .ToListAsync();
+        }
+
         public async Task<IReadOnlyList<AuditLog>> QueryAsync(DateTime? from, DateTime? to, string? usuario, string? modulo, string? accion)
         {
             var query = _context.AuditLogs.AsNoTracking().AsQueryable();

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.ObjectModel;
 using System.Globalization;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Input;
@@ -97,27 +98,33 @@ namespace StockManufactura.Desktop.ViewModels
 
         private async Task LoadAsync()
         {
-            var products = await _unitOfWork.Productos.ListAsync();
-            Products.Clear();
-            foreach (var product in products.Where(x => x.Activo).OrderBy(x => x.Nombre))
+            try
             {
-                Products.Add(product);
-            }
+                var (products, orders) = await Task.Run(async () =>
+                {
+                    var p = await _unitOfWork.Productos.ListAsync();
+                    var o = await _unitOfWork.OrdenesProduccion.ListByCreatedDescAsync();
+                    return (p, o);
+                });
 
-            var currentOrders = await _unitOfWork.OrdenesProduccion.ListByCreatedDescAsync();
-            Orders.Clear();
-            foreach (var order in currentOrders)
+                Products.Clear();
+                foreach (var product in products.Where(x => x.Activo).OrderBy(x => x.Nombre))
+                    Products.Add(product);
+
+                Orders.Clear();
+                foreach (var order in orders)
+                    Orders.Add(order);
+
+                if (SelectedProduct is null && Products.Count > 0)
+                    SelectedProduct = Products[0];
+
+                RefreshIndicators();
+                StatusMessage = "Órdenes cargadas.";
+            }
+            catch (Exception ex)
             {
-                Orders.Add(order);
+                StatusMessage = $"Error al cargar órdenes: {ex.Message}";
             }
-
-            if (SelectedProduct is null && Products.Count > 0)
-            {
-                SelectedProduct = Products[0];
-            }
-
-            RefreshIndicators();
-            StatusMessage = "Órdenes cargadas.";
         }
 
         private async Task CreateOrderAsync()
@@ -246,6 +253,7 @@ namespace StockManufactura.Desktop.ViewModels
         {
             try
             {
+                var previousState = order.Estado;
                 var observations = Observaciones?.Trim() ?? string.Empty;
                 if (!string.Equals(order.Observaciones, observations, StringComparison.Ordinal))
                 {
@@ -253,6 +261,7 @@ namespace StockManufactura.Desktop.ViewModels
                 }
 
                 transition();
+                await ApplyStockMovementAsync(previousState, order);
                 _unitOfWork.OrdenesProduccion.Update(order);
                 await _unitOfWork.SaveChangesAsync();
                 await RegisterAuditAsync(action, order, successMessage);
@@ -272,6 +281,54 @@ namespace StockManufactura.Desktop.ViewModels
             OnPropertyChanged(nameof(OrdersCompletedCount));
             OnPropertyChanged(nameof(EstimatedOrdersCost));
             OnPropertyChanged(nameof(CriticalStockCount));
+        }
+
+        private async Task ApplyStockMovementAsync(EstadoOrdenProduccion previousState, OrdenProduccion order)
+        {
+            var recipeItems = await _unitOfWork.RecetaProductoItems.ListByProductIdAsync(order.ProductoId);
+            if (!recipeItems.Any())
+            {
+                return;
+            }
+
+            var shouldConsume = previousState != EstadoOrdenProduccion.EnProceso
+                && (order.Estado == EstadoOrdenProduccion.EnProceso || order.Estado == EstadoOrdenProduccion.Finalizada);
+
+            var shouldRelease = previousState == EstadoOrdenProduccion.EnProceso
+                && (order.Estado == EstadoOrdenProduccion.Borrador || order.Estado == EstadoOrdenProduccion.Cancelada);
+
+            if (!shouldConsume && !shouldRelease)
+            {
+                return;
+            }
+
+            foreach (var recipeItem in recipeItems)
+            {
+                var resource = await _unitOfWork.Recursos.GetByIdAsync(recipeItem.RecursoId);
+                if (resource is null)
+                {
+                    throw new InvalidOperationException($"No se encontró el insumo {recipeItem.RecursoId}.");
+                }
+
+                var requiredQuantity = recipeItem.Cantidad * order.CantidadPlaneada;
+
+                if (shouldConsume)
+                {
+                    if (resource.StockActual < requiredQuantity)
+                    {
+                        throw new InvalidOperationException($"Stock insuficiente para {resource.Nombre}. Requerido: {requiredQuantity:0.##}, disponible: {resource.StockActual:0.##}.");
+                    }
+
+                    resource.StockActual -= requiredQuantity;
+                }
+                else
+                {
+                    resource.StockActual += requiredQuantity;
+                }
+
+                resource.FechaUltimaActualizacion = DateTime.UtcNow;
+                _unitOfWork.Recursos.Update(resource);
+            }
         }
 
         private string GenerateCode()

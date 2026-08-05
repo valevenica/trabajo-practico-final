@@ -28,6 +28,21 @@ public partial class App : global::System.Windows.Application
     {
         base.OnStartup(e);
 
+        DispatcherUnhandledException += (_, args) =>
+        {
+            Log.Error(args.Exception, "Unhandled UI exception");
+            args.Handled = true;
+        };
+
+        AppDomain.CurrentDomain.UnhandledException += (_, args) =>
+            Log.Error(args.ExceptionObject as Exception, "AppDomain unhandled exception");
+
+        System.Threading.Tasks.TaskScheduler.UnobservedTaskException += (_, args) =>
+        {
+            Log.Error(args.Exception, "Unobserved task exception");
+            args.SetObserved();
+        };
+
         Directory.CreateDirectory(AppPaths.LogsDirectory);
         Directory.CreateDirectory(AppPaths.AssetsDirectory);
 

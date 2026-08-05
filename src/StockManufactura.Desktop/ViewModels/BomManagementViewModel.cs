@@ -123,31 +123,35 @@ namespace StockManufactura.Desktop.ViewModels
                 return;
             }
 
-            var products = await _unitOfWork.Productos.ListActivosAsync();
-            Products.Clear();
-            foreach (var product in products.OrderBy(x => x.Nombre))
+            try
             {
-                Products.Add(product);
-            }
+                var (products, resources) = await Task.Run(async () =>
+                {
+                    var p = await _unitOfWork.Productos.ListActivosAsync();
+                    var r = await _unitOfWork.Recursos.ListActivosAsync();
+                    return (p, r);
+                });
 
-            var resources = await _unitOfWork.Recursos.ListActivosAsync();
-            Resources.Clear();
-            foreach (var resource in resources.OrderBy(x => x.Nombre))
+                Products.Clear();
+                foreach (var product in products.OrderBy(x => x.Nombre))
+                    Products.Add(product);
+
+                Resources.Clear();
+                foreach (var resource in resources.OrderBy(x => x.Nombre))
+                    Resources.Add(resource);
+
+                if (SelectedProduct is null && Products.Count > 0)
+                    SelectedProduct = Products[0];
+
+                if (SelectedResource is null && Resources.Count > 0)
+                    SelectedResource = Resources[0];
+
+                StatusMessage = "Recetas cargadas.";
+            }
+            catch (Exception ex)
             {
-                Resources.Add(resource);
+                StatusMessage = $"Error al cargar recetas: {ex.Message}";
             }
-
-            if (SelectedProduct is null && Products.Count > 0)
-            {
-                SelectedProduct = Products[0];
-            }
-
-            if (SelectedResource is null && Resources.Count > 0)
-            {
-                SelectedResource = Resources[0];
-            }
-
-            StatusMessage = "Recetas cargadas.";
         }
 
         private async Task LoadItemsAsync(Guid? productId)
@@ -159,7 +163,9 @@ namespace StockManufactura.Desktop.ViewModels
                 return;
             }
 
-            var items = await _unitOfWork.RecetaProductoItems.ListByProductIdAsync(productId.Value);
+            var items = await Task.Run(async () =>
+                await _unitOfWork.RecetaProductoItems.ListByProductIdAsync(productId.Value));
+
             foreach (var item in items.OrderBy(x => x.Recurso.Nombre))
             {
                 Items.Add(item);
@@ -219,7 +225,7 @@ namespace StockManufactura.Desktop.ViewModels
 
                     await _unitOfWork.RecetaProductoItems.AddAsync(item);
                     await _unitOfWork.SaveChangesAsync();
-                    await RegisterAuditAsync("CrearItem", item, "Alta de item en receta.");
+                    await RegisterAuditAsync("CrearItem", item, $"Insumo agregado: {item.Recurso?.Nombre ?? SelectedResource!.Nombre} | Cantidad: {item.Cantidad:0.0000} | Costo parcial: {item.CostoParcialManual:0.0000}", SelectedProduct!.Id);
                     StatusMessage = "Item agregado a la receta.";
                 }
                 else
@@ -246,7 +252,7 @@ namespace StockManufactura.Desktop.ViewModels
 
                     _unitOfWork.RecetaProductoItems.Update(item);
                     await _unitOfWork.SaveChangesAsync();
-                    await RegisterAuditAsync("EditarItem", item, "Edición de item en receta.");
+                    await RegisterAuditAsync("EditarItem", item, $"Insumo modificado: {item.Recurso?.Nombre ?? SelectedResource!.Nombre} | Cantidad: {item.Cantidad:0.0000} | Costo parcial: {item.CostoParcialManual:0.0000}", SelectedProduct!.Id);
                     StatusMessage = "Item de receta actualizado.";
                 }
 
@@ -276,7 +282,7 @@ namespace StockManufactura.Desktop.ViewModels
 
             _unitOfWork.RecetaProductoItems.Delete(SelectedItem);
             await _unitOfWork.SaveChangesAsync();
-            await RegisterAuditAsync("EliminarItem", SelectedItem, "Eliminación de item en receta.");
+            await RegisterAuditAsync("EliminarItem", SelectedItem, $"Insumo eliminado: {SelectedItem.Recurso?.Nombre ?? "?"} | Cantidad: {SelectedItem.Cantidad:0.0000}", SelectedProduct!.Id);
 
             await RecalculateProductCostAsync(SelectedProduct);
             StartNewItem();
@@ -331,10 +337,10 @@ namespace StockManufactura.Desktop.ViewModels
                 CambioReceta = true
             });
 
-            await RegisterAuditAsync("RecalculoCostos", null, $"Recalculo de costos disparado por cambios en receta de producto {product.Codigo}.");
+            await RegisterAuditAsync("RecalculoCostos", null, $"Recalculo de costos por cambios en receta | Producto: {product.Codigo}", product.Id);
         }
 
-        private Task RegisterAuditAsync(string action, RecetaProductoItem? item, string description)
+        private Task RegisterAuditAsync(string action, RecetaProductoItem? item, string description, Guid? productId = null)
         {
             return _auditLogService.RegisterAsync(new AuditLog
             {
@@ -342,7 +348,7 @@ namespace StockManufactura.Desktop.ViewModels
                 Modulo = "Recetas",
                 Accion = action,
                 Entidad = "RecetaProductoItem",
-                IdEntidad = item?.Id.ToString() ?? string.Empty,
+                IdEntidad = (productId ?? SelectedProduct?.Id ?? item?.ProductoId)?.ToString() ?? string.Empty,
                 Descripcion = description,
                 Equipo = Environment.MachineName
             });

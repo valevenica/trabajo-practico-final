@@ -50,6 +50,7 @@ namespace StockManufactura.Api.Extensions
             services.AddScoped<IAuditLogRepository, AuditLogRepository>();
             services.AddScoped<IBackupRecordRepository, BackupRecordRepository>();
             services.AddScoped<IBackupSettingsRepository, BackupSettingsRepository>();
+            services.AddScoped<IRecursoProveedorRepository, RecursoProveedorRepository>();
             services.AddScoped<IUnitOfWork, UnitOfWork>();
 
             services.AddScoped<IGoogleDriveBackupSyncService, NoOpGoogleDriveBackupSyncService>();

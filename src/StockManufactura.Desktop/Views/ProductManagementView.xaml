@@ -17,7 +17,9 @@
             <Border Background="{StaticResource BackgroundDarkMetalBrush}" Padding="8" CornerRadius="4" Margin="0 0 0 8">
                 <TextBlock Text="Listado" Foreground="{StaticResource SecondaryAccentBrush}" FontWeight="SemiBold" />
             </Border>
-            <ListBox ItemsSource="{Binding Products}" SelectedItem="{Binding SelectedProduct}" Height="320">
+            <TextBlock Text="Buscar por código o nombre:" Margin="0 0 0 4" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" />
+            <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" Height="30" Margin="0 0 0 8" Padding="8" />
+            <ListBox ItemsSource="{Binding FilteredProducts}" SelectedItem="{Binding SelectedProduct}" Height="320">
                 <ListBox.ItemTemplate>
                     <DataTemplate>
                         <StackPanel>
@@ -48,8 +50,8 @@
 
             <UniformGrid Rows="1" Columns="3" Margin="0 0 0 8">
                 <StackPanel Margin="0 0 8 0">
-                    <TextBlock Text="Costo fabricación" />
-                    <TextBox Text="{Binding CostoFabricacion, UpdateSourceTrigger=PropertyChanged}" Height="32" Margin="0 4 0 0" />
+                    <TextBlock Text="Costo fabricación (calculado)" />
+                    <TextBox Text="{Binding CostoFabricacionCalculado}" Height="32" Margin="0 4 0 0" IsReadOnly="True" />
                 </StackPanel>
                 <StackPanel Margin="0 0 8 0">
                     <TextBlock Text="Margen" />
@@ -61,12 +63,30 @@
                 </StackPanel>
             </UniformGrid>
 
+            <TextBlock Text="Insumos del producto (BOM)" FontWeight="SemiBold" Margin="0 6 0 6" />
+            <DataGrid ItemsSource="{Binding RecipeItems}"
+                      AutoGenerateColumns="False"
+                      CanUserAddRows="False"
+                      CanUserDeleteRows="False"
+                      IsReadOnly="True"
+                      HeadersVisibility="Column"
+                      Height="150"
+                      Margin="0 0 0 8">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Insumo" Binding="{Binding Recurso}" Width="*" />
+                    <DataGridTextColumn Header="Unidad" Binding="{Binding Unidad}" Width="90" />
+                    <DataGridTextColumn Header="Cantidad" Binding="{Binding Cantidad, StringFormat={}{0:0.0000}}" Width="100" />
+                    <DataGridTextColumn Header="Costo unidad" Binding="{Binding CostoUnitario, StringFormat={}{0:0.0000}}" Width="120" />
+                    <DataGridTextColumn Header="Subtotal" Binding="{Binding CostoTotal, StringFormat={}{0:0.0000}}" Width="120" />
+                </DataGrid.Columns>
+            </DataGrid>
+
             <CheckBox Content="Producto activo" IsChecked="{Binding Activo}" Margin="0 2 0 8" />
 
             <TextBlock Text="Observaciones" />
             <TextBox Text="{Binding Observaciones, UpdateSourceTrigger=PropertyChanged}" Height="56" Margin="0 4 0 8" AcceptsReturn="True" TextWrapping="Wrap" />
 
-            <Button Content="Guardar" Command="{Binding SaveCommand}" Width="160" Style="{StaticResource PrimaryButtonStyle}" />
+            <Button Content="Guardar" Command="{Binding SaveCommand}" IsEnabled="{Binding IsDirty}" Width="160" Style="{StaticResource PrimaryButtonStyle}" />
 
             <TextBlock Text="{Binding StatusMessage}" Margin="0 12 0 0" Style="{StaticResource StatusMessageStyle}" />
         </StackPanel>

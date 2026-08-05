@@ -147,7 +147,7 @@ namespace StockManufactura.Application.Services
             await _unitOfWork.SaveChangesAsync();
 
             await TrySyncGoogleDriveAsync(record, settings, cancellationToken);
-            await ApplyRetentionAsync(settings);
+            ApplyRetentionAsync(settings);
 
             return record;
         }
@@ -162,7 +162,7 @@ namespace StockManufactura.Application.Services
             await _googleDriveService.TryUploadAsync(record, settings, cancellationToken);
         }
 
-        private async Task ApplyRetentionAsync(BackupSettings settings)
+        private void ApplyRetentionAsync(BackupSettings settings)
         {
             var files = Directory.GetFiles(settings.CarpetaLocal, "backup-*.zip")
                 .Select(x => new FileInfo(x))
@@ -173,8 +173,6 @@ namespace StockManufactura.Application.Services
             {
                 file.Delete();
             }
-
-            await Task.CompletedTask;
         }
     }
 }

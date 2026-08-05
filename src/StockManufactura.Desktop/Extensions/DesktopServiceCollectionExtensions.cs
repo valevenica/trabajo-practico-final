@@ -56,6 +56,7 @@ namespace StockManufactura.Desktop.Extensions
             services.AddTransient<IAuditLogRepository, AuditLogRepository>();
             services.AddTransient<IBackupRecordRepository, BackupRecordRepository>();
             services.AddTransient<IBackupSettingsRepository, BackupSettingsRepository>();
+            services.AddTransient<IRecursoProveedorRepository, RecursoProveedorRepository>();
             services.AddTransient<IUnitOfWork, UnitOfWork>();
 
             services.AddSingleton<IExchangeRateProvider, BluelyticsExchangeRateProvider>();

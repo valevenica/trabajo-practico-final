@@ -116,26 +116,32 @@ namespace StockManufactura.Desktop.ViewModels
                 return;
             }
 
-            var roles = await _userManagementService.GetRolesAsync();
-            Roles.Clear();
-            foreach (var role in roles)
+            try
             {
-                Roles.Add(new RolOption(role.Id, role.Nombre));
-            }
+                var (roles, users) = await Task.Run(async () =>
+                {
+                    var r = await _userManagementService.GetRolesAsync();
+                    var u = await _userManagementService.GetAllAsync();
+                    return (r, u);
+                });
 
-            if (SelectedRole is null && Roles.Count > 0)
+                Roles.Clear();
+                foreach (var role in roles)
+                    Roles.Add(new RolOption(role.Id, role.Nombre));
+
+                if (SelectedRole is null && Roles.Count > 0)
+                    SelectedRole = Roles[0];
+
+                Users.Clear();
+                foreach (var user in users)
+                    Users.Add(user);
+
+                StatusMessage = "Usuarios cargados.";
+            }
+            catch (Exception ex)
             {
-                SelectedRole = Roles[0];
+                StatusMessage = $"Error al cargar usuarios: {ex.Message}";
             }
-
-            var users = await _userManagementService.GetAllAsync();
-            Users.Clear();
-            foreach (var user in users)
-            {
-                Users.Add(user);
-            }
-
-            StatusMessage = "Usuarios cargados.";
         }
 
         private async Task SaveAsync()

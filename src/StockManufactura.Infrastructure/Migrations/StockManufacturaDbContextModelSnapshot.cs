@@ -731,6 +731,48 @@ namespace StockManufactura.Infrastructure.Migrations
                     b.ToTable("Recursos", (string)null);
                 });
 
+            modelBuilder.Entity("StockManufactura.Domain.Entities.RecursoProveedor", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("EsPrioritario")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Observaciones")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("Precio")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<Guid>("ProveedorId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("RecursoId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProveedorId");
+
+                    b.HasIndex("RecursoId", "ProveedorId")
+                        .IsUnique();
+
+                    b.ToTable("RecursoProveedores", (string)null);
+                });
+
             modelBuilder.Entity("StockManufactura.Domain.Entities.ResourceCostCalculation", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1042,6 +1084,25 @@ namespace StockManufactura.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("ProveedorHabitual");
+                });
+
+            modelBuilder.Entity("StockManufactura.Domain.Entities.RecursoProveedor", b =>
+                {
+                    b.HasOne("StockManufactura.Domain.Entities.Proveedor", "Proveedor")
+                        .WithMany()
+                        .HasForeignKey("ProveedorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("StockManufactura.Domain.Entities.Recurso", "Recurso")
+                        .WithMany()
+                        .HasForeignKey("RecursoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Proveedor");
+
+                    b.Navigation("Recurso");
                 });
 
             modelBuilder.Entity("StockManufactura.Domain.Entities.ResourceCostCalculation", b =>

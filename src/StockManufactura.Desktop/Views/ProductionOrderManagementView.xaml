@@ -6,26 +6,7 @@
              mc:Ignorable="d"
              d:DesignHeight="500" d:DesignWidth="980">
     <Grid Background="{StaticResource BackgroundSoftLightBrush}">
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="165" />
-            <ColumnDefinition Width="*" />
-        </Grid.ColumnDefinitions>
-
-        <Border Grid.Column="0" Background="{StaticResource BackgroundDarkMetalBrush}" BorderBrush="#4A4B50" BorderThickness="0,0,1,0">
-            <StackPanel Margin="14 18 14 18">
-                <Border Background="#FFFFFF14" BorderBrush="{StaticResource SecondaryAccentBrush}" BorderThickness="1" CornerRadius="8" Padding="10" Margin="0 0 0 20">
-                    <Image x:Name="SidebarLogoImage" Height="78" Stretch="Uniform" />
-                </Border>
-
-                <Button Content="Producción" Margin="0 0 0 10" Style="{StaticResource SecondaryButtonStyle}" Command="{Binding BackCommand}" />
-                <Button Content="Materias Primas" Margin="0 0 0 10" Style="{StaticResource SecondaryButtonStyle}" IsEnabled="False" />
-                <Button Content="Inventario" Margin="0 0 0 10" Style="{StaticResource SecondaryButtonStyle}" IsEnabled="False" />
-                <Button Content="Configuración" Margin="0 0 0 10" Style="{StaticResource SecondaryButtonStyle}" IsEnabled="False" />
-                <Button Content="Reportes" Margin="0 0 0 10" Style="{StaticResource SecondaryButtonStyle}" IsEnabled="False" />
-            </StackPanel>
-        </Border>
-
-        <Grid Grid.Column="1" Margin="22 18 18 18">
+        <Grid Margin="22 18 18 18">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />

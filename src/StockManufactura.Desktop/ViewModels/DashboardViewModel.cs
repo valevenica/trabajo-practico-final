@@ -1,6 +1,11 @@
 using System;
+using System.Collections.ObjectModel;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Input;
+using System.Windows.Data;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using StockManufactura.Application.Interfaces;
@@ -11,7 +16,7 @@ using StockManufactura.Domain.Entities;
 
 namespace StockManufactura.Desktop.ViewModels
 {
-    public sealed class DashboardViewModel : ObservableObject
+    public sealed partial class DashboardViewModel : ObservableObject
     {
         private readonly NavigationService _navigationService;
         private readonly IResourcePricingService _resourcePricingService;
@@ -24,6 +29,7 @@ namespace StockManufactura.Desktop.ViewModels
         private readonly IUserManagementService _userManagementService;
         private SystemStatusSnapshot? _status;
         private string _statusMessage = string.Empty;
+        private readonly ICollectionView _ordersView;
 
         public DashboardViewModel(
             Usuario usuario,
@@ -58,6 +64,15 @@ namespace StockManufactura.Desktop.ViewModels
             NavigateToProductionOrdersCommand = new RelayCommand(NavigateToProductionOrders);
             NavigateToUserManagementCommand = new RelayCommand(NavigateToUserManagement);
             RefreshStatusCommand = new AsyncRelayCommand(LoadStatusAsync);
+            OrderStatusFilters = new ObservableCollection<string>(new[] { "Todas", "En espera", "En proceso", "Finalizada", "Cancelada" });
+            OrderSortOptions = new ObservableCollection<string>(new[] { "Más recientes", "Más antiguas", "Estado", "Costo mayor", "Costo menor" });
+            Orders = new ObservableCollection<DashboardOrderRow>();
+            _ordersView = CollectionViewSource.GetDefaultView(Orders);
+            _ordersView.Filter = FilterOrder;
+            ApplyOrderSorting();
+
+            SelectedOrderStatusFilter = "Todas";
+            SelectedOrderSortOption = "Más recientes";
             _ = LoadStatusAsync();
         }
 
@@ -74,6 +89,15 @@ namespace StockManufactura.Desktop.ViewModels
         public ICommand NavigateToProductionOrdersCommand { get; }
         public ICommand NavigateToUserManagementCommand { get; }
         public ICommand RefreshStatusCommand { get; }
+        public ObservableCollection<DashboardOrderRow> Orders { get; }
+        public ObservableCollection<string> OrderStatusFilters { get; }
+        public ObservableCollection<string> OrderSortOptions { get; }
+
+        public ICollectionView OrdersView => _ordersView;
+
+        [ObservableProperty] private string _selectedOrderStatusFilter = string.Empty;
+        [ObservableProperty] private string _selectedOrderSortOption = string.Empty;
+
         public bool CanManageUsers => AuthSession.Current?.TienePermiso("USUARIOS_ADMIN") == true;
         public bool CanViewProducts => AuthSession.Current?.TienePermiso("PRODUCTOS_VER") == true
             || AuthSession.Current?.TienePermiso("PRODUCTOS_CREAR") == true
@@ -111,9 +135,20 @@ namespace StockManufactura.Desktop.ViewModels
         public bool BackupHealthy => Status?.BackupEnabled == true;
         public bool SyncHealthy => Status?.DriveSyncEnabled == true;
 
+        partial void OnSelectedOrderStatusFilterChanged(string value)
+        {
+            _ordersView.Refresh();
+        }
+
+        partial void OnSelectedOrderSortOptionChanged(string value)
+        {
+            ApplyOrderSorting();
+            _ordersView.Refresh();
+        }
+
         private void NavigateToResources()
         {
-            _navigationService.NavigateTo(new ResourceManagementViewModel(_resourcePricingService, _monetaryConfigurationService));
+            _navigationService.NavigateTo(new ResourceManagementViewModel(_resourcePricingService, _monetaryConfigurationService, _unitOfWork));
         }
 
         private void NavigateToMonetaryConfiguration()
@@ -133,7 +168,7 @@ namespace StockManufactura.Desktop.ViewModels
 
         private void NavigateToProductCostHistory()
         {
-            _navigationService.NavigateTo(new ProductCostHistoryViewModel(_unitOfWork, _productCostService));
+            _navigationService.NavigateTo(new ProductCostHistoryViewModel(_unitOfWork, _productCostService, _navigationService, this));
         }
 
         private void NavigateToProducts()
@@ -195,13 +230,77 @@ namespace StockManufactura.Desktop.ViewModels
         {
             try
             {
-                var snapshot = await _systemStatusService.GetSnapshotAsync();
+                var (snapshot, orders) = await Task.Run(async () =>
+                {
+                    var s = await _systemStatusService.GetSnapshotAsync();
+                    var o = await _unitOfWork.OrdenesProduccion.ListByCreatedDescAsync();
+                    return (s, o);
+                });
+
+                var productIds = orders.Select(x => x.ProductoId).Distinct();
+                var products = await Task.Run(async () => await _unitOfWork.Productos.ListByIdsAsync(productIds.ToArray()));
+
                 Status = snapshot;
+                LoadOrders(orders, products);
                 StatusMessage = string.Empty;
             }
             catch (Exception ex)
             {
                 StatusMessage = $"No se pudo cargar el estado del sistema: {ex.Message}";
+            }
+        }
+
+        private void LoadOrders(IEnumerable<OrdenProduccion> orders, IEnumerable<Producto> products)
+        {
+            var productsById = products.ToDictionary(product => product.Id, product => product);
+            Orders.Clear();
+
+            foreach (var order in orders)
+            {
+                productsById.TryGetValue(order.ProductoId, out var product);
+                var productName = product?.Nombre ?? "Producto eliminado";
+                var estimatedCost = (product?.CostoFabricacionActual ?? 0m) * order.CantidadPlaneada;
+                Orders.Add(new DashboardOrderRow(order, productName, estimatedCost));
+            }
+
+            OnPropertyChanged(nameof(Orders));
+            _ordersView.Refresh();
+        }
+
+        private bool FilterOrder(object obj)
+        {
+            if (obj is not DashboardOrderRow row)
+            {
+                return false;
+            }
+
+            return string.Equals(SelectedOrderStatusFilter, "Todas", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(row.StatusFilter, SelectedOrderStatusFilter, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private void ApplyOrderSorting()
+        {
+            _ordersView.SortDescriptions.Clear();
+
+            switch (SelectedOrderSortOption)
+            {
+                case "Más antiguas":
+                    _ordersView.SortDescriptions.Add(new SortDescription(nameof(DashboardOrderRow.CreatedAt), ListSortDirection.Ascending));
+                    break;
+                case "Estado":
+                    _ordersView.SortDescriptions.Add(new SortDescription(nameof(DashboardOrderRow.StatusSortOrder), ListSortDirection.Ascending));
+                    _ordersView.SortDescriptions.Add(new SortDescription(nameof(DashboardOrderRow.CreatedAt), ListSortDirection.Descending));
+                    break;
+                case "Costo mayor":
+                    _ordersView.SortDescriptions.Add(new SortDescription(nameof(DashboardOrderRow.EstimatedCostValue), ListSortDirection.Descending));
+                    break;
+                case "Costo menor":
+                    _ordersView.SortDescriptions.Add(new SortDescription(nameof(DashboardOrderRow.EstimatedCostValue), ListSortDirection.Ascending));
+                    break;
+                case "Más recientes":
+                default:
+                    _ordersView.SortDescriptions.Add(new SortDescription(nameof(DashboardOrderRow.CreatedAt), ListSortDirection.Descending));
+                    break;
             }
         }
 

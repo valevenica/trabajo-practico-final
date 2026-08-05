@@ -18,7 +18,7 @@
                 Background="{StaticResource CardSurfaceBrush}"
                 BorderBrush="#DDDDDD"
                 BorderThickness="0,0,0,1"
-                Padding="16,10">
+                Padding="26,18">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
@@ -26,37 +26,65 @@
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
 
-                <Border CornerRadius="8" Background="#FFFFFF" BorderBrush="#DDD" BorderThickness="1" Padding="6" MinWidth="44" MinHeight="44" MaxWidth="64" MaxHeight="64">
+                <Border CornerRadius="0" Background="Transparent" BorderBrush="Transparent" BorderThickness="0" Padding="0" MinWidth="1" MinHeight="1" MaxWidth="1" MaxHeight="1" Visibility="Collapsed">
                     <Viewbox Stretch="Uniform" StretchDirection="Both">
                         <Image x:Name="HeaderLogoImage" Stretch="Uniform" />
                     </Viewbox>
                 </Border>
 
                 <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center">
-                    <TextBlock Text="Integra Manufacturing" FontSize="24" FontFamily="Georgia" FontWeight="Bold" Foreground="{StaticResource PrimaryAccentBrush}" />
-                    <TextBlock Text="Sistema de gestión integral" FontStyle="Italic" Foreground="{StaticResource TextMutedBrush}" />
+                    <TextBlock Text="INTEGRA MANUFACTURING" FontSize="37" FontFamily="Georgia" FontWeight="Bold" Foreground="{StaticResource PrimaryAccentBrush}" />
+                    <TextBlock Text="Sistema de Gestión Integral de Inventario, Producción y Costos" FontSize="20" FontStyle="Italic" Foreground="{StaticResource TextMutedBrush}" />
                 </StackPanel>
 
-                <TextBlock Grid.Column="2"
-                           VerticalAlignment="Center"
-                           FontWeight="SemiBold"
-                           Text="{Binding CurrentUserName, StringFormat=Usuario: {0}}" />
+                <StackPanel Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Right">
+                    <TextBlock FontSize="16" HorizontalAlignment="Right" Text="{Binding CurrentUserName, StringFormat=Usuario: {0}}" />
+                </StackPanel>
             </Grid>
         </Border>
 
         <Border DockPanel.Dock="Left"
-                Width="220"
+                Width="160"
                 Visibility="{Binding IsShellVisible, Converter={StaticResource BoolToVisibilityConverter}}"
                 Background="{StaticResource BackgroundDarkMetalBrush}"
                 BorderBrush="#4A4B50"
                 BorderThickness="0,0,1,0"
                 Padding="12,16">
             <Border.Resources>
-                <Style x:Key="SidebarMenuButtonStyle" TargetType="Button" BasedOn="{StaticResource SecondaryButtonStyle}">
+                <Style x:Key="SidebarMenuButtonStyle" TargetType="Button">
                     <Setter Property="Foreground" Value="White" />
-                    <Setter Property="Background" Value="#FFFFFF12" />
-                    <Setter Property="BorderBrush" Value="#D6B87A" />
+                    <Setter Property="Background" Value="Transparent" />
+                    <Setter Property="BorderBrush" Value="#7A1C52" />
+                    <Setter Property="BorderThickness" Value="1" />
+                    <Setter Property="Padding" Value="10,6" />
+                    <Setter Property="Height" Value="34" />
                     <Setter Property="FontWeight" Value="SemiBold" />
+                    <Setter Property="Cursor" Value="Hand" />
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="Button">
+                                <Border x:Name="ButtonBorder"
+                                        Background="{TemplateBinding Background}"
+                                        BorderBrush="{TemplateBinding BorderBrush}"
+                                        BorderThickness="{TemplateBinding BorderThickness}"
+                                        CornerRadius="6">
+                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter TargetName="ButtonBorder" Property="Opacity" Value="0.92" />
+                                    </Trigger>
+                                    <Trigger Property="Tag" Value="True">
+                                        <Setter TargetName="ButtonBorder" Property="Effect">
+                                            <Setter.Value>
+                                                <DropShadowEffect Color="White" BlurRadius="14" ShadowDepth="0" Opacity="1" />
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
                 </Style>
             </Border.Resources>
             <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
@@ -66,7 +94,7 @@
                             <TextBlock Text="Dashboard" Foreground="White" FontWeight="Bold" />
                         </Expander.Header>
                         <StackPanel Margin="0,6,0,0">
-                            <Button Content="Panel principal" Margin="0,0,0,6" Command="{Binding NavigateDashboardCommand}" Style="{StaticResource SidebarMenuButtonStyle}" />
+                            <Button Content="Panel principal" Margin="0,0,0,6" Command="{Binding NavigateDashboardCommand}" Tag="{Binding IsDashboardSelected}" Style="{StaticResource SidebarMenuButtonStyle}" />
                         </StackPanel>
                     </Expander>
 
@@ -75,11 +103,17 @@
                             <TextBlock Text="Stock" Foreground="White" FontWeight="Bold" />
                         </Expander.Header>
                         <StackPanel Margin="0,6,0,0">
-                            <Button Content="Productos" Margin="0,0,0,6" Command="{Binding NavigateProductsCommand}" Style="{StaticResource SidebarMenuButtonStyle}" />
-                            <Button Content="Insumos" Margin="0,0,0,6" Command="{Binding NavigateResourcesCommand}" Style="{StaticResource SidebarMenuButtonStyle}" />
-                            <Button Content="Nuevo producto" Margin="0,0,0,6" Command="{Binding NavigateNewProductCommand}" Style="{StaticResource SidebarMenuButtonStyle}" />
-                            <Button Content="Nuevo stock/insumo" Margin="0,0,0,6" Command="{Binding NavigateNewResourceCommand}" Style="{StaticResource SidebarMenuButtonStyle}" />
-                            <Button Content="Proveedores" Margin="0,0,0,6" Command="{Binding NavigateProvidersCommand}" Style="{StaticResource SidebarMenuButtonStyle}" />
+                            <Button Content="Productos" Margin="0,0,0,6" Command="{Binding NavigateProductsCommand}" Tag="{Binding IsProductsSelected}" Style="{StaticResource SidebarMenuButtonStyle}" />
+                            <Button Content="Insumos" Margin="0,0,0,6" Command="{Binding NavigateResourcesCommand}" Tag="{Binding IsResourcesSelected}" Style="{StaticResource SidebarMenuButtonStyle}" />
+                        </StackPanel>
+                    </Expander>
+
+                    <Expander IsExpanded="False" Margin="0,0,0,8">
+                        <Expander.Header>
+                            <TextBlock Text="Proveedores" Foreground="White" FontWeight="Bold" />
+                        </Expander.Header>
+                        <StackPanel Margin="0,6,0,0">
+                            <Button Content="Proveedores" Margin="0,0,0,6" Command="{Binding NavigateProvidersCommand}" Tag="{Binding IsProvidersSelected}" Style="{StaticResource SidebarMenuButtonStyle}" />
                         </StackPanel>
                     </Expander>
 
@@ -88,9 +122,9 @@
                             <TextBlock Text="Producción" Foreground="White" FontWeight="Bold" />
                         </Expander.Header>
                         <StackPanel Margin="0,6,0,0">
-                            <Button Content="Órdenes" Margin="0,0,0,6" Command="{Binding NavigateProductionOrdersCommand}" Style="{StaticResource SidebarMenuButtonStyle}" />
-                            <Button Content="Recetas BOM" Margin="0,0,0,6" Command="{Binding NavigateBomCommand}" Style="{StaticResource SidebarMenuButtonStyle}" />
-                            <Button Content="Historial costos" Margin="0,0,0,6" Command="{Binding NavigateCostsCommand}" Style="{StaticResource SidebarMenuButtonStyle}" />
+                            <Button Content="Órdenes" Margin="0,0,0,6" Command="{Binding NavigateProductionOrdersCommand}" Tag="{Binding IsProductionOrdersSelected}" Style="{StaticResource SidebarMenuButtonStyle}" />
+                            <Button Content="Recetas BOM" Margin="0,0,0,6" Command="{Binding NavigateBomCommand}" Tag="{Binding IsBomSelected}" Style="{StaticResource SidebarMenuButtonStyle}" />
+                            <Button Content="Historial costos" Margin="0,0,0,6" Command="{Binding NavigateCostsCommand}" Tag="{Binding IsCostsSelected}" Style="{StaticResource SidebarMenuButtonStyle}" />
                         </StackPanel>
                     </Expander>
 
@@ -99,8 +133,8 @@
                             <TextBlock Text="Finanzas" Foreground="White" FontWeight="Bold" />
                         </Expander.Header>
                         <StackPanel Margin="0,6,0,0">
-                            <Button Content="Configuración monetaria" Margin="0,0,0,6" Command="{Binding NavigateMonetaryCommand}" Style="{StaticResource SidebarMenuButtonStyle}" />
-                            <Button Content="Backups" Margin="0,0,0,6" Command="{Binding NavigateBackupsCommand}" Style="{StaticResource SidebarMenuButtonStyle}" />
+                            <Button Content="Configuración monetaria" Margin="0,0,0,6" Command="{Binding NavigateMonetaryCommand}" Tag="{Binding IsMonetarySelected}" Style="{StaticResource SidebarMenuButtonStyle}" />
+                            <Button Content="Backups" Margin="0,0,0,6" Command="{Binding NavigateBackupsCommand}" Tag="{Binding IsBackupsSelected}" Style="{StaticResource SidebarMenuButtonStyle}" />
                         </StackPanel>
                     </Expander>
 
@@ -109,8 +143,8 @@
                             <TextBlock Text="Administración" Foreground="White" FontWeight="Bold" />
                         </Expander.Header>
                         <StackPanel Margin="0,6,0,0">
-                            <Button Content="Usuarios" Margin="0,0,0,6" Command="{Binding NavigateUsersCommand}" Style="{StaticResource SidebarMenuButtonStyle}" />
-                            <Button Content="Bitácora" Margin="0,0,0,6" Command="{Binding NavigateAuditCommand}" Style="{StaticResource SidebarMenuButtonStyle}" />
+                            <Button Content="Usuarios" Margin="0,0,0,6" Command="{Binding NavigateUsersCommand}" Tag="{Binding IsUsersSelected}" Style="{StaticResource SidebarMenuButtonStyle}" />
+                            <Button Content="Bitácora" Margin="0,0,0,6" Command="{Binding NavigateAuditCommand}" Tag="{Binding IsAuditSelected}" Style="{StaticResource SidebarMenuButtonStyle}" />
                         </StackPanel>
                     </Expander>
                 </StackPanel>
