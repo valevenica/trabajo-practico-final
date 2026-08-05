@@ -56,7 +56,11 @@ namespace StockManufactura.Desktop.ViewModels
             _userManagementService = userManagementService ?? throw new ArgumentNullException(nameof(userManagementService));
             LoginCommand = new AsyncRelayCommand(ExecuteLoginAsync);
             ChangePasswordCommand = new AsyncRelayCommand(ExecuteChangePasswordAsync);
-            ToggleShowPasswordCommand = new RelayCommand(() => ShowPassword = !ShowPassword);
+            ToggleShowPasswordCommand = new RelayCommand(() => 
+            {
+                ShowPassword = !ShowPassword;
+                OnPropertyChanged(nameof(HidePassword));
+            });
         }
 
         public string Usuario
@@ -100,6 +104,8 @@ namespace StockManufactura.Desktop.ViewModels
             get => _showPassword;
             set => SetProperty(ref _showPassword, value);
         }
+
+        public bool HidePassword => !ShowPassword;
 
         public ICommand LoginCommand { get; }
         public ICommand ChangePasswordCommand { get; }

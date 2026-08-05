@@ -37,8 +37,9 @@
                                 <ColumnDefinition Width="36" />
                             </Grid.ColumnDefinitions>
                             
-                            <!-- Ambos controles superpuestos, uno visible a la vez -->
-                            <PasswordBox x:Name="PasswordBox" PasswordChanged="OnPasswordChanged" KeyDown="OnLoginEnterPressed" Grid.Column="0" Visibility="{Binding ShowPassword, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=Inverted}" />
+                            <!-- PasswordBox visible cuando HidePassword=true (ShowPassword=false) -->
+                            <PasswordBox x:Name="PasswordBox" PasswordChanged="OnPasswordChanged" KeyDown="OnLoginEnterPressed" Grid.Column="0" Visibility="{Binding HidePassword, Converter={StaticResource BoolToVisibilityConverter}}" />
+                            <!-- TextBox visible cuando ShowPassword=true -->
                             <TextBox x:Name="VisiblePasswordBox" Text="{Binding Password, UpdateSourceTrigger=PropertyChanged}" KeyDown="OnLoginEnterPressed" Grid.Column="0" Visibility="{Binding ShowPassword, Converter={StaticResource BoolToVisibilityConverter}}" />
                             
                             <Button x:Name="TogglePasswordButton" 
