@@ -98,16 +98,21 @@ namespace StockManufactura.Desktop.ViewModels
 
         private async Task LoadAsync()
         {
-            var products = await _unitOfWork.Productos.ListAsync();
+            var (products, orders) = await Task.Run(async () =>
+            {
+                var p = await _unitOfWork.Productos.ListAsync();
+                var o = await _unitOfWork.OrdenesProduccion.ListByCreatedDescAsync();
+                return (p, o);
+            });
+
             Products.Clear();
             foreach (var product in products.Where(x => x.Activo).OrderBy(x => x.Nombre))
             {
                 Products.Add(product);
             }
 
-            var currentOrders = await _unitOfWork.OrdenesProduccion.ListByCreatedDescAsync();
             Orders.Clear();
-            foreach (var order in currentOrders)
+            foreach (var order in orders)
             {
                 Orders.Add(order);
             }

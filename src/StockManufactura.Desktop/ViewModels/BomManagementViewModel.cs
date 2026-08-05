@@ -123,14 +123,19 @@ namespace StockManufactura.Desktop.ViewModels
                 return;
             }
 
-            var products = await _unitOfWork.Productos.ListActivosAsync();
+            var (products, resources) = await Task.Run(async () =>
+            {
+                var p = await _unitOfWork.Productos.ListActivosAsync();
+                var r = await _unitOfWork.Recursos.ListActivosAsync();
+                return (p, r);
+            });
+
             Products.Clear();
             foreach (var product in products.OrderBy(x => x.Nombre))
             {
                 Products.Add(product);
             }
 
-            var resources = await _unitOfWork.Recursos.ListActivosAsync();
             Resources.Clear();
             foreach (var resource in resources.OrderBy(x => x.Nombre))
             {
@@ -159,7 +164,9 @@ namespace StockManufactura.Desktop.ViewModels
                 return;
             }
 
-            var items = await _unitOfWork.RecetaProductoItems.ListByProductIdAsync(productId.Value);
+            var items = await Task.Run(async () =>
+                await _unitOfWork.RecetaProductoItems.ListByProductIdAsync(productId.Value));
+
             foreach (var item in items.OrderBy(x => x.Recurso.Nombre))
             {
                 Items.Add(item);

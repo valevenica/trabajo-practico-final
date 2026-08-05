@@ -129,14 +129,19 @@ namespace StockManufactura.Desktop.ViewModels
 
         private async Task LoadAsync()
         {
-            var resources = await _resourcePricingService.GetResourcesAsync();
+            var (resources, state) = await Task.Run(async () =>
+            {
+                var r = await _resourcePricingService.GetResourcesAsync();
+                var s = await _monetaryConfigurationService.GetCurrentStateAsync();
+                return (r, s);
+            });
+
             Resources.Clear();
             foreach (var resource in resources)
             {
                 Resources.Add(resource);
             }
 
-            var state = await _monetaryConfigurationService.GetCurrentStateAsync();
             CotizacionVigente = state.CurrentRate.ToString("0.0000", CultureInfo.InvariantCulture);
             await RecalculateAsync();
             StatusMessage = "Recursos cargados.";

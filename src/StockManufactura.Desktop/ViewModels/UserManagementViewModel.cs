@@ -116,7 +116,13 @@ namespace StockManufactura.Desktop.ViewModels
                 return;
             }
 
-            var roles = await _userManagementService.GetRolesAsync();
+            var (roles, users) = await Task.Run(async () =>
+            {
+                var r = await _userManagementService.GetRolesAsync();
+                var u = await _userManagementService.GetAllAsync();
+                return (r, u);
+            });
+
             Roles.Clear();
             foreach (var role in roles)
             {
@@ -128,7 +134,6 @@ namespace StockManufactura.Desktop.ViewModels
                 SelectedRole = Roles[0];
             }
 
-            var users = await _userManagementService.GetAllAsync();
             Users.Clear();
             foreach (var user in users)
             {

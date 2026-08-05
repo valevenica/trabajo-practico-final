@@ -230,10 +230,15 @@ namespace StockManufactura.Desktop.ViewModels
         {
             try
             {
-                var snapshot = await _systemStatusService.GetSnapshotAsync();
-                var orders = await _unitOfWork.OrdenesProduccion.ListByCreatedDescAsync();
+                var (snapshot, orders) = await Task.Run(async () =>
+                {
+                    var s = await _systemStatusService.GetSnapshotAsync();
+                    var o = await _unitOfWork.OrdenesProduccion.ListByCreatedDescAsync();
+                    return (s, o);
+                });
+
                 var productIds = orders.Select(x => x.ProductoId).Distinct();
-                var products = await _unitOfWork.Productos.ListByIdsAsync(productIds);
+                var products = await Task.Run(async () => await _unitOfWork.Productos.ListByIdsAsync(productIds.ToArray()));
 
                 Status = snapshot;
                 LoadOrders(orders, products);

@@ -87,9 +87,8 @@ namespace StockManufactura.Desktop.ViewModels
 
         private async Task LoadAsync()
         {
-            var providers = (await _unitOfWork.Proveedores.ListAsync())
-                .OrderBy(x => x.Nombre)
-                .ToArray();
+            var providers = await Task.Run(async () =>
+                (await _unitOfWork.Proveedores.ListAsync()).OrderBy(x => x.Nombre).ToArray());
 
             Providers.Clear();
             foreach (var provider in providers)
