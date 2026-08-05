@@ -29,6 +29,7 @@ namespace StockManufactura.Desktop.ViewModels
         private string _confirmNewPassword = string.Empty;
         private string _statusMessage = string.Empty;
         private bool _requiresPasswordChange;
+        private bool _showPassword;
         private Usuario? _pendingAuthenticatedUser;
 
         public LoginViewModel(
@@ -55,6 +56,7 @@ namespace StockManufactura.Desktop.ViewModels
             _userManagementService = userManagementService ?? throw new ArgumentNullException(nameof(userManagementService));
             LoginCommand = new AsyncRelayCommand(ExecuteLoginAsync);
             ChangePasswordCommand = new AsyncRelayCommand(ExecuteChangePasswordAsync);
+            ToggleShowPasswordCommand = new RelayCommand(() => ShowPassword = !ShowPassword);
         }
 
         public string Usuario
@@ -93,8 +95,15 @@ namespace StockManufactura.Desktop.ViewModels
             set => SetProperty(ref _requiresPasswordChange, value);
         }
 
+        public bool ShowPassword
+        {
+            get => _showPassword;
+            set => SetProperty(ref _showPassword, value);
+        }
+
         public ICommand LoginCommand { get; }
         public ICommand ChangePasswordCommand { get; }
+        public ICommand ToggleShowPasswordCommand { get; }
 
         private async Task ExecuteLoginAsync()
         {

@@ -31,7 +31,24 @@
                         <TextBox Text="{Binding Usuario, UpdateSourceTrigger=PropertyChanged}" Height="32" KeyDown="OnLoginEnterPressed" />
 
                         <TextBlock Text="Contraseña" Margin="0 16 0 4" />
-                        <PasswordBox x:Name="PasswordBox" Height="32" PasswordChanged="OnPasswordChanged" KeyDown="OnLoginEnterPressed" />
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="36" />
+                            </Grid.ColumnDefinitions>
+                            
+                            <PasswordBox x:Name="PasswordBox" Height="32" PasswordChanged="OnPasswordChanged" KeyDown="OnLoginEnterPressed" Grid.Column="0" Visibility="{Binding ShowPassword, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=Inverted}" />
+                            <TextBox x:Name="VisiblePasswordBox" Text="{Binding Password, UpdateSourceTrigger=PropertyChanged}" Height="32" KeyDown="OnLoginEnterPressed" Grid.Column="0" Visibility="{Binding ShowPassword, Converter={StaticResource BoolToVisibilityConverter}}" />
+                            
+                            <Button x:Name="TogglePasswordButton" 
+                                    Grid.Column="1" 
+                                    Height="32" 
+                                    Width="32"
+                                    Margin="4 0 0 0"
+                                    Command="{Binding ToggleShowPasswordCommand}"
+                                    Style="{StaticResource SecondaryButtonStyle}"
+                                    Content="👁" />
+                        </Grid>
 
                         <StackPanel Visibility="{Binding RequiresPasswordChange, Converter={StaticResource BoolToVisibilityConverter}}" Margin="0 16 0 0">
                             <TextBlock Text="Nueva contraseña" Margin="0 0 0 4" />
