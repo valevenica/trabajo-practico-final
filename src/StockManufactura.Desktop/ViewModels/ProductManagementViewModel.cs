@@ -154,8 +154,7 @@ namespace StockManufactura.Desktop.ViewModels
 
             try
             {
-                var products = await Task.Run(async () =>
-                    (await _unitOfWork.Productos.ListAsync()).OrderBy(x => x.Nombre).ToArray());
+                var products = (await _unitOfWork.Productos.ListAsync()).OrderBy(x => x.Nombre).ToArray();
 
                 Products.Clear();
                 foreach (var product in products)
@@ -327,8 +326,7 @@ namespace StockManufactura.Desktop.ViewModels
 
         private async Task LoadRecipeItemsAsync(Guid productId)
         {
-            var items = await Task.Run(async () =>
-                await _unitOfWork.RecetaProductoItems.ListByProductIdAsync(productId));
+            var items = await _unitOfWork.RecetaProductoItems.ListByProductIdAsync(productId);
 
             RecipeItems.Clear();
 
