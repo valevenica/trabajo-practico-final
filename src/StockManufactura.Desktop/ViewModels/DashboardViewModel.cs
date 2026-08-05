@@ -148,7 +148,7 @@ namespace StockManufactura.Desktop.ViewModels
 
         private void NavigateToResources()
         {
-            _navigationService.NavigateTo(new ResourceManagementViewModel(_resourcePricingService, _monetaryConfigurationService));
+            _navigationService.NavigateTo(new ResourceManagementViewModel(_resourcePricingService, _monetaryConfigurationService, _unitOfWork));
         }
 
         private void NavigateToMonetaryConfiguration()

@@ -138,26 +138,46 @@ namespace StockManufactura.Desktop.ViewModels
 
         partial void OnSelectedResourceChanged(Recurso? value)
         {
-            if (value is null)
+            _loading = true;
+            try
             {
-                ProveedoresDelInsumo.Clear();
-                return;
-            }
+                if (value is null)
+                {
+                    ProveedoresDelInsumo.Clear();
+                    return;
+                }
 
-            Codigo = value.Codigo;
-            Nombre = value.Nombre;
-            Descripcion = value.Descripcion;
-            Categoria = value.Categoria;
-            UnidadMedida = value.UnidadMedida;
-            StockActual = value.StockActual;
-            StockMinimo = value.StockMinimo;
-            Precio = value.Precio.ToString(CultureInfo.InvariantCulture);
-            IsUsd = value.Moneda == Moneda.USD;
-            Observaciones = value.Observaciones;
-            Activo = value.Activo;
-            _ = LoadHistoryAsync(value.Id);
-            _ = LoadProveedoresDelInsumoAsync(value.Id);
+                Codigo = value.Codigo;
+                Nombre = value.Nombre;
+                Descripcion = value.Descripcion;
+                Categoria = value.Categoria;
+                UnidadMedida = value.UnidadMedida;
+                StockActual = value.StockActual;
+                StockMinimo = value.StockMinimo;
+                Precio = value.Precio.ToString(CultureInfo.InvariantCulture);
+                IsUsd = value.Moneda == Moneda.USD;
+                Observaciones = value.Observaciones;
+                Activo = value.Activo;
+                _ = LoadHistoryAsync(value.Id);
+                _ = LoadProveedoresDelInsumoAsync(value.Id);
+            }
+            finally
+            {
+                _loading = false;
+                IsDirty = false;
+            }
         }
+
+        partial void OnCodigoChanged(string value) { if (!_loading) IsDirty = true; }
+        partial void OnNombreChanged(string value) { if (!_loading) IsDirty = true; }
+        partial void OnDescripcionChanged(string value) { if (!_loading) IsDirty = true; }
+        partial void OnCategoriaChanged(string value) { if (!_loading) IsDirty = true; }
+        partial void OnUnidadMedidaChanged(string value) { if (!_loading) IsDirty = true; }
+        partial void OnStockActualChanged(decimal value) { if (!_loading) IsDirty = true; }
+        partial void OnStockMinimoChanged(decimal value) { if (!_loading) IsDirty = true; }
+        partial void OnPrecioChanged(string value) { if (!_loading) IsDirty = true; }
+        partial void OnActivoChanged(bool value) { if (!_loading) IsDirty = true; }
+        partial void OnObservacionesChanged(string value) { if (!_loading) IsDirty = true; }
 
         private async Task LoadAsync()
         {

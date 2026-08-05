@@ -128,13 +128,13 @@ namespace StockManufactura.Desktop.ViewModels
             }
         }
 
-        partial void OnCodigoChanged(string _) { if (!_loading) IsDirty = true; }
-        partial void OnNombreChanged(string _) { if (!_loading) IsDirty = true; }
-        partial void OnDescripcionChanged(string _) { if (!_loading) IsDirty = true; }
-        partial void OnMargenChanged(string _) { if (!_loading) IsDirty = true; }
-        partial void OnPrecioSugeridoChanged(string _) { if (!_loading) IsDirty = true; }
-        partial void OnActivoChanged(bool _) { if (!_loading) IsDirty = true; }
-        partial void OnObservacionesChanged(string _) { if (!_loading) IsDirty = true; }
+        partial void OnCodigoChanged(string value) { if (!_loading) IsDirty = true; }
+        partial void OnNombreChanged(string value) { if (!_loading) IsDirty = true; }
+        partial void OnDescripcionChanged(string value) { if (!_loading) IsDirty = true; }
+        partial void OnMargenChanged(string value) { if (!_loading) IsDirty = true; }
+        partial void OnPrecioSugeridoChanged(string value) { if (!_loading) IsDirty = true; }
+        partial void OnActivoChanged(bool value) { if (!_loading) IsDirty = true; }
+        partial void OnObservacionesChanged(string value) { if (!_loading) IsDirty = true; }
 
         private async Task LoadAsync()
         {
