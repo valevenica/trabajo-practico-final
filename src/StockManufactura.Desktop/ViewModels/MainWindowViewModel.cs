@@ -4,6 +4,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.DependencyInjection;
+using Serilog;
 using StockManufactura.Application.Interfaces;
 using StockManufactura.Desktop.Infrastructure;
 using StockManufactura.Desktop.Services;
@@ -158,8 +159,10 @@ namespace StockManufactura.Desktop.ViewModels
 
         private void NavigateDashboard()
         {
+            Log.Debug("NavigateDashboard called. AuthSession.Current?.Usuario = {usuario}", AuthSession.Current?.Usuario?.Nombre);
             if (!EnsureDashboardAvailable(out var dashboard))
             {
+                Log.Warning("EnsureDashboardAvailable returned false");
                 return;
             }
 
@@ -169,6 +172,7 @@ namespace StockManufactura.Desktop.ViewModels
 
         private void NavigateProducts()
         {
+            Log.Debug("NavigateProducts called. AuthSession.Current?.Usuario = {usuario}", AuthSession.Current?.Usuario?.Nombre);
             if (EnsureDashboardAvailable(out var dashboard))
             {
                 _navigationService.NavigateTo(new ProductManagementViewModel(
@@ -177,6 +181,10 @@ namespace StockManufactura.Desktop.ViewModels
                     _navigationService,
                     dashboard));
                 SetActiveMenu("Products");
+            }
+            else
+            {
+                Log.Warning("EnsureDashboardAvailable returned false in NavigateProducts");
             }
         }
 
@@ -210,6 +218,7 @@ namespace StockManufactura.Desktop.ViewModels
 
         private void NavigateResources()
         {
+            Log.Debug("NavigateResources called. AuthSession.Current?.Usuario = {usuario}", AuthSession.Current?.Usuario?.Nombre);
             if (EnsureDashboardAvailable(out _))
             {
                 _navigationService.NavigateTo(new ResourceManagementViewModel(
@@ -217,6 +226,10 @@ namespace StockManufactura.Desktop.ViewModels
                     _serviceProvider.GetRequiredService<IMonetaryConfigurationService>(),
                     _serviceProvider.GetRequiredService<IUnitOfWork>()));
                 SetActiveMenu("Resources");
+            }
+            else
+            {
+                Log.Warning("EnsureDashboardAvailable returned false in NavigateResources");
             }
         }
 
