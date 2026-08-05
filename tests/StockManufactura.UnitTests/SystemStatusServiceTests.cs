@@ -95,6 +95,7 @@ public class SystemStatusServiceTests
     private sealed class StubRecetaProductoItemRepository : StubRepository<RecetaProductoItem>, IRecetaProductoItemRepository
     {
         public Task<IReadOnlyList<RecetaProductoItem>> ListByProductIdAsync(Guid productId) => Task.FromResult<IReadOnlyList<RecetaProductoItem>>(Array.Empty<RecetaProductoItem>());
+        public Task<IReadOnlyList<RecetaProductoItem>> ListByProductIdsAsync(IEnumerable<Guid> productIds) => Task.FromResult<IReadOnlyList<RecetaProductoItem>>(Array.Empty<RecetaProductoItem>());
         public Task<IReadOnlyList<RecetaProductoItem>> ListByResourceIdAsync(Guid resourceId) => Task.FromResult<IReadOnlyList<RecetaProductoItem>>(Array.Empty<RecetaProductoItem>());
     }
 
@@ -139,6 +140,7 @@ public class SystemStatusServiceTests
     {
         public Task<Producto?> GetByCodigoAsync(string codigo) => Task.FromResult<Producto?>(null);
         public Task<IReadOnlyList<Producto>> ListActivosAsync() => Task.FromResult<IReadOnlyList<Producto>>(Array.Empty<Producto>());
+        public Task<IReadOnlyList<Producto>> ListByIdsAsync(IEnumerable<Guid> ids) => Task.FromResult<IReadOnlyList<Producto>>(Array.Empty<Producto>());
         public override Task<IEnumerable<Producto>> ListAsync() => Task.FromResult<IEnumerable<Producto>>(new[]
         {
             new Producto(),

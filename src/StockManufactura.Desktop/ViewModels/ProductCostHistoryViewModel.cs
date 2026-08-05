@@ -81,7 +81,7 @@ namespace StockManufactura.Desktop.ViewModels
             foreach (var h in costHistory)
             {
                 rows.Add(new ProductHistoryRow(
-                    h.Fecha.ToLocalTime().ToString("dd/MM/yyyy HH:mm", CultureInfo.CurrentCulture),
+                    h.Fecha,
                     TipoEvento(h.MotivoRecalculo),
                     $"{h.MotivoRecalculo} | Costo: {h.CostoAnterior:0.00} → {h.CostoNuevo:0.00} | Precio: {h.PrecioSugeridoAnterior:0.00} → {h.PrecioSugeridoNuevo:0.00}",
                     h.Usuario,
@@ -93,14 +93,14 @@ namespace StockManufactura.Desktop.ViewModels
             foreach (var a in auditEvents)
             {
                 rows.Add(new ProductHistoryRow(
-                    a.FechaHora.ToLocalTime().ToString("dd/MM/yyyy HH:mm", CultureInfo.CurrentCulture),
+                    a.FechaHora,
                     MapAuditAccion(a.Modulo, a.Accion),
                     a.Descripcion,
                     a.Usuario,
                     string.Empty));
             }
 
-            foreach (var row in rows.OrderByDescending(x => x.FechaRaw))
+            foreach (var row in rows.OrderByDescending(x => x.FechaUtc))
             {
                 Timeline.Add(row);
             }
@@ -134,13 +134,12 @@ namespace StockManufactura.Desktop.ViewModels
     }
 
     public sealed record ProductHistoryRow(
-        string Fecha,
+        DateTime FechaUtc,
         string TipoEvento,
         string Descripcion,
         string Usuario,
         string CostoNuevo)
     {
-        // Para ordenar por fecha real sin parsear strings repetidamente
-        internal DateTime FechaRaw { get; init; } = DateTime.TryParse(Fecha, out var d) ? d : DateTime.MinValue;
+        public string Fecha => FechaUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm", CultureInfo.CurrentCulture);
     }
 }

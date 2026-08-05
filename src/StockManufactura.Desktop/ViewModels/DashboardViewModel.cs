@@ -231,8 +231,9 @@ namespace StockManufactura.Desktop.ViewModels
             try
             {
                 var snapshot = await _systemStatusService.GetSnapshotAsync();
-                var products = await _unitOfWork.Productos.ListAsync();
                 var orders = await _unitOfWork.OrdenesProduccion.ListByCreatedDescAsync();
+                var productIds = orders.Select(x => x.ProductoId).Distinct();
+                var products = await _unitOfWork.Productos.ListByIdsAsync(productIds);
 
                 Status = snapshot;
                 LoadOrders(orders, products);

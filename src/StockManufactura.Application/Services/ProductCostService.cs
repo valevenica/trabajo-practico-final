@@ -55,9 +55,17 @@ namespace StockManufactura.Application.Services
             var latestRate = await _exchangeRateRepository.GetLatestAsync();
             var exchangeRateValue = latestRate?.Valor ?? 1m;
 
+            // Batch-load all recipe items for all impacted products in one query
+            var allRecipeItems = await _recetaRepository.ListByProductIdsAsync(impactedProducts.Select(x => x.Id));
+            var recipeByProduct = allRecipeItems
+                .GroupBy(x => x.ProductoId)
+                .ToDictionary(g => g.Key, g => (IReadOnlyList<RecetaProductoItem>)g.ToList());
+
             foreach (var product in impactedProducts)
             {
-                var recipeItems = await _recetaRepository.ListByProductIdAsync(product.Id);
+                var recipeItems = recipeByProduct.TryGetValue(product.Id, out var items)
+                    ? items
+                    : Array.Empty<RecetaProductoItem>();
 
                 var previousCost = product.CostoFabricacionActual;
                 var previousSuggested = product.PrecioSugeridoActual;

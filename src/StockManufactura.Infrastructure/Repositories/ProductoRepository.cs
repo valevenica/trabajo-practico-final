@@ -26,5 +26,16 @@ namespace StockManufactura.Infrastructure.Repositories
         {
             return await _context.Productos.AsNoTracking().Where(x => x.Activo).OrderBy(x => x.Nombre).ToListAsync();
         }
+
+        public async Task<IReadOnlyList<Producto>> ListByIdsAsync(IEnumerable<Guid> ids)
+        {
+            var arr = ids as Guid[] ?? ids.ToArray();
+            if (arr.Length == 0)
+            {
+                return Array.Empty<Producto>();
+            }
+
+            return await _context.Productos.AsNoTracking().Where(x => arr.Contains(x.Id)).ToListAsync();
+        }
     }
 }

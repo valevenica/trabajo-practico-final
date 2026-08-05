@@ -8,5 +8,6 @@ namespace StockManufactura.Application.Interfaces
     {
         Task<Producto?> GetByCodigoAsync(string codigo);
         Task<IReadOnlyList<Producto>> ListActivosAsync();
+        Task<IReadOnlyList<Producto>> ListByIdsAsync(IEnumerable<Guid> ids);
     }
 }
