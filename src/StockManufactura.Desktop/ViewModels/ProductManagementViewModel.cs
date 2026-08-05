@@ -50,6 +50,11 @@ namespace StockManufactura.Desktop.ViewModels
         [ObservableProperty]
         private bool _esNuevo = true;
 
+        [ObservableProperty]
+        private bool _isDirty;
+
+        private bool _loading;
+
         public ObservableCollection<ProductRecipeRow> RecipeItems { get; } = new();
 
         public string CostoFabricacionCalculado => RecipeItems.Sum(x => x.CostoTotal).ToString("0.0000", CultureInfo.InvariantCulture);
@@ -93,26 +98,43 @@ namespace StockManufactura.Desktop.ViewModels
 
         partial void OnSelectedProductChanged(Producto? value)
         {
-            if (value is null)
+            _loading = true;
+            try
             {
-                RecipeItems.Clear();
-                CostoFabricacion = "0.0000";
-                OnPropertyChanged(nameof(CostoFabricacionCalculado));
-                return;
+                if (value is null)
+                {
+                    RecipeItems.Clear();
+                    CostoFabricacion = "0.0000";
+                    OnPropertyChanged(nameof(CostoFabricacionCalculado));
+                    return;
+                }
+
+                EsNuevo = false;
+                Codigo = value.Codigo;
+                Nombre = value.Nombre;
+                Descripcion = value.Descripcion;
+                CostoFabricacion = value.CostoFabricacionActual.ToString("0.0000", CultureInfo.InvariantCulture);
+                Margen = value.MargenActual.ToString("0.0000", CultureInfo.InvariantCulture);
+                PrecioSugerido = value.PrecioSugeridoActual.ToString("0.0000", CultureInfo.InvariantCulture);
+                Activo = value.Activo;
+                Observaciones = value.Observaciones;
+
+                _ = LoadRecipeItemsAsync(value.Id);
             }
-
-            EsNuevo = false;
-            Codigo = value.Codigo;
-            Nombre = value.Nombre;
-            Descripcion = value.Descripcion;
-            CostoFabricacion = value.CostoFabricacionActual.ToString("0.0000", CultureInfo.InvariantCulture);
-            Margen = value.MargenActual.ToString("0.0000", CultureInfo.InvariantCulture);
-            PrecioSugerido = value.PrecioSugeridoActual.ToString("0.0000", CultureInfo.InvariantCulture);
-            Activo = value.Activo;
-            Observaciones = value.Observaciones;
-
-            _ = LoadRecipeItemsAsync(value.Id);
+            finally
+            {
+                _loading = false;
+                IsDirty = false;
+            }
         }
+
+        partial void OnCodigoChanged(string _) { if (!_loading) IsDirty = true; }
+        partial void OnNombreChanged(string _) { if (!_loading) IsDirty = true; }
+        partial void OnDescripcionChanged(string _) { if (!_loading) IsDirty = true; }
+        partial void OnMargenChanged(string _) { if (!_loading) IsDirty = true; }
+        partial void OnPrecioSugeridoChanged(string _) { if (!_loading) IsDirty = true; }
+        partial void OnActivoChanged(bool _) { if (!_loading) IsDirty = true; }
+        partial void OnObservacionesChanged(string _) { if (!_loading) IsDirty = true; }
 
         private async Task LoadAsync()
         {
@@ -248,6 +270,7 @@ namespace StockManufactura.Desktop.ViewModels
 
                 await LoadAsync();
                 SelectedProduct = Products.FirstOrDefault(x => x.Id == product.Id);
+                IsDirty = false;
             }
             catch (Exception ex)
             {
@@ -257,19 +280,28 @@ namespace StockManufactura.Desktop.ViewModels
 
         private void StartNewProduct()
         {
-            EsNuevo = true;
-            SelectedProduct = null;
-            Codigo = string.Empty;
-            Nombre = string.Empty;
-            Descripcion = string.Empty;
-            CostoFabricacion = "0";
-            Margen = "0";
-            PrecioSugerido = "0";
-            Activo = true;
-            Observaciones = string.Empty;
-            RecipeItems.Clear();
-            OnPropertyChanged(nameof(CostoFabricacionCalculado));
-            StatusMessage = "Alta de producto nueva.";
+            _loading = true;
+            try
+            {
+                EsNuevo = true;
+                SelectedProduct = null;
+                Codigo = string.Empty;
+                Nombre = string.Empty;
+                Descripcion = string.Empty;
+                CostoFabricacion = "0";
+                Margen = "0";
+                PrecioSugerido = "0";
+                Activo = true;
+                Observaciones = string.Empty;
+                RecipeItems.Clear();
+                OnPropertyChanged(nameof(CostoFabricacionCalculado));
+                StatusMessage = "Alta de producto nueva.";
+            }
+            finally
+            {
+                _loading = false;
+                IsDirty = true;
+            }
         }
 
         private async Task LoadRecipeItemsAsync(Guid productId)

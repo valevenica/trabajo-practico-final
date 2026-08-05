@@ -105,8 +105,14 @@
                         <StackPanel Margin="0,6,0,0">
                             <Button Content="Productos" Margin="0,0,0,6" Command="{Binding NavigateProductsCommand}" Tag="{Binding IsProductsSelected}" Style="{StaticResource SidebarMenuButtonStyle}" />
                             <Button Content="Insumos" Margin="0,0,0,6" Command="{Binding NavigateResourcesCommand}" Tag="{Binding IsResourcesSelected}" Style="{StaticResource SidebarMenuButtonStyle}" />
-                            <Button Content="Nuevo producto" Margin="0,0,0,6" Command="{Binding NavigateNewProductCommand}" Tag="{Binding IsNewProductSelected}" Style="{StaticResource SidebarMenuButtonStyle}" />
-                            <Button Content="Nuevo stock/insumo" Margin="0,0,0,6" Command="{Binding NavigateNewResourceCommand}" Tag="{Binding IsNewResourceSelected}" Style="{StaticResource SidebarMenuButtonStyle}" />
+                        </StackPanel>
+                    </Expander>
+
+                    <Expander IsExpanded="False" Margin="0,0,0,8">
+                        <Expander.Header>
+                            <TextBlock Text="Proveedores" Foreground="White" FontWeight="Bold" />
+                        </Expander.Header>
+                        <StackPanel Margin="0,6,0,0">
                             <Button Content="Proveedores" Margin="0,0,0,6" Command="{Binding NavigateProvidersCommand}" Tag="{Binding IsProvidersSelected}" Style="{StaticResource SidebarMenuButtonStyle}" />
                         </StackPanel>
                     </Expander>

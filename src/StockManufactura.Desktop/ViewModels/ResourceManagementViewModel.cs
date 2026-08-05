@@ -65,6 +65,11 @@ namespace StockManufactura.Desktop.ViewModels
         private bool _activo = true;
 
         [ObservableProperty]
+        private bool _isDirty;
+
+        private bool _loading;
+
+        [ObservableProperty]
         private Proveedor? _selectedNuevoProveedor;
 
         [ObservableProperty]
@@ -212,6 +217,7 @@ namespace StockManufactura.Desktop.ViewModels
 
             var saved = await _resourcePricingService.UpsertResourceAsync(request);
             StatusMessage = "Precio del recurso guardado manualmente.";
+            IsDirty = false;
 
             if (SelectedResource is null)
             {
