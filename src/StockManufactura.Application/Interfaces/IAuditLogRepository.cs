@@ -8,5 +8,6 @@ namespace StockManufactura.Application.Interfaces
     public interface IAuditLogRepository : IRepository<AuditLog>
     {
         Task<IReadOnlyList<AuditLog>> QueryAsync(DateTime? from, DateTime? to, string? usuario, string? modulo, string? accion);
+        Task<IReadOnlyList<AuditLog>> ListByProductIdAsync(Guid productId);
     }
 }

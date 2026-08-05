@@ -168,7 +168,7 @@ namespace StockManufactura.Desktop.ViewModels
 
         private void NavigateToProductCostHistory()
         {
-            _navigationService.NavigateTo(new ProductCostHistoryViewModel(_unitOfWork, _productCostService));
+            _navigationService.NavigateTo(new ProductCostHistoryViewModel(_unitOfWork, _productCostService, _navigationService, this));
         }
 
         private void NavigateToProducts()

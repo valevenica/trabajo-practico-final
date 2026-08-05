@@ -219,7 +219,7 @@ namespace StockManufactura.Desktop.ViewModels
 
                     await _unitOfWork.RecetaProductoItems.AddAsync(item);
                     await _unitOfWork.SaveChangesAsync();
-                    await RegisterAuditAsync("CrearItem", item, "Alta de item en receta.");
+                    await RegisterAuditAsync("CrearItem", item, $"Insumo agregado: {item.Recurso?.Nombre ?? SelectedResource!.Nombre} | Cantidad: {item.Cantidad:0.0000} | Costo parcial: {item.CostoParcialManual:0.0000}", SelectedProduct!.Id);
                     StatusMessage = "Item agregado a la receta.";
                 }
                 else
@@ -246,7 +246,7 @@ namespace StockManufactura.Desktop.ViewModels
 
                     _unitOfWork.RecetaProductoItems.Update(item);
                     await _unitOfWork.SaveChangesAsync();
-                    await RegisterAuditAsync("EditarItem", item, "Edición de item en receta.");
+                    await RegisterAuditAsync("EditarItem", item, $"Insumo modificado: {item.Recurso?.Nombre ?? SelectedResource!.Nombre} | Cantidad: {item.Cantidad:0.0000} | Costo parcial: {item.CostoParcialManual:0.0000}", SelectedProduct!.Id);
                     StatusMessage = "Item de receta actualizado.";
                 }
 
@@ -276,7 +276,7 @@ namespace StockManufactura.Desktop.ViewModels
 
             _unitOfWork.RecetaProductoItems.Delete(SelectedItem);
             await _unitOfWork.SaveChangesAsync();
-            await RegisterAuditAsync("EliminarItem", SelectedItem, "Eliminación de item en receta.");
+            await RegisterAuditAsync("EliminarItem", SelectedItem, $"Insumo eliminado: {SelectedItem.Recurso?.Nombre ?? "?"} | Cantidad: {SelectedItem.Cantidad:0.0000}", SelectedProduct!.Id);
 
             await RecalculateProductCostAsync(SelectedProduct);
             StartNewItem();
@@ -331,10 +331,10 @@ namespace StockManufactura.Desktop.ViewModels
                 CambioReceta = true
             });
 
-            await RegisterAuditAsync("RecalculoCostos", null, $"Recalculo de costos disparado por cambios en receta de producto {product.Codigo}.");
+            await RegisterAuditAsync("RecalculoCostos", null, $"Recalculo de costos por cambios en receta | Producto: {product.Codigo}", product.Id);
         }
 
-        private Task RegisterAuditAsync(string action, RecetaProductoItem? item, string description)
+        private Task RegisterAuditAsync(string action, RecetaProductoItem? item, string description, Guid? productId = null)
         {
             return _auditLogService.RegisterAsync(new AuditLog
             {
@@ -342,7 +342,7 @@ namespace StockManufactura.Desktop.ViewModels
                 Modulo = "Recetas",
                 Accion = action,
                 Entidad = "RecetaProductoItem",
-                IdEntidad = item?.Id.ToString() ?? string.Empty,
+                IdEntidad = (productId ?? SelectedProduct?.Id ?? item?.ProductoId)?.ToString() ?? string.Empty,
                 Descripcion = description,
                 Equipo = Environment.MachineName
             });

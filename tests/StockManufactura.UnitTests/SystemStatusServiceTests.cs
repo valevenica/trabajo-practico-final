@@ -122,6 +122,7 @@ public class SystemStatusServiceTests
     private sealed class StubAuditLogRepository : StubRepository<AuditLog>, IAuditLogRepository
     {
         public Task<IReadOnlyList<AuditLog>> QueryAsync(DateTime? from, DateTime? to, string? usuario, string? modulo, string? accion) => Task.FromResult<IReadOnlyList<AuditLog>>(Array.Empty<AuditLog>());
+        public Task<IReadOnlyList<AuditLog>> ListByProductIdAsync(Guid productId) => Task.FromResult<IReadOnlyList<AuditLog>>(Array.Empty<AuditLog>());
     }
 
     private sealed class StubBackupRecordRepository : StubRepository<BackupRecord>, IBackupRecordRepository

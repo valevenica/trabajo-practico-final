@@ -295,11 +295,13 @@ namespace StockManufactura.Desktop.ViewModels
 
         private void NavigateCosts()
         {
-            if (EnsureDashboardAvailable(out _))
+            if (EnsureDashboardAvailable(out var dashboard))
             {
                 _navigationService.NavigateTo(new ProductCostHistoryViewModel(
                     _serviceProvider.GetRequiredService<IUnitOfWork>(),
-                    _serviceProvider.GetRequiredService<IProductCostService>()));
+                    _serviceProvider.GetRequiredService<IProductCostService>(),
+                    _navigationService,
+                    dashboard));
                 SetActiveMenu("Costs");
             }
         }

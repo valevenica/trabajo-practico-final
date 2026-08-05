@@ -1,5 +1,6 @@
 using System;
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Input;
@@ -7,6 +8,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using StockManufactura.Application.Interfaces;
 using StockManufactura.Application.Products;
+using StockManufactura.Desktop.Services;
 using StockManufactura.Domain.Entities;
 
 namespace StockManufactura.Desktop.ViewModels
@@ -15,35 +17,37 @@ namespace StockManufactura.Desktop.ViewModels
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IProductCostService _productCostService;
+        private readonly NavigationService? _navigationService;
+        private readonly DashboardViewModel? _dashboardViewModel;
 
         [ObservableProperty]
         private Producto? _selectedProduct;
 
         [ObservableProperty]
-        private ProductCostHistory? _selectedOlder;
+        private string _statusMessage = string.Empty;
 
-        [ObservableProperty]
-        private ProductCostHistory? _selectedNewer;
-
-        [ObservableProperty]
-        private string _comparisonSummary = "Sin comparación";
-
-        public ProductCostHistoryViewModel(IUnitOfWork unitOfWork, IProductCostService productCostService)
+        public ProductCostHistoryViewModel(
+            IUnitOfWork unitOfWork,
+            IProductCostService productCostService,
+            NavigationService? navigationService = null,
+            DashboardViewModel? dashboardViewModel = null)
         {
             _unitOfWork = unitOfWork;
             _productCostService = productCostService;
+            _navigationService = navigationService;
+            _dashboardViewModel = dashboardViewModel;
             Products = new ObservableCollection<Producto>();
-            History = new ObservableCollection<ProductCostHistory>();
-            CompareCommand = new AsyncRelayCommand(CompareAsync);
+            Timeline = new ObservableCollection<ProductHistoryRow>();
             LoadHistoryCommand = new AsyncRelayCommand(LoadHistoryAsync);
+            BackCommand = new RelayCommand(GoBack);
             _ = LoadProductsAsync();
         }
 
         public ObservableCollection<Producto> Products { get; }
-        public ObservableCollection<ProductCostHistory> History { get; }
+        public ObservableCollection<ProductHistoryRow> Timeline { get; }
 
-        public ICommand CompareCommand { get; }
         public ICommand LoadHistoryCommand { get; }
+        public ICommand BackCommand { get; }
 
         partial void OnSelectedProductChanged(Producto? value)
         {
@@ -52,9 +56,9 @@ namespace StockManufactura.Desktop.ViewModels
 
         private async Task LoadProductsAsync()
         {
-            var products = await _unitOfWork.Productos.ListActivosAsync();
+            var products = await _unitOfWork.Productos.ListAsync();
             Products.Clear();
-            foreach (var product in products)
+            foreach (var product in products.OrderBy(x => x.Nombre))
             {
                 Products.Add(product);
             }
@@ -64,33 +68,79 @@ namespace StockManufactura.Desktop.ViewModels
 
         private async Task LoadHistoryAsync()
         {
+            Timeline.Clear();
             if (SelectedProduct is null)
             {
                 return;
             }
 
-            var history = await _productCostService.GetProductCostHistoryAsync(SelectedProduct.Id);
-            History.Clear();
-            foreach (var item in history)
+            var rows = new System.Collections.Generic.List<ProductHistoryRow>();
+
+            // Cambios de costo
+            var costHistory = await _productCostService.GetProductCostHistoryAsync(SelectedProduct.Id);
+            foreach (var h in costHistory)
             {
-                History.Add(item);
+                rows.Add(new ProductHistoryRow(
+                    h.Fecha.ToLocalTime().ToString("dd/MM/yyyy HH:mm", CultureInfo.CurrentCulture),
+                    TipoEvento(h.MotivoRecalculo),
+                    $"{h.MotivoRecalculo} | Costo: {h.CostoAnterior:0.00} → {h.CostoNuevo:0.00} | Precio: {h.PrecioSugeridoAnterior:0.00} → {h.PrecioSugeridoNuevo:0.00}",
+                    h.Usuario,
+                    h.CostoNuevo.ToString("0.00", CultureInfo.InvariantCulture)));
             }
+
+            // Eventos de auditoría (productos + BOM)
+            var auditEvents = await _unitOfWork.AuditLogs.ListByProductIdAsync(SelectedProduct.Id);
+            foreach (var a in auditEvents)
+            {
+                rows.Add(new ProductHistoryRow(
+                    a.FechaHora.ToLocalTime().ToString("dd/MM/yyyy HH:mm", CultureInfo.CurrentCulture),
+                    MapAuditAccion(a.Modulo, a.Accion),
+                    a.Descripcion,
+                    a.Usuario,
+                    string.Empty));
+            }
+
+            foreach (var row in rows.OrderByDescending(x => x.FechaRaw))
+            {
+                Timeline.Add(row);
+            }
+
+            StatusMessage = Timeline.Count == 0 ? "Sin historial para este producto." : $"{Timeline.Count} evento(s) encontrados.";
         }
 
-        private async Task CompareAsync()
+        private static string TipoEvento(string motivo) =>
+            motivo.Contains("receta", StringComparison.OrdinalIgnoreCase) || motivo.Contains("BOM", StringComparison.OrdinalIgnoreCase)
+                ? "Recalculo (BOM)"
+                : "Recalculo de costo";
+
+        private static string MapAuditAccion(string modulo, string accion) => accion switch
         {
-            if (SelectedOlder is null || SelectedNewer is null)
+            "CrearItem"       => "Insumo agregado",
+            "EditarItem"      => "Insumo modificado",
+            "EliminarItem"    => "Insumo eliminado",
+            "RecalculoCostos" => "Recalculo (BOM)",
+            "Crear"           => "Producto creado",
+            "Editar"          => "Producto editado",
+            _                 => $"{modulo}: {accion}"
+        };
+
+        private void GoBack()
+        {
+            if (_navigationService is not null && _dashboardViewModel is not null)
             {
-                ComparisonSummary = "Seleccioná dos versiones para comparar.";
-                return;
+                _navigationService.NavigateTo(_dashboardViewModel);
             }
-
-            ProductCostComparison comparison = await _productCostService.CompareVersionsAsync(SelectedOlder.Id, SelectedNewer.Id);
-            var recursos = comparison.RecursosModificados.Count == 0
-                ? "sin cambios detectados"
-                : string.Join(", ", comparison.RecursosModificados);
-
-            ComparisonSummary = $"Anterior: {comparison.CostoAnterior:0.0000} | Nuevo: {comparison.CostoNuevo:0.0000} | Variación: {comparison.VariacionAbsoluta:0.0000} ({comparison.VariacionPorcentual:P2}) | Cotización: {comparison.CotizacionUtilizada:0.0000} | Recursos: {recursos}";
         }
+    }
+
+    public sealed record ProductHistoryRow(
+        string Fecha,
+        string TipoEvento,
+        string Descripcion,
+        string Usuario,
+        string CostoNuevo)
+    {
+        // Para ordenar por fecha real sin parsear strings repetidamente
+        internal DateTime FechaRaw { get; init; } = DateTime.TryParse(Fecha, out var d) ? d : DateTime.MinValue;
     }
 }
