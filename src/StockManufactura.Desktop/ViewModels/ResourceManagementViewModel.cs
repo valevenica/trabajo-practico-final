@@ -78,6 +78,9 @@ namespace StockManufactura.Desktop.ViewModels
         [ObservableProperty]
         private RecursoProveedorRow? _selectedProveedorDelInsumo;
 
+        [ObservableProperty]
+        private string _searchText = string.Empty;
+
         public ResourceManagementViewModel(
             IResourcePricingService resourcePricingService,
             IMonetaryConfigurationService monetaryConfigurationService,
@@ -87,6 +90,7 @@ namespace StockManufactura.Desktop.ViewModels
             _monetaryConfigurationService = monetaryConfigurationService;
             _unitOfWork = unitOfWork;
             Resources = new ObservableCollection<Recurso>();
+            FilteredResources = new ObservableCollection<Recurso>();
             PriceHistory = new ObservableCollection<ResourcePriceHistory>();
             ProveedoresDisponibles = new ObservableCollection<Proveedor>();
             ProveedoresDelInsumo = new ObservableCollection<RecursoProveedorRow>();
@@ -103,6 +107,7 @@ namespace StockManufactura.Desktop.ViewModels
         }
 
         public ObservableCollection<Recurso> Resources { get; }
+        public ObservableCollection<Recurso> FilteredResources { get; }
         public ObservableCollection<ResourcePriceHistory> PriceHistory { get; }
         public ObservableCollection<Proveedor> ProveedoresDisponibles { get; }
         public ObservableCollection<RecursoProveedorRow> ProveedoresDelInsumo { get; }
@@ -127,6 +132,11 @@ namespace StockManufactura.Desktop.ViewModels
                     IsUsd = false;
                 }
             }
+        }
+
+        partial void OnSearchTextChanged(string value)
+        {
+            UpdateFilteredResources();
         }
 
         partial void OnIsUsdChanged(bool value)
@@ -195,6 +205,7 @@ namespace StockManufactura.Desktop.ViewModels
                 foreach (var resource in resources)
                     Resources.Add(resource);
 
+                UpdateFilteredResources();
                 ProveedoresDisponibles.Clear();
                 foreach (var p in proveedores.Where(x => x.Activo).OrderBy(x => x.Nombre))
                     ProveedoresDisponibles.Add(p);
@@ -207,6 +218,18 @@ namespace StockManufactura.Desktop.ViewModels
             {
                 StatusMessage = $"Error al cargar recursos: {ex.Message}";
             }
+        }
+
+        private void UpdateFilteredResources()
+        {
+            var search = SearchText.ToLower().Trim();
+            var filtered = string.IsNullOrEmpty(search)
+                ? Resources
+                : Resources.Where(r => r.Codigo.ToLower().Contains(search) || r.Nombre.ToLower().Contains(search));
+
+            FilteredResources.Clear();
+            foreach (var resource in filtered)
+                FilteredResources.Add(resource);
         }
 
         private async Task SaveAsync()

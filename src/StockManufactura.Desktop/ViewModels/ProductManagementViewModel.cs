@@ -52,7 +52,8 @@ namespace StockManufactura.Desktop.ViewModels
 
         [ObservableProperty]
         private bool _isDirty;
-
+        [ObservableProperty]
+        private string _searchText = string.Empty;
         private bool _loading;
 
         public ObservableCollection<ProductRecipeRow> RecipeItems { get; } = new();
@@ -72,6 +73,7 @@ namespace StockManufactura.Desktop.ViewModels
             _dashboardViewModel = dashboardViewModel ?? throw new ArgumentNullException(nameof(dashboardViewModel));
 
             Products = new ObservableCollection<Producto>();
+            FilteredProducts = new ObservableCollection<Producto>();
             LoadCommand = new AsyncRelayCommand(LoadAsync);
             SaveCommand = new AsyncRelayCommand(SaveAsync);
             NewProductCommand = new RelayCommand(StartNewProduct);
@@ -86,6 +88,7 @@ namespace StockManufactura.Desktop.ViewModels
         }
 
         public ObservableCollection<Producto> Products { get; }
+        public ObservableCollection<Producto> FilteredProducts { get; }
 
         public ICommand LoadCommand { get; }
         public ICommand SaveCommand { get; }
@@ -95,6 +98,11 @@ namespace StockManufactura.Desktop.ViewModels
         public bool CanViewProducts => AuthSession.Current?.TienePermiso("PRODUCTOS_VER") == true || CanCreateProducts || CanEditProducts;
         public bool CanCreateProducts => AuthSession.Current?.TienePermiso("PRODUCTOS_CREAR") == true;
         public bool CanEditProducts => AuthSession.Current?.TienePermiso("PRODUCTOS_EDITAR") == true;
+
+        partial void OnSearchTextChanged(string value)
+        {
+            UpdateFilteredProducts();
+        }
 
         partial void OnSelectedProductChanged(Producto? value)
         {
@@ -155,6 +163,7 @@ namespace StockManufactura.Desktop.ViewModels
                     Products.Add(product);
                 }
 
+                UpdateFilteredProducts();
                 StatusMessage = "Productos cargados.";
 
                 if (SelectedProduct is null)
@@ -168,6 +177,18 @@ namespace StockManufactura.Desktop.ViewModels
             {
                 StatusMessage = $"Error al cargar productos: {ex.Message}";
             }
+        }
+
+        private void UpdateFilteredProducts()
+        {
+            var search = SearchText.ToLower().Trim();
+            var filtered = string.IsNullOrEmpty(search)
+                ? Products
+                : Products.Where(p => p.Codigo.ToLower().Contains(search) || p.Nombre.ToLower().Contains(search));
+
+            FilteredProducts.Clear();
+            foreach (var product in filtered)
+                FilteredProducts.Add(product);
         }
 
         private async Task SaveAsync()

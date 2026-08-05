@@ -18,7 +18,11 @@
                         Padding="8" CornerRadius="4" Margin="0 0 0 8">
                     <TextBlock Text="INSUMOS" Foreground="{StaticResource SecondaryAccentBrush}" FontWeight="SemiBold" />
                 </Border>
-                <DataGrid ItemsSource="{Binding Resources}" SelectedItem="{Binding SelectedResource}"
+                <StackPanel DockPanel.Dock="Top" Margin="0 0 0 8">
+                    <TextBlock Text="Buscar por código o nombre:" Margin="0 0 0 4" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" />
+                    <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" Height="28" Padding="6" />
+                </StackPanel>
+                <DataGrid ItemsSource="{Binding FilteredResources}" SelectedItem="{Binding SelectedResource}"
                           AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True">
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="Código" Binding="{Binding Codigo}" Width="80" />
