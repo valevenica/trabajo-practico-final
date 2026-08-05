@@ -48,8 +48,8 @@
 
             <UniformGrid Rows="1" Columns="3" Margin="0 0 0 8">
                 <StackPanel Margin="0 0 8 0">
-                    <TextBlock Text="Costo fabricación" />
-                    <TextBox Text="{Binding CostoFabricacion, UpdateSourceTrigger=PropertyChanged}" Height="32" Margin="0 4 0 0" />
+                    <TextBlock Text="Costo fabricación (calculado)" />
+                    <TextBox Text="{Binding CostoFabricacionCalculado}" Height="32" Margin="0 4 0 0" IsReadOnly="True" />
                 </StackPanel>
                 <StackPanel Margin="0 0 8 0">
                     <TextBlock Text="Margen" />
@@ -60,6 +60,24 @@
                     <TextBox Text="{Binding PrecioSugerido, UpdateSourceTrigger=PropertyChanged}" Height="32" Margin="0 4 0 0" />
                 </StackPanel>
             </UniformGrid>
+
+            <TextBlock Text="Insumos del producto (BOM)" FontWeight="SemiBold" Margin="0 6 0 6" />
+            <DataGrid ItemsSource="{Binding RecipeItems}"
+                      AutoGenerateColumns="False"
+                      CanUserAddRows="False"
+                      CanUserDeleteRows="False"
+                      IsReadOnly="True"
+                      HeadersVisibility="Column"
+                      Height="150"
+                      Margin="0 0 0 8">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Insumo" Binding="{Binding Recurso}" Width="*" />
+                    <DataGridTextColumn Header="Unidad" Binding="{Binding Unidad}" Width="90" />
+                    <DataGridTextColumn Header="Cantidad" Binding="{Binding Cantidad, StringFormat={}{0:0.0000}}" Width="100" />
+                    <DataGridTextColumn Header="Costo unidad" Binding="{Binding CostoUnitario, StringFormat={}{0:0.0000}}" Width="120" />
+                    <DataGridTextColumn Header="Subtotal" Binding="{Binding CostoTotal, StringFormat={}{0:0.0000}}" Width="120" />
+                </DataGrid.Columns>
+            </DataGrid>
 
             <CheckBox Content="Producto activo" IsChecked="{Binding Activo}" Margin="0 2 0 8" />
 
