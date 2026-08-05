@@ -4,139 +4,185 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              mc:Ignorable="d"
-             d:DesignHeight="800" d:DesignWidth="1200">
-    <Grid Margin="20" Background="{StaticResource BackgroundSoftLightBrush}">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="2*" />
-            <RowDefinition Height="*" />
-            <RowDefinition Height="Auto" />
-        </Grid.RowDefinitions>
+             d:DesignHeight="700" d:DesignWidth="1100">
+    <Grid Margin="16" Background="{StaticResource BackgroundSoftLightBrush}">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="2*" />
-            <ColumnDefinition Width="2*" />
+            <ColumnDefinition Width="3*" />
         </Grid.ColumnDefinitions>
 
-        <TextBlock Grid.ColumnSpan="2" Text="INSUMOS" Style="{StaticResource SectionTitleStyle}" />
-
-        <!-- Formulario de campos -->
-        <Border Grid.Row="1" Grid.ColumnSpan="2" Style="{StaticResource CardBorderStyle}" Margin="0 8 0 8" Padding="12 8">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                </Grid.RowDefinitions>
-                <TextBox Grid.Column="0" Margin="0 0 8 6" Text="{Binding Codigo, UpdateSourceTrigger=PropertyChanged}" />
-                <TextBox Grid.Column="1" Margin="0 0 8 6" Text="{Binding Nombre, UpdateSourceTrigger=PropertyChanged}" />
-                <TextBox Grid.Column="2" Margin="0 0 8 6" Text="{Binding Categoria, UpdateSourceTrigger=PropertyChanged}" />
-                <TextBox Grid.Column="3" Margin="0 0 0 6" Text="{Binding UnidadMedida, UpdateSourceTrigger=PropertyChanged}" />
-                <TextBox Grid.Row="1" Grid.Column="0" Margin="0 0 8 6" Text="{Binding Precio, UpdateSourceTrigger=PropertyChanged}" />
-                <TextBox Grid.Row="1" Grid.Column="1" Margin="0 0 8 6" Text="{Binding StockActual, UpdateSourceTrigger=PropertyChanged}" />
-                <TextBox Grid.Row="1" Grid.Column="2" Margin="0 0 8 6" Text="{Binding StockMinimo, UpdateSourceTrigger=PropertyChanged}" />
-                <StackPanel Grid.Row="1" Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
-                    <RadioButton Content="Pesos" IsChecked="{Binding IsArs}" Command="{Binding SelectArsCommand}" Margin="0 0 12 0" />
-                    <RadioButton Content="Dólares" IsChecked="{Binding IsUsd}" Command="{Binding SelectUsdCommand}" />
-                </StackPanel>
-                <TextBox Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="4" Margin="0 0 0 6" Text="{Binding Descripcion, UpdateSourceTrigger=PropertyChanged}" />
-                <TextBox Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="4" Text="{Binding Observaciones, UpdateSourceTrigger=PropertyChanged}" />
-            </Grid>
-        </Border>
-
-        <!-- Listado de insumos -->
-        <Border Grid.Row="2" Grid.Column="0" Margin="0 0 8 0" Style="{StaticResource CardBorderStyle}">
+        <!-- Columna izquierda: listado de insumos -->
+        <Border Grid.Column="0" Margin="0 0 10 0" Style="{StaticResource CardBorderStyle}">
             <DockPanel>
-                <Border DockPanel.Dock="Top" Background="{StaticResource BackgroundDarkMetalBrush}" Padding="8" CornerRadius="4" Margin="0 0 0 8">
-                    <TextBlock Text="Insumos" Foreground="{StaticResource SecondaryAccentBrush}" FontWeight="SemiBold" />
+                <Border DockPanel.Dock="Top" Background="{StaticResource BackgroundDarkMetalBrush}"
+                        Padding="8" CornerRadius="4" Margin="0 0 0 8">
+                    <TextBlock Text="INSUMOS" Foreground="{StaticResource SecondaryAccentBrush}" FontWeight="SemiBold" />
                 </Border>
                 <DataGrid ItemsSource="{Binding Resources}" SelectedItem="{Binding SelectedResource}"
                           AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True">
                     <DataGrid.Columns>
-                        <DataGridTextColumn Header="Código" Binding="{Binding Codigo}" Width="90" />
+                        <DataGridTextColumn Header="Código" Binding="{Binding Codigo}" Width="80" />
                         <DataGridTextColumn Header="Nombre" Binding="{Binding Nombre}" Width="*" />
-                        <DataGridTextColumn Header="Precio" Binding="{Binding Precio, StringFormat={}{0:0.00}}" Width="90" />
-                        <DataGridTextColumn Header="Moneda" Binding="{Binding Moneda}" Width="70" />
-                        <DataGridTextColumn Header="Stock" Binding="{Binding StockActual, StringFormat={}{0:0.00}}" Width="70" />
+                        <DataGridTextColumn Header="Precio" Binding="{Binding Precio, StringFormat={}{0:0.00}}" Width="80" />
+                        <DataGridTextColumn Header="Moneda" Binding="{Binding Moneda}" Width="60" />
+                        <DataGridTextColumn Header="Stock" Binding="{Binding StockActual, StringFormat={}{0:0.0}}" Width="60" />
                     </DataGrid.Columns>
                 </DataGrid>
             </DockPanel>
         </Border>
 
-        <!-- Precio y acciones -->
-        <Border Grid.Row="2" Grid.Column="1" Margin="8 0 0 0" Style="{StaticResource CardBorderStyle}">
+        <!-- Columna derecha: formulario, precio, proveedores, historial -->
+        <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
             <StackPanel>
-                <TextBlock Text="Cotización vigente:" FontWeight="SemiBold" />
-                <TextBlock Text="{Binding CotizacionVigente}" Margin="0 2 0 8" />
-                <TextBlock Text="Costo equivalente en pesos:" FontWeight="SemiBold" />
-                <TextBlock Text="{Binding CostoEquivalentePesos}" Margin="0 2 0 8" />
-                <Button Content="Recalcular" Command="{Binding RecalculateCommand}" Height="32" Margin="0 0 0 6" Style="{StaticResource SecondaryButtonStyle}" />
-                <Button Content="Guardar precio" Command="{Binding SaveCommand}" IsEnabled="{Binding IsDirty}" Height="32" Style="{StaticResource PrimaryButtonStyle}" />
-                <TextBlock Text="{Binding StatusMessage}" Margin="0 10 0 0" Style="{StaticResource StatusMessageStyle}" />
-            </StackPanel>
-        </Border>
 
-        <!-- Proveedores del insumo -->
-        <Border Grid.Row="3" Grid.Column="0" Margin="0 8 8 0" Style="{StaticResource CardBorderStyle}">
-            <DockPanel>
-                <Border DockPanel.Dock="Top" Background="{StaticResource BackgroundDarkMetalBrush}" Padding="8" CornerRadius="4" Margin="0 0 0 8">
-                    <TextBlock Text="Proveedores del insumo" Foreground="{StaticResource SecondaryAccentBrush}" FontWeight="SemiBold" />
+                <!-- Datos del insumo -->
+                <Border Style="{StaticResource CardBorderStyle}" Margin="0 0 0 10">
+                    <StackPanel>
+                        <Border Background="{StaticResource BackgroundDarkMetalBrush}" Padding="8" CornerRadius="4" Margin="0 0 0 10">
+                            <TextBlock Text="Datos del insumo" Foreground="{StaticResource SecondaryAccentBrush}" FontWeight="SemiBold" />
+                        </Border>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <StackPanel Grid.Column="0" Margin="0 0 6 6">
+                                <TextBlock Text="Código" FontSize="11" Foreground="Gray" />
+                                <TextBox Text="{Binding Codigo, UpdateSourceTrigger=PropertyChanged}" Height="30" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Margin="6 0 0 6">
+                                <TextBlock Text="Nombre" FontSize="11" Foreground="Gray" />
+                                <TextBox Text="{Binding Nombre, UpdateSourceTrigger=PropertyChanged}" Height="30" />
+                            </StackPanel>
+                            <StackPanel Grid.Row="1" Grid.Column="0" Margin="0 0 6 6">
+                                <TextBlock Text="Categoría" FontSize="11" Foreground="Gray" />
+                                <TextBox Text="{Binding Categoria, UpdateSourceTrigger=PropertyChanged}" Height="30" />
+                            </StackPanel>
+                            <StackPanel Grid.Row="1" Grid.Column="1" Margin="6 0 0 6">
+                                <TextBlock Text="Unidad de medida" FontSize="11" Foreground="Gray" />
+                                <TextBox Text="{Binding UnidadMedida, UpdateSourceTrigger=PropertyChanged}" Height="30" />
+                            </StackPanel>
+                            <StackPanel Grid.Row="2" Grid.Column="0" Margin="0 0 6 6">
+                                <TextBlock Text="Stock actual" FontSize="11" Foreground="Gray" />
+                                <TextBox Text="{Binding StockActual, UpdateSourceTrigger=PropertyChanged}" Height="30" />
+                            </StackPanel>
+                            <StackPanel Grid.Row="2" Grid.Column="1" Margin="6 0 0 6">
+                                <TextBlock Text="Stock mínimo" FontSize="11" Foreground="Gray" />
+                                <TextBox Text="{Binding StockMinimo, UpdateSourceTrigger=PropertyChanged}" Height="30" />
+                            </StackPanel>
+                            <StackPanel Grid.Row="3" Grid.Column="0" Margin="0 0 6 6">
+                                <TextBlock Text="Descripción" FontSize="11" Foreground="Gray" />
+                                <TextBox Text="{Binding Descripcion, UpdateSourceTrigger=PropertyChanged}" Height="30" />
+                            </StackPanel>
+                            <StackPanel Grid.Row="3" Grid.Column="1" Margin="6 0 0 6">
+                                <TextBlock Text="Observaciones" FontSize="11" Foreground="Gray" />
+                                <TextBox Text="{Binding Observaciones, UpdateSourceTrigger=PropertyChanged}" Height="30" />
+                            </StackPanel>
+                            <Grid Grid.Row="4" Grid.ColumnSpan="2" Margin="0 4 0 0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Margin="0 0 6 0">
+                                    <TextBlock Text="Precio" FontSize="11" Foreground="Gray" />
+                                    <TextBox Text="{Binding Precio, UpdateSourceTrigger=PropertyChanged}" Height="30" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Margin="6 0 12 0">
+                                    <TextBlock Text="Moneda" FontSize="11" Foreground="Gray" />
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0 6 0 0">
+                                        <RadioButton Content="$ARS" IsChecked="{Binding IsArs}" Command="{Binding SelectArsCommand}" Margin="0 0 12 0" />
+                                        <RadioButton Content="USD" IsChecked="{Binding IsUsd}" Command="{Binding SelectUsdCommand}" />
+                                    </StackPanel>
+                                </StackPanel>
+                                <Button Grid.Column="2" Content="Recalcular" Command="{Binding RecalculateCommand}"
+                                        Width="100" Height="30" Margin="0 16 6 0" Style="{StaticResource SecondaryButtonStyle}" />
+                                <Button Grid.Column="3" Content="Guardar" Command="{Binding SaveCommand}"
+                                        IsEnabled="{Binding IsDirty}" Width="100" Height="30" Margin="0 16 0 0"
+                                        Style="{StaticResource PrimaryButtonStyle}" />
+                            </Grid>
+                        </Grid>
+                        <TextBlock Text="{Binding CostoEquivalentePesos, StringFormat=Equivalente en pesos: {0}}"
+                                   Margin="0 6 0 0" Foreground="{StaticResource SecondaryAccentBrush}" />
+                        <TextBlock Text="{Binding StatusMessage}" Margin="0 4 0 0" Style="{StaticResource StatusMessageStyle}" />
+                    </StackPanel>
                 </Border>
-                <DataGrid ItemsSource="{Binding ProveedoresDelInsumo}" SelectedItem="{Binding SelectedProveedorDelInsumo}"
-                          AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True"
-                          GridLinesVisibility="Horizontal" AlternatingRowBackground="#F5F5F5">
-                    <DataGrid.Columns>
-                        <DataGridTextColumn Header="Proveedor" Binding="{Binding ProveedorNombre}" Width="*" />
-                        <DataGridTextColumn Header="Precio" Binding="{Binding Precio, StringFormat={}{0:0.0000}}" Width="110" />
-                        <DataGridCheckBoxColumn Header="Prioritario" Binding="{Binding EsPrioritario}" Width="90" />
-                    </DataGrid.Columns>
-                </DataGrid>
-            </DockPanel>
-        </Border>
 
-        <!-- Panel para agregar proveedor -->
-        <Border Grid.Row="3" Grid.Column="1" Margin="8 8 0 0" Style="{StaticResource CardBorderStyle}">
-            <StackPanel>
-                <TextBlock Text="Agregar proveedor al insumo" FontWeight="SemiBold" Margin="0 0 0 8" />
-                <TextBlock Text="Proveedor" />
-                <ComboBox ItemsSource="{Binding ProveedoresDisponibles}"
-                          SelectedItem="{Binding SelectedNuevoProveedor}"
-                          DisplayMemberPath="Nombre" Height="32" Margin="0 4 0 8" />
-                <TextBlock Text="Precio del proveedor" />
-                <TextBox Text="{Binding PrecioNuevoProveedor, UpdateSourceTrigger=PropertyChanged}" Height="32" Margin="0 4 0 12" />
-                <StackPanel Orientation="Horizontal">
-                    <Button Content="Agregar" Command="{Binding AddProveedorCommand}" Width="100" Height="32" Margin="0 0 8 0" Style="{StaticResource PrimaryButtonStyle}" />
-                    <Button Content="Quitar" Command="{Binding RemoveProveedorCommand}" Width="100" Height="32" Margin="0 0 8 0" Style="{StaticResource SecondaryButtonStyle}" />
-                    <Button Content="★ Prioritario" Command="{Binding SetPrioritarioCommand}" Width="120" Height="32" Style="{StaticResource PrimaryButtonStyle}" />
-                </StackPanel>
-            </StackPanel>
-        </Border>
+                <!-- Proveedores del insumo -->
+                <Border Style="{StaticResource CardBorderStyle}" Margin="0 0 0 10">
+                    <StackPanel>
+                        <Border Background="{StaticResource BackgroundDarkMetalBrush}" Padding="8" CornerRadius="4" Margin="0 0 0 10">
+                            <TextBlock Text="Proveedores del insumo" Foreground="{StaticResource SecondaryAccentBrush}" FontWeight="SemiBold" />
+                        </Border>
 
-        <!-- Historial de precios -->
-        <Border Grid.Row="4" Grid.ColumnSpan="2" Margin="0 8 0 0" Style="{StaticResource CardBorderStyle}">
-            <DockPanel>
-                <Border DockPanel.Dock="Top" Background="{StaticResource BackgroundDarkMetalBrush}" Padding="8" CornerRadius="4" Margin="0 0 0 8">
-                    <TextBlock Text="Historial de precios" Foreground="{StaticResource SecondaryAccentBrush}" FontWeight="SemiBold" />
+                        <!-- Grid: lista de proveedores + formulario agregar -->
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="220" />
+                            </Grid.ColumnDefinitions>
+
+                            <DataGrid ItemsSource="{Binding ProveedoresDelInsumo}"
+                                      SelectedItem="{Binding SelectedProveedorDelInsumo}"
+                                      AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True"
+                                      GridLinesVisibility="Horizontal" AlternatingRowBackground="#F5F5F5"
+                                      MinHeight="80" MaxHeight="180" Margin="0 0 8 0">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="Proveedor" Binding="{Binding ProveedorNombre}" Width="*" />
+                                    <DataGridTextColumn Header="Precio" Binding="{Binding Precio, StringFormat={}{0:0.00}}" Width="90" />
+                                    <DataGridCheckBoxColumn Header="Prioritario" Binding="{Binding EsPrioritario}" Width="80" />
+                                </DataGrid.Columns>
+                            </DataGrid>
+
+                            <StackPanel Grid.Column="1">
+                                <TextBlock Text="Proveedor" FontSize="11" Foreground="Gray" />
+                                <ComboBox ItemsSource="{Binding ProveedoresDisponibles}"
+                                          SelectedItem="{Binding SelectedNuevoProveedor}"
+                                          DisplayMemberPath="Nombre" Height="28" Margin="0 2 0 6" />
+                                <TextBlock Text="Precio del proveedor" FontSize="11" Foreground="Gray" />
+                                <TextBox Text="{Binding PrecioNuevoProveedor, UpdateSourceTrigger=PropertyChanged}"
+                                         Height="28" Margin="0 2 0 8" />
+                                <Button Content="+ Agregar" Command="{Binding AddProveedorCommand}"
+                                        Height="28" Margin="0 0 0 4" Style="{StaticResource PrimaryButtonStyle}" />
+                                <Button Content="✕ Quitar" Command="{Binding RemoveProveedorCommand}"
+                                        Height="28" Margin="0 0 0 4" Style="{StaticResource SecondaryButtonStyle}" />
+                                <Button Content="★ Prioritario" Command="{Binding SetPrioritarioCommand}"
+                                        Height="28" Style="{StaticResource PrimaryButtonStyle}" />
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
                 </Border>
-                <DataGrid ItemsSource="{Binding PriceHistory}" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False" MaxHeight="140">
-                    <DataGrid.Columns>
-                        <DataGridTextColumn Header="Fecha" Binding="{Binding Fecha}" Width="140" />
-                        <DataGridTextColumn Header="Usuario" Binding="{Binding Usuario}" Width="110" />
-                        <DataGridTextColumn Header="Precio anterior" Binding="{Binding PrecioAnterior, StringFormat={}{0:0.0000}}" Width="120" />
-                        <DataGridTextColumn Header="Precio nuevo" Binding="{Binding PrecioNuevo, StringFormat={}{0:0.0000}}" Width="120" />
-                        <DataGridTextColumn Header="Moneda" Binding="{Binding Moneda}" Width="70" />
-                        <DataGridTextColumn Header="Cotización" Binding="{Binding CotizacionUtilizada, StringFormat={}{0:0.00}}" Width="90" />
-                        <DataGridTextColumn Header="Observaciones" Binding="{Binding Observaciones}" Width="*" />
-                    </DataGrid.Columns>
-                </DataGrid>
-            </DockPanel>
-        </Border>
+
+                <!-- Historial de precios -->
+                <Border Style="{StaticResource CardBorderStyle}">
+                    <StackPanel>
+                        <Border Background="{StaticResource BackgroundDarkMetalBrush}" Padding="8" CornerRadius="4" Margin="0 0 0 8">
+                            <TextBlock Text="Historial de precios" Foreground="{StaticResource SecondaryAccentBrush}" FontWeight="SemiBold" />
+                        </Border>
+                        <DataGrid ItemsSource="{Binding PriceHistory}" AutoGenerateColumns="False"
+                                  IsReadOnly="True" CanUserAddRows="False" MaxHeight="150">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Fecha" Binding="{Binding Fecha}" Width="130" />
+                                <DataGridTextColumn Header="Usuario" Binding="{Binding Usuario}" Width="100" />
+                                <DataGridTextColumn Header="Ant." Binding="{Binding PrecioAnterior, StringFormat={}{0:0.00}}" Width="80" />
+                                <DataGridTextColumn Header="Nuevo" Binding="{Binding PrecioNuevo, StringFormat={}{0:0.00}}" Width="80" />
+                                <DataGridTextColumn Header="Moneda" Binding="{Binding Moneda}" Width="60" />
+                                <DataGridTextColumn Header="Cotiz." Binding="{Binding CotizacionUtilizada, StringFormat={}{0:0.00}}" Width="70" />
+                                <DataGridTextColumn Header="Observaciones" Binding="{Binding Observaciones}" Width="*" />
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </StackPanel>
+                </Border>
+
+            </StackPanel>
+        </ScrollViewer>
     </Grid>
 </UserControl>
