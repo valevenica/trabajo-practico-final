@@ -51,11 +51,40 @@
                 BorderThickness="0,0,1,0"
                 Padding="12,16">
             <Border.Resources>
-                <Style x:Key="SidebarMenuButtonStyle" TargetType="Button" BasedOn="{StaticResource SecondaryButtonStyle}">
+                <Style x:Key="SidebarMenuButtonStyle" TargetType="Button">
                     <Setter Property="Foreground" Value="White" />
-                    <Setter Property="Background" Value="#FFFFFF12" />
-                    <Setter Property="BorderBrush" Value="#D6B87A" />
+                    <Setter Property="Background" Value="Transparent" />
+                    <Setter Property="BorderBrush" Value="#7A1C52" />
+                    <Setter Property="BorderThickness" Value="1" />
+                    <Setter Property="Padding" Value="10,6" />
+                    <Setter Property="Height" Value="34" />
                     <Setter Property="FontWeight" Value="SemiBold" />
+                    <Setter Property="Cursor" Value="Hand" />
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="Button">
+                                <Border x:Name="ButtonBorder"
+                                        Background="{TemplateBinding Background}"
+                                        BorderBrush="{TemplateBinding BorderBrush}"
+                                        BorderThickness="{TemplateBinding BorderThickness}"
+                                        CornerRadius="6">
+                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter TargetName="ButtonBorder" Property="Opacity" Value="0.92" />
+                                    </Trigger>
+                                    <Trigger Property="Tag" Value="True">
+                                        <Setter TargetName="ButtonBorder" Property="Effect">
+                                            <Setter.Value>
+                                                <DropShadowEffect Color="White" BlurRadius="14" ShadowDepth="0" Opacity="1" />
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
                 </Style>
             </Border.Resources>
             <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
@@ -65,7 +94,7 @@
                             <TextBlock Text="Dashboard" Foreground="White" FontWeight="Bold" />
                         </Expander.Header>
                         <StackPanel Margin="0,6,0,0">
-                            <Button Content="Panel principal" Margin="0,0,0,6" Command="{Binding NavigateDashboardCommand}" Style="{StaticResource SidebarMenuButtonStyle}" />
+                            <Button Content="Panel principal" Margin="0,0,0,6" Command="{Binding NavigateDashboardCommand}" Tag="{Binding IsDashboardSelected}" Style="{StaticResource SidebarMenuButtonStyle}" />
                         </StackPanel>
                     </Expander>
 
@@ -74,11 +103,11 @@
                             <TextBlock Text="Stock" Foreground="White" FontWeight="Bold" />
                         </Expander.Header>
                         <StackPanel Margin="0,6,0,0">
-                            <Button Content="Productos" Margin="0,0,0,6" Command="{Binding NavigateProductsCommand}" Style="{StaticResource SidebarMenuButtonStyle}" />
-                            <Button Content="Insumos" Margin="0,0,0,6" Command="{Binding NavigateResourcesCommand}" Style="{StaticResource SidebarMenuButtonStyle}" />
-                            <Button Content="Nuevo producto" Margin="0,0,0,6" Command="{Binding NavigateNewProductCommand}" Style="{StaticResource SidebarMenuButtonStyle}" />
-                            <Button Content="Nuevo stock/insumo" Margin="0,0,0,6" Command="{Binding NavigateNewResourceCommand}" Style="{StaticResource SidebarMenuButtonStyle}" />
-                            <Button Content="Proveedores" Margin="0,0,0,6" Command="{Binding NavigateProvidersCommand}" Style="{StaticResource SidebarMenuButtonStyle}" />
+                            <Button Content="Productos" Margin="0,0,0,6" Command="{Binding NavigateProductsCommand}" Tag="{Binding IsProductsSelected}" Style="{StaticResource SidebarMenuButtonStyle}" />
+                            <Button Content="Insumos" Margin="0,0,0,6" Command="{Binding NavigateResourcesCommand}" Tag="{Binding IsResourcesSelected}" Style="{StaticResource SidebarMenuButtonStyle}" />
+                            <Button Content="Nuevo producto" Margin="0,0,0,6" Command="{Binding NavigateNewProductCommand}" Tag="{Binding IsNewProductSelected}" Style="{StaticResource SidebarMenuButtonStyle}" />
+                            <Button Content="Nuevo stock/insumo" Margin="0,0,0,6" Command="{Binding NavigateNewResourceCommand}" Tag="{Binding IsNewResourceSelected}" Style="{StaticResource SidebarMenuButtonStyle}" />
+                            <Button Content="Proveedores" Margin="0,0,0,6" Command="{Binding NavigateProvidersCommand}" Tag="{Binding IsProvidersSelected}" Style="{StaticResource SidebarMenuButtonStyle}" />
                         </StackPanel>
                     </Expander>
 
@@ -87,9 +116,9 @@
                             <TextBlock Text="Producción" Foreground="White" FontWeight="Bold" />
                         </Expander.Header>
                         <StackPanel Margin="0,6,0,0">
-                            <Button Content="Órdenes" Margin="0,0,0,6" Command="{Binding NavigateProductionOrdersCommand}" Style="{StaticResource SidebarMenuButtonStyle}" />
-                            <Button Content="Recetas BOM" Margin="0,0,0,6" Command="{Binding NavigateBomCommand}" Style="{StaticResource SidebarMenuButtonStyle}" />
-                            <Button Content="Historial costos" Margin="0,0,0,6" Command="{Binding NavigateCostsCommand}" Style="{StaticResource SidebarMenuButtonStyle}" />
+                            <Button Content="Órdenes" Margin="0,0,0,6" Command="{Binding NavigateProductionOrdersCommand}" Tag="{Binding IsProductionOrdersSelected}" Style="{StaticResource SidebarMenuButtonStyle}" />
+                            <Button Content="Recetas BOM" Margin="0,0,0,6" Command="{Binding NavigateBomCommand}" Tag="{Binding IsBomSelected}" Style="{StaticResource SidebarMenuButtonStyle}" />
+                            <Button Content="Historial costos" Margin="0,0,0,6" Command="{Binding NavigateCostsCommand}" Tag="{Binding IsCostsSelected}" Style="{StaticResource SidebarMenuButtonStyle}" />
                         </StackPanel>
                     </Expander>
 
@@ -98,8 +127,8 @@
                             <TextBlock Text="Finanzas" Foreground="White" FontWeight="Bold" />
                         </Expander.Header>
                         <StackPanel Margin="0,6,0,0">
-                            <Button Content="Configuración monetaria" Margin="0,0,0,6" Command="{Binding NavigateMonetaryCommand}" Style="{StaticResource SidebarMenuButtonStyle}" />
-                            <Button Content="Backups" Margin="0,0,0,6" Command="{Binding NavigateBackupsCommand}" Style="{StaticResource SidebarMenuButtonStyle}" />
+                            <Button Content="Configuración monetaria" Margin="0,0,0,6" Command="{Binding NavigateMonetaryCommand}" Tag="{Binding IsMonetarySelected}" Style="{StaticResource SidebarMenuButtonStyle}" />
+                            <Button Content="Backups" Margin="0,0,0,6" Command="{Binding NavigateBackupsCommand}" Tag="{Binding IsBackupsSelected}" Style="{StaticResource SidebarMenuButtonStyle}" />
                         </StackPanel>
                     </Expander>
 
@@ -108,8 +137,8 @@
                             <TextBlock Text="Administración" Foreground="White" FontWeight="Bold" />
                         </Expander.Header>
                         <StackPanel Margin="0,6,0,0">
-                            <Button Content="Usuarios" Margin="0,0,0,6" Command="{Binding NavigateUsersCommand}" Style="{StaticResource SidebarMenuButtonStyle}" />
-                            <Button Content="Bitácora" Margin="0,0,0,6" Command="{Binding NavigateAuditCommand}" Style="{StaticResource SidebarMenuButtonStyle}" />
+                            <Button Content="Usuarios" Margin="0,0,0,6" Command="{Binding NavigateUsersCommand}" Tag="{Binding IsUsersSelected}" Style="{StaticResource SidebarMenuButtonStyle}" />
+                            <Button Content="Bitácora" Margin="0,0,0,6" Command="{Binding NavigateAuditCommand}" Tag="{Binding IsAuditSelected}" Style="{StaticResource SidebarMenuButtonStyle}" />
                         </StackPanel>
                     </Expander>
                 </StackPanel>

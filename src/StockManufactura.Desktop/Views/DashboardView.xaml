@@ -39,7 +39,6 @@
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
             <UniformGrid Columns="3" Margin="0,0,0,20">
@@ -153,12 +152,6 @@
                 </StackPanel>
             </Border>
 
-            <Canvas Grid.Row="2" Height="86" Margin="0,12,0,0">
-                <Polyline Points="310,34 390,34 412,56 540,56 562,40 640,40" Stroke="{StaticResource PrimaryAccentBrush}" StrokeThickness="5" StrokeLineJoin="Round" />
-                <Ellipse Canvas.Left="302" Canvas.Top="25" Width="18" Height="18" Fill="{StaticResource PrimaryAccentBrush}" Stroke="#4E1235" StrokeThickness="2" />
-                <Ellipse Canvas.Left="532" Canvas.Top="47" Width="18" Height="18" Fill="{StaticResource PrimaryAccentBrush}" Stroke="#4E1235" StrokeThickness="2" />
-                <Path Data="M640,40 L672,16 L658,52 Z" Fill="{StaticResource PrimaryAccentBrush}" Stroke="#4E1235" StrokeThickness="1" />
-            </Canvas>
         </Grid>
     </ScrollViewer>
 </UserControl>
