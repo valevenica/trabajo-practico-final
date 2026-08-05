@@ -129,22 +129,27 @@ namespace StockManufactura.Desktop.ViewModels
 
         private async Task LoadAsync()
         {
-            var (resources, state) = await Task.Run(async () =>
+            try
             {
-                var r = await _resourcePricingService.GetResourcesAsync();
-                var s = await _monetaryConfigurationService.GetCurrentStateAsync();
-                return (r, s);
-            });
+                var (resources, state) = await Task.Run(async () =>
+                {
+                    var r = await _resourcePricingService.GetResourcesAsync();
+                    var s = await _monetaryConfigurationService.GetCurrentStateAsync();
+                    return (r, s);
+                });
 
-            Resources.Clear();
-            foreach (var resource in resources)
-            {
-                Resources.Add(resource);
+                Resources.Clear();
+                foreach (var resource in resources)
+                    Resources.Add(resource);
+
+                CotizacionVigente = state.CurrentRate.ToString("0.0000", CultureInfo.InvariantCulture);
+                await RecalculateAsync();
+                StatusMessage = "Recursos cargados.";
             }
-
-            CotizacionVigente = state.CurrentRate.ToString("0.0000", CultureInfo.InvariantCulture);
-            await RecalculateAsync();
-            StatusMessage = "Recursos cargados.";
+            catch (Exception ex)
+            {
+                StatusMessage = $"Error al cargar recursos: {ex.Message}";
+            }
         }
 
         private async Task SaveAsync()

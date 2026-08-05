@@ -122,22 +122,29 @@ namespace StockManufactura.Desktop.ViewModels
                 return;
             }
 
-            var products = await Task.Run(async () =>
-                (await _unitOfWork.Productos.ListAsync()).OrderBy(x => x.Nombre).ToArray());
-
-            Products.Clear();
-            foreach (var product in products)
+            try
             {
-                Products.Add(product);
+                var products = await Task.Run(async () =>
+                    (await _unitOfWork.Productos.ListAsync()).OrderBy(x => x.Nombre).ToArray());
+
+                Products.Clear();
+                foreach (var product in products)
+                {
+                    Products.Add(product);
+                }
+
+                StatusMessage = "Productos cargados.";
+
+                if (SelectedProduct is null)
+                {
+                    RecipeItems.Clear();
+                    CostoFabricacion = "0.0000";
+                    OnPropertyChanged(nameof(CostoFabricacionCalculado));
+                }
             }
-
-            StatusMessage = "Productos cargados.";
-
-            if (SelectedProduct is null)
+            catch (Exception ex)
             {
-                RecipeItems.Clear();
-                CostoFabricacion = "0.0000";
-                OnPropertyChanged(nameof(CostoFabricacionCalculado));
+                StatusMessage = $"Error al cargar productos: {ex.Message}";
             }
         }
 

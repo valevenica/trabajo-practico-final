@@ -123,36 +123,35 @@ namespace StockManufactura.Desktop.ViewModels
                 return;
             }
 
-            var (products, resources) = await Task.Run(async () =>
+            try
             {
-                var p = await _unitOfWork.Productos.ListActivosAsync();
-                var r = await _unitOfWork.Recursos.ListActivosAsync();
-                return (p, r);
-            });
+                var (products, resources) = await Task.Run(async () =>
+                {
+                    var p = await _unitOfWork.Productos.ListActivosAsync();
+                    var r = await _unitOfWork.Recursos.ListActivosAsync();
+                    return (p, r);
+                });
 
-            Products.Clear();
-            foreach (var product in products.OrderBy(x => x.Nombre))
-            {
-                Products.Add(product);
+                Products.Clear();
+                foreach (var product in products.OrderBy(x => x.Nombre))
+                    Products.Add(product);
+
+                Resources.Clear();
+                foreach (var resource in resources.OrderBy(x => x.Nombre))
+                    Resources.Add(resource);
+
+                if (SelectedProduct is null && Products.Count > 0)
+                    SelectedProduct = Products[0];
+
+                if (SelectedResource is null && Resources.Count > 0)
+                    SelectedResource = Resources[0];
+
+                StatusMessage = "Recetas cargadas.";
             }
-
-            Resources.Clear();
-            foreach (var resource in resources.OrderBy(x => x.Nombre))
+            catch (Exception ex)
             {
-                Resources.Add(resource);
+                StatusMessage = $"Error al cargar recetas: {ex.Message}";
             }
-
-            if (SelectedProduct is null && Products.Count > 0)
-            {
-                SelectedProduct = Products[0];
-            }
-
-            if (SelectedResource is null && Resources.Count > 0)
-            {
-                SelectedResource = Resources[0];
-            }
-
-            StatusMessage = "Recetas cargadas.";
         }
 
         private async Task LoadItemsAsync(Guid? productId)

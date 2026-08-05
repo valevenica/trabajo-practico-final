@@ -98,32 +98,33 @@ namespace StockManufactura.Desktop.ViewModels
 
         private async Task LoadAsync()
         {
-            var (products, orders) = await Task.Run(async () =>
+            try
             {
-                var p = await _unitOfWork.Productos.ListAsync();
-                var o = await _unitOfWork.OrdenesProduccion.ListByCreatedDescAsync();
-                return (p, o);
-            });
+                var (products, orders) = await Task.Run(async () =>
+                {
+                    var p = await _unitOfWork.Productos.ListAsync();
+                    var o = await _unitOfWork.OrdenesProduccion.ListByCreatedDescAsync();
+                    return (p, o);
+                });
 
-            Products.Clear();
-            foreach (var product in products.Where(x => x.Activo).OrderBy(x => x.Nombre))
-            {
-                Products.Add(product);
+                Products.Clear();
+                foreach (var product in products.Where(x => x.Activo).OrderBy(x => x.Nombre))
+                    Products.Add(product);
+
+                Orders.Clear();
+                foreach (var order in orders)
+                    Orders.Add(order);
+
+                if (SelectedProduct is null && Products.Count > 0)
+                    SelectedProduct = Products[0];
+
+                RefreshIndicators();
+                StatusMessage = "Órdenes cargadas.";
             }
-
-            Orders.Clear();
-            foreach (var order in orders)
+            catch (Exception ex)
             {
-                Orders.Add(order);
+                StatusMessage = $"Error al cargar órdenes: {ex.Message}";
             }
-
-            if (SelectedProduct is null && Products.Count > 0)
-            {
-                SelectedProduct = Products[0];
-            }
-
-            RefreshIndicators();
-            StatusMessage = "Órdenes cargadas.";
         }
 
         private async Task CreateOrderAsync()

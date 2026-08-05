@@ -87,16 +87,21 @@ namespace StockManufactura.Desktop.ViewModels
 
         private async Task LoadAsync()
         {
-            var providers = await Task.Run(async () =>
-                (await _unitOfWork.Proveedores.ListAsync()).OrderBy(x => x.Nombre).ToArray());
-
-            Providers.Clear();
-            foreach (var provider in providers)
+            try
             {
-                Providers.Add(provider);
-            }
+                var providers = await Task.Run(async () =>
+                    (await _unitOfWork.Proveedores.ListAsync()).OrderBy(x => x.Nombre).ToArray());
 
-            StatusMessage = "Proveedores cargados.";
+                Providers.Clear();
+                foreach (var provider in providers)
+                    Providers.Add(provider);
+
+                StatusMessage = "Proveedores cargados.";
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"Error al cargar proveedores: {ex.Message}";
+            }
         }
 
         private async Task SaveAsync()
