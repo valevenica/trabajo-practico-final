@@ -193,24 +193,20 @@ namespace StockManufactura.Desktop.ViewModels
         {
             try
             {
-                var (resources, state, proveedores) = await Task.Run(async () =>
-                {
-                    var r = await _resourcePricingService.GetResourcesAsync();
-                    var s = await _monetaryConfigurationService.GetCurrentStateAsync();
-                    var p = await _unitOfWork.Proveedores.ListAsync();
-                    return (r, s, p);
-                });
+                var r = await _resourcePricingService.GetResourcesAsync();
+                var s = await _monetaryConfigurationService.GetCurrentStateAsync();
+                var p = await _unitOfWork.Proveedores.ListAsync();
 
                 Resources.Clear();
-                foreach (var resource in resources)
+                foreach (var resource in r)
                     Resources.Add(resource);
 
                 UpdateFilteredResources();
                 ProveedoresDisponibles.Clear();
-                foreach (var p in proveedores.Where(x => x.Activo).OrderBy(x => x.Nombre))
-                    ProveedoresDisponibles.Add(p);
+                foreach (var proveedor in p.Where(x => x.Activo).OrderBy(x => x.Nombre))
+                    ProveedoresDisponibles.Add(proveedor);
 
-                CotizacionVigente = state.CurrentRate.ToString("0.0000", CultureInfo.InvariantCulture);
+                CotizacionVigente = s.CurrentRate.ToString("0.0000", CultureInfo.InvariantCulture);
                 await RecalculateAsync();
                 StatusMessage = "Recursos cargados.";
             }
@@ -309,8 +305,7 @@ namespace StockManufactura.Desktop.ViewModels
         {
             try
             {
-                var items = await Task.Run(async () =>
-                    await _unitOfWork.RecursoProveedores.ListByRecursoIdAsync(recursoId));
+                var items = await _unitOfWork.RecursoProveedores.ListByRecursoIdAsync(recursoId);
 
                 ProveedoresDelInsumo.Clear();
                 foreach (var item in items)
