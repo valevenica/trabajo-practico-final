@@ -31,14 +31,15 @@
                         <TextBox Text="{Binding Usuario, UpdateSourceTrigger=PropertyChanged}" Height="32" KeyDown="OnLoginEnterPressed" />
 
                         <TextBlock Text="Contraseña" Margin="0 16 0 4" />
-                        <Grid>
+                        <Grid Height="32">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="36" />
                             </Grid.ColumnDefinitions>
                             
-                            <PasswordBox x:Name="PasswordBox" Height="32" PasswordChanged="OnPasswordChanged" KeyDown="OnLoginEnterPressed" Grid.Column="0" Visibility="{Binding ShowPassword, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=Inverted}" />
-                            <TextBox x:Name="VisiblePasswordBox" Text="{Binding Password, UpdateSourceTrigger=PropertyChanged}" Height="32" KeyDown="OnLoginEnterPressed" Grid.Column="0" Visibility="{Binding ShowPassword, Converter={StaticResource BoolToVisibilityConverter}}" />
+                            <!-- Ambos controles superpuestos, uno visible a la vez -->
+                            <PasswordBox x:Name="PasswordBox" PasswordChanged="OnPasswordChanged" KeyDown="OnLoginEnterPressed" Grid.Column="0" Visibility="{Binding ShowPassword, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=Inverted}" />
+                            <TextBox x:Name="VisiblePasswordBox" Text="{Binding Password, UpdateSourceTrigger=PropertyChanged}" KeyDown="OnLoginEnterPressed" Grid.Column="0" Visibility="{Binding ShowPassword, Converter={StaticResource BoolToVisibilityConverter}}" />
                             
                             <Button x:Name="TogglePasswordButton" 
                                     Grid.Column="1" 
