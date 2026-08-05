@@ -25,7 +25,8 @@ namespace StockManufactura.Infrastructure.Repositories
             IProductCostSnapshotItemRepository productCostSnapshotItemRepository,
             IAuditLogRepository auditLogRepository,
             IBackupRecordRepository backupRecordRepository,
-            IBackupSettingsRepository backupSettingsRepository)
+            IBackupSettingsRepository backupSettingsRepository,
+            IRecursoProveedorRepository recursoProveedorRepository)
         {
             _context = context;
             Roles = rolRepository;
@@ -44,6 +45,7 @@ namespace StockManufactura.Infrastructure.Repositories
             AuditLogs = auditLogRepository;
             BackupRecords = backupRecordRepository;
             BackupSettings = backupSettingsRepository;
+            RecursoProveedores = recursoProveedorRepository;
         }
 
         public IRolRepository Roles { get; }
@@ -62,6 +64,7 @@ namespace StockManufactura.Infrastructure.Repositories
         public IAuditLogRepository AuditLogs { get; }
         public IBackupRecordRepository BackupRecords { get; }
         public IBackupSettingsRepository BackupSettings { get; }
+        public IRecursoProveedorRepository RecursoProveedores { get; }
 
         public Task<int> SaveChangesAsync() => _context.SaveChangesAsync();
     }

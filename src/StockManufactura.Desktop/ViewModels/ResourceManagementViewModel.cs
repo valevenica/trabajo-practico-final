@@ -1,6 +1,7 @@
 using System;
 using System.Collections.ObjectModel;
 using System.Globalization;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
@@ -16,6 +17,7 @@ namespace StockManufactura.Desktop.ViewModels
     {
         private readonly IResourcePricingService _resourcePricingService;
         private readonly IMonetaryConfigurationService _monetaryConfigurationService;
+        private readonly IUnitOfWork _unitOfWork;
 
         [ObservableProperty]
         private Recurso? _selectedResource;
@@ -62,29 +64,52 @@ namespace StockManufactura.Desktop.ViewModels
         [ObservableProperty]
         private bool _activo = true;
 
-        public ResourceManagementViewModel(IResourcePricingService resourcePricingService, IMonetaryConfigurationService monetaryConfigurationService)
+        [ObservableProperty]
+        private Proveedor? _selectedNuevoProveedor;
+
+        [ObservableProperty]
+        private string _precioNuevoProveedor = "0";
+
+        [ObservableProperty]
+        private RecursoProveedorRow? _selectedProveedorDelInsumo;
+
+        public ResourceManagementViewModel(
+            IResourcePricingService resourcePricingService,
+            IMonetaryConfigurationService monetaryConfigurationService,
+            IUnitOfWork unitOfWork)
         {
             _resourcePricingService = resourcePricingService;
             _monetaryConfigurationService = monetaryConfigurationService;
+            _unitOfWork = unitOfWork;
             Resources = new ObservableCollection<Recurso>();
             PriceHistory = new ObservableCollection<ResourcePriceHistory>();
+            ProveedoresDisponibles = new ObservableCollection<Proveedor>();
+            ProveedoresDelInsumo = new ObservableCollection<RecursoProveedorRow>();
             LoadCommand = new AsyncRelayCommand(LoadAsync);
             SaveCommand = new AsyncRelayCommand(SaveAsync);
             SelectArsCommand = new RelayCommand(() => IsUsd = false);
             SelectUsdCommand = new RelayCommand(() => IsUsd = true);
             RecalculateCommand = new AsyncRelayCommand(RecalculateAsync);
+            AddProveedorCommand = new AsyncRelayCommand(AddProveedorAsync);
+            RemoveProveedorCommand = new AsyncRelayCommand(RemoveProveedorAsync);
+            SetPrioritarioCommand = new AsyncRelayCommand(SetPrioritarioAsync);
 
             _ = LoadAsync();
         }
 
         public ObservableCollection<Recurso> Resources { get; }
         public ObservableCollection<ResourcePriceHistory> PriceHistory { get; }
+        public ObservableCollection<Proveedor> ProveedoresDisponibles { get; }
+        public ObservableCollection<RecursoProveedorRow> ProveedoresDelInsumo { get; }
 
         public ICommand LoadCommand { get; }
         public ICommand SaveCommand { get; }
         public ICommand SelectArsCommand { get; }
         public ICommand SelectUsdCommand { get; }
         public ICommand RecalculateCommand { get; }
+        public ICommand AddProveedorCommand { get; }
+        public ICommand RemoveProveedorCommand { get; }
+        public ICommand SetPrioritarioCommand { get; }
 
         public Visibility UsdDetailsVisibility => IsUsd ? Visibility.Visible : Visibility.Collapsed;
         public bool IsArs
@@ -110,6 +135,7 @@ namespace StockManufactura.Desktop.ViewModels
         {
             if (value is null)
             {
+                ProveedoresDelInsumo.Clear();
                 return;
             }
 
@@ -125,22 +151,28 @@ namespace StockManufactura.Desktop.ViewModels
             Observaciones = value.Observaciones;
             Activo = value.Activo;
             _ = LoadHistoryAsync(value.Id);
+            _ = LoadProveedoresDelInsumoAsync(value.Id);
         }
 
         private async Task LoadAsync()
         {
             try
             {
-                var (resources, state) = await Task.Run(async () =>
+                var (resources, state, proveedores) = await Task.Run(async () =>
                 {
                     var r = await _resourcePricingService.GetResourcesAsync();
                     var s = await _monetaryConfigurationService.GetCurrentStateAsync();
-                    return (r, s);
+                    var p = await _unitOfWork.Proveedores.ListAsync();
+                    return (r, s, p);
                 });
 
                 Resources.Clear();
                 foreach (var resource in resources)
                     Resources.Add(resource);
+
+                ProveedoresDisponibles.Clear();
+                foreach (var p in proveedores.Where(x => x.Activo).OrderBy(x => x.Nombre))
+                    ProveedoresDisponibles.Add(p);
 
                 CotizacionVigente = state.CurrentRate.ToString("0.0000", CultureInfo.InvariantCulture);
                 await RecalculateAsync();
@@ -223,5 +255,168 @@ namespace StockManufactura.Desktop.ViewModels
                 PriceHistory.Add(item);
             }
         }
+
+        private async Task LoadProveedoresDelInsumoAsync(Guid recursoId)
+        {
+            try
+            {
+                var items = await Task.Run(async () =>
+                    await _unitOfWork.RecursoProveedores.ListByRecursoIdAsync(recursoId));
+
+                ProveedoresDelInsumo.Clear();
+                foreach (var item in items)
+                    ProveedoresDelInsumo.Add(new RecursoProveedorRow(
+                        item.Id, item.ProveedorId,
+                        item.Proveedor.Nombre, item.Precio, item.EsPrioritario));
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"Error al cargar proveedores del insumo: {ex.Message}";
+            }
+        }
+
+        private async Task AddProveedorAsync()
+        {
+            if (SelectedResource is null || SelectedNuevoProveedor is null)
+            {
+                StatusMessage = "Seleccioná un insumo y un proveedor.";
+                return;
+            }
+
+            if (!decimal.TryParse(PrecioNuevoProveedor, NumberStyles.Number, CultureInfo.InvariantCulture, out var precio) || precio < 0)
+            {
+                StatusMessage = "Precio inválido.";
+                return;
+            }
+
+            if (ProveedoresDelInsumo.Any(x => x.ProveedorId == SelectedNuevoProveedor.Id))
+            {
+                StatusMessage = "Ese proveedor ya está asociado a este insumo.";
+                return;
+            }
+
+            try
+            {
+                var esPrimero = ProveedoresDelInsumo.Count == 0;
+                var nuevo = new RecursoProveedor
+                {
+                    RecursoId = SelectedResource.Id,
+                    ProveedorId = SelectedNuevoProveedor.Id,
+                    Precio = precio,
+                    EsPrioritario = esPrimero
+                };
+                await _unitOfWork.RecursoProveedores.AddAsync(nuevo);
+
+                if (esPrimero)
+                    await UpdateRecursoPrecioAsync(SelectedResource, precio);
+
+                await _unitOfWork.SaveChangesAsync();
+                await LoadProveedoresDelInsumoAsync(SelectedResource.Id);
+                PrecioNuevoProveedor = "0";
+                StatusMessage = "Proveedor agregado.";
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"Error: {ex.Message}";
+            }
+        }
+
+        private async Task RemoveProveedorAsync()
+        {
+            if (SelectedResource is null || SelectedProveedorDelInsumo is null)
+            {
+                StatusMessage = "Seleccioná un proveedor para quitar.";
+                return;
+            }
+
+            try
+            {
+                var items = await _unitOfWork.RecursoProveedores.ListByRecursoIdAsync(SelectedResource.Id);
+                var target = items.FirstOrDefault(x => x.Id == SelectedProveedorDelInsumo.Id);
+                if (target is null) return;
+
+                _unitOfWork.RecursoProveedores.Delete(target);
+                await _unitOfWork.SaveChangesAsync();
+
+                // Si era el prioritario, asignar el primero restante como nuevo prioritario
+                if (target.EsPrioritario)
+                {
+                    var remaining = items.Where(x => x.Id != target.Id).ToList();
+                    if (remaining.Count > 0)
+                    {
+                        remaining[0].EsPrioritario = true;
+                        _unitOfWork.RecursoProveedores.Update(remaining[0]);
+                        await UpdateRecursoPrecioAsync(SelectedResource, remaining[0].Precio);
+                        await _unitOfWork.SaveChangesAsync();
+                    }
+                }
+
+                await LoadProveedoresDelInsumoAsync(SelectedResource.Id);
+                StatusMessage = "Proveedor quitado.";
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"Error: {ex.Message}";
+            }
+        }
+
+        private async Task SetPrioritarioAsync()
+        {
+            if (SelectedResource is null || SelectedProveedorDelInsumo is null)
+            {
+                StatusMessage = "Seleccioná un proveedor para marcar como prioritario.";
+                return;
+            }
+
+            try
+            {
+                var items = await _unitOfWork.RecursoProveedores.ListByRecursoIdAsync(SelectedResource.Id);
+                foreach (var item in items)
+                {
+                    item.EsPrioritario = item.Id == SelectedProveedorDelInsumo.Id;
+                    _unitOfWork.RecursoProveedores.Update(item);
+                }
+
+                var prioritario = items.First(x => x.Id == SelectedProveedorDelInsumo.Id);
+                await UpdateRecursoPrecioAsync(SelectedResource, prioritario.Precio);
+                await _unitOfWork.SaveChangesAsync();
+
+                await LoadProveedoresDelInsumoAsync(SelectedResource.Id);
+                Precio = prioritario.Precio.ToString(CultureInfo.InvariantCulture);
+                StatusMessage = $"Proveedor prioritario actualizado. Precio del insumo: {prioritario.Precio:0.0000}";
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"Error: {ex.Message}";
+            }
+        }
+
+        private async Task UpdateRecursoPrecioAsync(Recurso recurso, decimal nuevoPrecio)
+        {
+            var request = new ResourceUpsertRequest
+            {
+                ResourceId = recurso.Id,
+                Codigo = recurso.Codigo,
+                Nombre = recurso.Nombre,
+                Descripcion = recurso.Descripcion,
+                Categoria = recurso.Categoria,
+                UnidadMedida = recurso.UnidadMedida,
+                StockActual = recurso.StockActual,
+                StockMinimo = recurso.StockMinimo,
+                Precio = nuevoPrecio,
+                Moneda = recurso.Moneda,
+                Observaciones = recurso.Observaciones,
+                Activo = recurso.Activo,
+                Usuario = "desktop-user"
+            };
+            await _resourcePricingService.UpsertResourceAsync(request);
+        }
     }
+
+    public sealed record RecursoProveedorRow(
+        Guid Id,
+        Guid ProveedorId,
+        string ProveedorNombre,
+        decimal Precio,
+        bool EsPrioritario);
 }
