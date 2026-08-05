@@ -350,12 +350,13 @@ namespace StockManufactura.Desktop.ViewModels
                     EsPrioritario = esPrimero
                 };
                 await _unitOfWork.RecursoProveedores.AddAsync(nuevo);
+                await _unitOfWork.SaveChangesAsync();
 
                 if (esPrimero)
                     await UpdateRecursoPrecioAsync(SelectedResource, precio);
 
-                await _unitOfWork.SaveChangesAsync();
                 await LoadProveedoresDelInsumoAsync(SelectedResource.Id);
+                SelectedNuevoProveedor = null;
                 PrecioNuevoProveedor = "0";
                 StatusMessage = "Proveedor agregado.";
             }
@@ -380,9 +381,9 @@ namespace StockManufactura.Desktop.ViewModels
                 if (target is null) return;
 
                 _unitOfWork.RecursoProveedores.Delete(target);
-                await _unitOfWork.SaveChangesAsync();
 
                 // Si era el prioritario, asignar el primero restante como nuevo prioritario
+                decimal? nuevoPrecio = null;
                 if (target.EsPrioritario)
                 {
                     var remaining = items.Where(x => x.Id != target.Id).ToList();
@@ -390,10 +391,14 @@ namespace StockManufactura.Desktop.ViewModels
                     {
                         remaining[0].EsPrioritario = true;
                         _unitOfWork.RecursoProveedores.Update(remaining[0]);
-                        await UpdateRecursoPrecioAsync(SelectedResource, remaining[0].Precio);
-                        await _unitOfWork.SaveChangesAsync();
+                        nuevoPrecio = remaining[0].Precio;
                     }
                 }
+
+                await _unitOfWork.SaveChangesAsync();
+
+                if (nuevoPrecio.HasValue)
+                    await UpdateRecursoPrecioAsync(SelectedResource, nuevoPrecio.Value);
 
                 await LoadProveedoresDelInsumoAsync(SelectedResource.Id);
                 StatusMessage = "Proveedor quitado.";
@@ -422,8 +427,8 @@ namespace StockManufactura.Desktop.ViewModels
                 }
 
                 var prioritario = items.First(x => x.Id == SelectedProveedorDelInsumo.Id);
-                await UpdateRecursoPrecioAsync(SelectedResource, prioritario.Precio);
                 await _unitOfWork.SaveChangesAsync();
+                await UpdateRecursoPrecioAsync(SelectedResource, prioritario.Precio);
 
                 await LoadProveedoresDelInsumoAsync(SelectedResource.Id);
                 Precio = prioritario.Precio.ToString(CultureInfo.InvariantCulture);
@@ -449,6 +454,7 @@ namespace StockManufactura.Desktop.ViewModels
                 StockMinimo = recurso.StockMinimo,
                 Precio = nuevoPrecio,
                 Moneda = recurso.Moneda,
+                MotivoCambio = "Precio de proveedor prioritario actualizado",
                 Observaciones = recurso.Observaciones,
                 Activo = recurso.Activo,
                 Usuario = "desktop-user"
