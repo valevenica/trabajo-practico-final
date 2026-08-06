@@ -1,5 +1,6 @@
 using System.Threading.Tasks;
 using StockManufactura.Application.Interfaces;
+using StockManufactura.Domain.Entities;
 using StockManufactura.Infrastructure.Db;
 
 namespace StockManufactura.Infrastructure.Repositories
@@ -18,6 +19,7 @@ namespace StockManufactura.Infrastructure.Repositories
             Recursos = new RecursoRepository(context);
             ExchangeRates = new ExchangeRateRepository(context);
             ResourcePriceHistory = new ResourcePriceHistoryRepository(context);
+            ResourceCostCalculations = new Repository<ResourceCostCalculation>(context);
             Productos = new ProductoRepository(context);
             OrdenesProduccion = new OrdenProduccionRepository(context);
             RecetaProductoItems = new RecetaProductoItemRepository(context);
@@ -37,6 +39,7 @@ namespace StockManufactura.Infrastructure.Repositories
         public IRecursoRepository Recursos { get; }
         public IExchangeRateRepository ExchangeRates { get; }
         public IResourcePriceHistoryRepository ResourcePriceHistory { get; }
+        public IRepository<ResourceCostCalculation> ResourceCostCalculations { get; }
         public IProductoRepository Productos { get; }
         public IOrdenProduccionRepository OrdenesProduccion { get; }
         public IRecetaProductoItemRepository RecetaProductoItems { get; }

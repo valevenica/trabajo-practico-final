@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using StockManufactura.Application.Interfaces;
@@ -11,27 +10,15 @@ namespace StockManufactura.Application.Services
 {
     public sealed class ResourcePricingService : IResourcePricingService
     {
-        private readonly IRecursoRepository _recursoRepository;
-        private readonly IExchangeRateRepository _exchangeRateRepository;
-        private readonly IResourcePriceHistoryRepository _priceHistoryRepository;
-        private readonly IRepository<ResourceCostCalculation> _costCalculationRepository;
         private readonly IProductCostService _productCostService;
         private readonly IAuditLogService _auditLogService;
         private readonly IUnitOfWork _unitOfWork;
 
         public ResourcePricingService(
-            IRecursoRepository recursoRepository,
-            IExchangeRateRepository exchangeRateRepository,
-            IResourcePriceHistoryRepository priceHistoryRepository,
-            IRepository<ResourceCostCalculation> costCalculationRepository,
             IProductCostService productCostService,
             IAuditLogService auditLogService,
             IUnitOfWork unitOfWork)
         {
-            _recursoRepository = recursoRepository;
-            _exchangeRateRepository = exchangeRateRepository;
-            _priceHistoryRepository = priceHistoryRepository;
-            _costCalculationRepository = costCalculationRepository;
             _productCostService = productCostService;
             _auditLogService = auditLogService;
             _unitOfWork = unitOfWork;
@@ -39,7 +26,7 @@ namespace StockManufactura.Application.Services
 
         public async Task<IReadOnlyList<Recurso>> GetResourcesAsync(CancellationToken cancellationToken = default)
         {
-            return await _recursoRepository.ListActivosAsync();
+            return await _unitOfWork.Recursos.ListActivosAsync();
         }
 
         public async Task<Recurso> UpsertResourceAsync(ResourceUpsertRequest request, CancellationToken cancellationToken = default)
@@ -47,12 +34,12 @@ namespace StockManufactura.Application.Services
             Recurso? resource = null;
             if (request.ResourceId.HasValue)
             {
-                resource = await _recursoRepository.GetByIdAsync(request.ResourceId.Value);
+                resource = await _unitOfWork.Recursos.GetByIdAsync(request.ResourceId.Value);
             }
 
             if (resource is null)
             {
-                resource = await _recursoRepository.GetByCodigoAsync(request.Codigo);
+                resource = await _unitOfWork.Recursos.GetByCodigoAsync(request.Codigo);
             }
 
             var oldPrice = resource?.Precio ?? request.Precio;
@@ -61,7 +48,7 @@ namespace StockManufactura.Application.Services
             if (resource is null)
             {
                 resource = new Recurso();
-                await _recursoRepository.AddAsync(resource);
+                await _unitOfWork.Recursos.AddAsync(resource);
             }
 
             resource.Codigo = request.Codigo;
@@ -80,7 +67,7 @@ namespace StockManufactura.Application.Services
 
             if (oldPrice != request.Precio || oldCurrency != request.Moneda)
             {
-                var rate = request.Moneda == Moneda.USD ? await _exchangeRateRepository.GetLatestAsync() : null;
+                var rate = request.Moneda == Moneda.USD ? await _unitOfWork.ExchangeRates.GetLatestAsync() : null;
                 var rateValue = rate?.Valor ?? 1m;
                 var equivalentArs = request.Moneda == Moneda.USD ? request.Precio * rateValue : request.Precio;
                 var history = new ResourcePriceHistory
@@ -98,7 +85,7 @@ namespace StockManufactura.Application.Services
                     Observaciones = request.Observaciones
                 };
 
-                await _priceHistoryRepository.AddAsync(history);
+                await _unitOfWork.ResourcePriceHistory.AddAsync(history);
 
                 await _auditLogService.RegisterAsync(new AuditLog
                 {
@@ -126,7 +113,7 @@ namespace StockManufactura.Application.Services
 
         public async Task<ResourceCostQuote> CalculateCostAsync(Guid recursoId, CancellationToken cancellationToken = default)
         {
-            var resource = await _recursoRepository.GetByIdAsync(recursoId);
+            var resource = await _unitOfWork.Recursos.GetByIdAsync(recursoId);
             if (resource is null)
             {
                 throw new InvalidOperationException("Recurso no encontrado.");
@@ -135,7 +122,7 @@ namespace StockManufactura.Application.Services
             decimal rateValue = 1m;
             if (resource.Moneda == Moneda.USD)
             {
-                var rate = await _exchangeRateRepository.GetLatestAsync();
+                var rate = await _unitOfWork.ExchangeRates.GetLatestAsync();
                 if (rate is null)
                 {
                     throw new InvalidOperationException("No hay cotización registrada para convertir USD a ARS.");
@@ -162,14 +149,14 @@ namespace StockManufactura.Application.Services
                 CostoEnPesos = quote.CostoEnPesos
             };
 
-            await _costCalculationRepository.AddAsync(calculation);
+            await _unitOfWork.ResourceCostCalculations.AddAsync(calculation);
             await _unitOfWork.SaveChangesAsync();
             return quote;
         }
 
         public async Task<IReadOnlyList<ResourcePriceHistory>> GetPriceHistoryAsync(Guid recursoId, CancellationToken cancellationToken = default)
         {
-            return await _priceHistoryRepository.ListByResourceAsync(recursoId);
+            return await _unitOfWork.ResourcePriceHistory.ListByResourceAsync(recursoId);
         }
     }
 }
