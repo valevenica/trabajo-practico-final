@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Windows.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Serilog;
 using StockManufactura.Application.Interfaces;
 using StockManufactura.Domain.Entities;
 
@@ -92,6 +93,7 @@ namespace StockManufactura.Desktop.ViewModels
 
         private async Task AutomaticUpdateAsync()
         {
+            StatusMessage = "Buscando cotización dólar blue...";
             try
             {
                 // Always fetch dolar blue from DolarHoy
@@ -104,7 +106,9 @@ namespace StockManufactura.Desktop.ViewModels
             }
             catch (Exception ex)
             {
-                StatusMessage = $"Error al obtener cotizaci\u00f3n: {ex.Message}";
+                Log.Error(ex, "AutomaticUpdateAsync failed");
+                var inner = ex.InnerException?.Message ?? string.Empty;
+                StatusMessage = $"Error: {ex.Message}{(string.IsNullOrEmpty(inner) ? "" : " | " + inner)}";
             }
         }
 
