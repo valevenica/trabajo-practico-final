@@ -39,6 +39,7 @@ namespace StockManufactura.Desktop.Extensions
 
             services.AddDbContext<StockManufacturaDbContext>(options => options.UseSqlite(connectionString), ServiceLifetime.Transient);
             services.AddAutoMapper(cfg => cfg.AddProfile<StockManufacturaMappingProfile>());
+            // Individual repos needed by Application services that inject them directly
             services.AddTransient(typeof(IRepository<>), typeof(Repository<>));
             services.AddTransient<IRolRepository, RolRepository>();
             services.AddTransient<IUsuarioRepository, UsuarioRepository>();
@@ -57,6 +58,7 @@ namespace StockManufactura.Desktop.Extensions
             services.AddTransient<IBackupRecordRepository, BackupRecordRepository>();
             services.AddTransient<IBackupSettingsRepository, BackupSettingsRepository>();
             services.AddTransient<IRecursoProveedorRepository, RecursoProveedorRepository>();
+            // UnitOfWork creates its own repos from its own DbContext — ensures SaveChangesAsync persists correctly
             services.AddTransient<IUnitOfWork, UnitOfWork>();
 
             services.AddSingleton<IExchangeRateProvider, BluelyticsExchangeRateProvider>();

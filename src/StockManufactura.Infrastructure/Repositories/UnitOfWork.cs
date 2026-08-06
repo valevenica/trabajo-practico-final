@@ -4,48 +4,31 @@ using StockManufactura.Infrastructure.Db;
 
 namespace StockManufactura.Infrastructure.Repositories
 {
+    // All repos are created from the same context so SaveChangesAsync persists what they track.
     public sealed class UnitOfWork : IUnitOfWork
     {
         private readonly StockManufacturaDbContext _context;
 
-        public UnitOfWork(
-            StockManufacturaDbContext context,
-            IRolRepository rolRepository,
-            IUsuarioRepository usuarioRepository,
-            IProveedorRepository proveedorRepository,
-            IRecursoRepository recursoRepository,
-            IExchangeRateRepository exchangeRateRepository,
-            IResourcePriceHistoryRepository resourcePriceHistoryRepository,
-            IProductoRepository productoRepository,
-            IOrdenProduccionRepository ordenProduccionRepository,
-            IRecetaProductoItemRepository recetaProductoItemRepository,
-            IStockRepository stockRepository,
-            IProductCostHistoryRepository productCostHistoryRepository,
-            IProductCostSnapshotRepository productCostSnapshotRepository,
-            IProductCostSnapshotItemRepository productCostSnapshotItemRepository,
-            IAuditLogRepository auditLogRepository,
-            IBackupRecordRepository backupRecordRepository,
-            IBackupSettingsRepository backupSettingsRepository,
-            IRecursoProveedorRepository recursoProveedorRepository)
+        public UnitOfWork(StockManufacturaDbContext context)
         {
             _context = context;
-            Roles = rolRepository;
-            Usuarios = usuarioRepository;
-            Proveedores = proveedorRepository;
-            Recursos = recursoRepository;
-            ExchangeRates = exchangeRateRepository;
-            ResourcePriceHistory = resourcePriceHistoryRepository;
-            Productos = productoRepository;
-            OrdenesProduccion = ordenProduccionRepository;
-            RecetaProductoItems = recetaProductoItemRepository;
-            Stocks = stockRepository;
-            ProductCostHistory = productCostHistoryRepository;
-            ProductCostSnapshots = productCostSnapshotRepository;
-            ProductCostSnapshotItems = productCostSnapshotItemRepository;
-            AuditLogs = auditLogRepository;
-            BackupRecords = backupRecordRepository;
-            BackupSettings = backupSettingsRepository;
-            RecursoProveedores = recursoProveedorRepository;
+            Roles = new RolRepository(context);
+            Usuarios = new UsuarioRepository(context);
+            Proveedores = new ProveedorRepository(context);
+            Recursos = new RecursoRepository(context);
+            ExchangeRates = new ExchangeRateRepository(context);
+            ResourcePriceHistory = new ResourcePriceHistoryRepository(context);
+            Productos = new ProductoRepository(context);
+            OrdenesProduccion = new OrdenProduccionRepository(context);
+            RecetaProductoItems = new RecetaProductoItemRepository(context);
+            Stocks = new StockRepository(context);
+            ProductCostHistory = new ProductCostHistoryRepository(context);
+            ProductCostSnapshots = new ProductCostSnapshotRepository(context);
+            ProductCostSnapshotItems = new ProductCostSnapshotItemRepository(context);
+            AuditLogs = new AuditLogRepository(context);
+            BackupRecords = new BackupRecordRepository(context);
+            BackupSettings = new BackupSettingsRepository(context);
+            RecursoProveedores = new RecursoProveedorRepository(context);
         }
 
         public IRolRepository Roles { get; }

@@ -81,6 +81,9 @@ namespace StockManufactura.Desktop.ViewModels
         [ObservableProperty]
         private string _searchText = string.Empty;
 
+        [ObservableProperty]
+        private string _proveedorSearchText = string.Empty;
+
         public ResourceManagementViewModel(
             IResourcePricingService resourcePricingService,
             IMonetaryConfigurationService monetaryConfigurationService,
@@ -93,6 +96,7 @@ namespace StockManufactura.Desktop.ViewModels
             FilteredResources = new ObservableCollection<Recurso>();
             PriceHistory = new ObservableCollection<ResourcePriceHistory>();
             ProveedoresDisponibles = new ObservableCollection<Proveedor>();
+            FilteredProveedoresDisponibles = new ObservableCollection<Proveedor>();
             ProveedoresDelInsumo = new ObservableCollection<RecursoProveedorRow>();
             LoadCommand = new AsyncRelayCommand(LoadAsync);
             SaveCommand = new AsyncRelayCommand(SaveAsync);
@@ -110,6 +114,7 @@ namespace StockManufactura.Desktop.ViewModels
         public ObservableCollection<Recurso> FilteredResources { get; }
         public ObservableCollection<ResourcePriceHistory> PriceHistory { get; }
         public ObservableCollection<Proveedor> ProveedoresDisponibles { get; }
+        public ObservableCollection<Proveedor> FilteredProveedoresDisponibles { get; }
         public ObservableCollection<RecursoProveedorRow> ProveedoresDelInsumo { get; }
 
         public ICommand LoadCommand { get; }
@@ -137,6 +142,11 @@ namespace StockManufactura.Desktop.ViewModels
         partial void OnSearchTextChanged(string value)
         {
             UpdateFilteredResources();
+        }
+
+        partial void OnProveedorSearchTextChanged(string value)
+        {
+            UpdateFilteredProveedores();
         }
 
         partial void OnIsUsdChanged(bool value)
@@ -205,6 +215,7 @@ namespace StockManufactura.Desktop.ViewModels
                 ProveedoresDisponibles.Clear();
                 foreach (var proveedor in p.Where(x => x.Activo).OrderBy(x => x.Nombre))
                     ProveedoresDisponibles.Add(proveedor);
+                UpdateFilteredProveedores();
 
                 CotizacionVigente = s.CurrentRate.ToString("0.0000", CultureInfo.InvariantCulture);
                 await RecalculateAsync();
@@ -226,6 +237,18 @@ namespace StockManufactura.Desktop.ViewModels
             FilteredResources.Clear();
             foreach (var resource in filtered)
                 FilteredResources.Add(resource);
+        }
+
+        private void UpdateFilteredProveedores()
+        {
+            var search = ProveedorSearchText.ToLower().Trim();
+            var filtered = string.IsNullOrEmpty(search)
+                ? ProveedoresDisponibles
+                : ProveedoresDisponibles.Where(p => p.Nombre.ToLower().Contains(search));
+
+            FilteredProveedoresDisponibles.Clear();
+            foreach (var p in filtered)
+                FilteredProveedoresDisponibles.Add(p);
         }
 
         private async Task SaveAsync()
