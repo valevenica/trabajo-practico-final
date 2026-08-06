@@ -28,6 +28,9 @@ namespace StockManufactura.Desktop.ViewModels
         private string _manualRateInput = string.Empty;
 
         [ObservableProperty]
+        private string _manualFuenteInput = string.Empty;
+
+        [ObservableProperty]
         private string _selectedProviderKey = string.Empty;
 
         [ObservableProperty]
@@ -78,11 +81,12 @@ namespace StockManufactura.Desktop.ViewModels
                 return;
             }
 
-            var rate = await _service.UpdateManualAsync(value, Source == "Sin cotización" ? "Manual" : Source, "desktop-user");
+            var fuente = string.IsNullOrWhiteSpace(ManualFuenteInput) ? "Manual" : ManualFuenteInput.Trim();
+            var rate = await _service.UpdateManualAsync(value, fuente, "desktop-user");
             CurrentRate = rate.Valor.ToString("0.0000", CultureInfo.InvariantCulture);
             LastUpdate = rate.Fecha.ToLocalTime().ToString("g");
             Source = rate.Fuente;
-            StatusMessage = "Cotización actualizada manualmente.";
+            StatusMessage = $"Cotizaci\u00f3n manual guardada: ${value:0.00} ({fuente})";
             await RefreshHistoryAsync();
         }
 
