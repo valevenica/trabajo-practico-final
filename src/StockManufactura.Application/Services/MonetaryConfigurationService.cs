@@ -11,20 +11,17 @@ namespace StockManufactura.Application.Services
 {
     public sealed class MonetaryConfigurationService : IMonetaryConfigurationService
     {
-        private readonly IExchangeRateRepository _exchangeRateRepository;
         private readonly IProductCostService _productCostService;
         private readonly IAuditLogService _auditLogService;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IReadOnlyDictionary<string, IExchangeRateProvider> _providers;
 
         public MonetaryConfigurationService(
-            IExchangeRateRepository exchangeRateRepository,
             IProductCostService productCostService,
             IAuditLogService auditLogService,
             IUnitOfWork unitOfWork,
             IEnumerable<IExchangeRateProvider> providers)
         {
-            _exchangeRateRepository = exchangeRateRepository;
             _productCostService = productCostService;
             _auditLogService = auditLogService;
             _unitOfWork = unitOfWork;
@@ -35,7 +32,7 @@ namespace StockManufactura.Application.Services
 
         public async Task<MonetaryConfigurationState> GetCurrentStateAsync(CancellationToken cancellationToken = default)
         {
-            var latest = await _exchangeRateRepository.GetLatestAsync();
+            var latest = await _unitOfWork.ExchangeRates.GetLatestAsync();
             if (latest is null)
             {
                 return new MonetaryConfigurationState
@@ -65,7 +62,7 @@ namespace StockManufactura.Application.Services
                 Automatica = false
             };
 
-            await _exchangeRateRepository.AddAsync(rate);
+            await _unitOfWork.ExchangeRates.AddAsync(rate);
             await _unitOfWork.SaveChangesAsync();
 
             await _auditLogService.RegisterAsync(new AuditLog
@@ -103,7 +100,7 @@ namespace StockManufactura.Application.Services
             {
                 rate = await provider.GetCurrentRateAsync(usuario, cancellationToken);
                 rate.Automatica = true;
-                await _exchangeRateRepository.AddAsync(rate);
+                await _unitOfWork.ExchangeRates.AddAsync(rate);
                 await _unitOfWork.SaveChangesAsync();
 
                 await _auditLogService.RegisterAsync(new AuditLog
@@ -120,7 +117,7 @@ namespace StockManufactura.Application.Services
             }
             catch
             {
-                var latest = await _exchangeRateRepository.GetLatestAsync();
+                var latest = await _unitOfWork.ExchangeRates.GetLatestAsync();
                 if (latest is null)
                 {
                     throw;
@@ -152,7 +149,7 @@ namespace StockManufactura.Application.Services
 
         public async Task<IReadOnlyList<ExchangeRate>> GetHistoryAsync(CancellationToken cancellationToken = default)
         {
-            var history = await _exchangeRateRepository.ListAsync();
+            var history = await _unitOfWork.ExchangeRates.ListAsync();
             return history.OrderByDescending(x => x.Fecha).ToArray();
         }
     }

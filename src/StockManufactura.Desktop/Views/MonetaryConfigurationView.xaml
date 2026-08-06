@@ -17,11 +17,11 @@
 
         <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0 14 0 10" VerticalAlignment="Center">
             <TextBlock Text="Cotización actual:" FontWeight="SemiBold" />
-            <TextBlock Text=" {Binding CurrentRate}" Margin="6 0 18 0" />
+            <TextBlock Text="{Binding CurrentRate}" Margin="6 0 18 0" />
             <TextBlock Text="Última actualización:" FontWeight="SemiBold" />
-            <TextBlock Text=" {Binding LastUpdate}" Margin="6 0 18 0" />
+            <TextBlock Text="{Binding LastUpdate}" Margin="6 0 18 0" />
             <TextBlock Text="Fuente:" FontWeight="SemiBold" />
-            <TextBlock Text=" {Binding Source}" Margin="6 0 0 0" />
+            <TextBlock Text="{Binding Source}" Margin="6 0 0 0" />
         </StackPanel>
 
         <Grid Grid.Row="2" Margin="0 0 0 12">

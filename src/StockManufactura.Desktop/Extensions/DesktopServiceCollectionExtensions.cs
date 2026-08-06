@@ -61,6 +61,7 @@ namespace StockManufactura.Desktop.Extensions
             // UnitOfWork creates its own repos from its own DbContext — ensures SaveChangesAsync persists correctly
             services.AddTransient<IUnitOfWork, UnitOfWork>();
 
+            services.AddSingleton<IExchangeRateProvider, DolarHoyProvider>();
             services.AddSingleton<IExchangeRateProvider, BluelyticsExchangeRateProvider>();
             services.AddTransient<IGoogleDriveBackupSyncService, NoOpGoogleDriveBackupSyncService>();
 
