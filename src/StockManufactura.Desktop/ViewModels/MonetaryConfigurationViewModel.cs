@@ -28,10 +28,16 @@ namespace StockManufactura.Desktop.ViewModels
         private string _manualRateInput = string.Empty;
 
         [ObservableProperty]
+        private string _manualFuenteInput = string.Empty;
+
+        [ObservableProperty]
         private string _selectedProviderKey = string.Empty;
 
         [ObservableProperty]
         private string _statusMessage = "Listo.";
+
+        [ObservableProperty]
+        private ExchangeRate? _selectedHistoryRate;
 
         public MonetaryConfigurationViewModel(IMonetaryConfigurationService service)
         {
@@ -44,6 +50,7 @@ namespace StockManufactura.Desktop.ViewModels
             ManualUpdateCommand = new AsyncRelayCommand(ManualUpdateAsync);
             AutomaticUpdateCommand = new AsyncRelayCommand(AutomaticUpdateAsync);
             RefreshHistoryCommand = new AsyncRelayCommand(RefreshHistoryAsync);
+            SetPrioritariaCommand = new AsyncRelayCommand(SetPrioritariaAsync);
 
             _ = LoadAsync();
         }
@@ -55,6 +62,7 @@ namespace StockManufactura.Desktop.ViewModels
         public ICommand ManualUpdateCommand { get; }
         public ICommand AutomaticUpdateCommand { get; }
         public ICommand RefreshHistoryCommand { get; }
+        public ICommand SetPrioritariaCommand { get; }
 
         public async Task LoadAsync()
         {
@@ -73,28 +81,31 @@ namespace StockManufactura.Desktop.ViewModels
                 return;
             }
 
-            var rate = await _service.UpdateManualAsync(value, Source == "Sin cotización" ? "Manual" : Source, "desktop-user");
+            var fuente = string.IsNullOrWhiteSpace(ManualFuenteInput) ? "Manual" : ManualFuenteInput.Trim();
+            var rate = await _service.UpdateManualAsync(value, fuente, "desktop-user");
             CurrentRate = rate.Valor.ToString("0.0000", CultureInfo.InvariantCulture);
             LastUpdate = rate.Fecha.ToLocalTime().ToString("g");
             Source = rate.Fuente;
-            StatusMessage = "Cotización actualizada manualmente.";
+            StatusMessage = $"Cotizaci\u00f3n manual guardada: ${value:0.00} ({fuente})";
             await RefreshHistoryAsync();
         }
 
         private async Task AutomaticUpdateAsync()
         {
-            if (string.IsNullOrWhiteSpace(SelectedProviderKey))
+            try
             {
-                StatusMessage = "Seleccioná una fuente para actualización automática.";
-                return;
+                // Always fetch dolar blue from DolarHoy
+                var rate = await _service.UpdateAutomaticAsync("dolar-hoy", "desktop-user");
+                CurrentRate = rate.Valor.ToString("0.0000", CultureInfo.InvariantCulture);
+                LastUpdate = rate.Fecha.ToLocalTime().ToString("g");
+                Source = rate.Fuente;
+                StatusMessage = $"D\u00f3lar blue actualizado: ${rate.Valor:0.00}";
+                await RefreshHistoryAsync();
             }
-
-            var rate = await _service.UpdateAutomaticAsync(SelectedProviderKey, "desktop-user");
-            CurrentRate = rate.Valor.ToString("0.0000", CultureInfo.InvariantCulture);
-            LastUpdate = rate.Fecha.ToLocalTime().ToString("g");
-            Source = rate.Fuente;
-            StatusMessage = "Cotización actualizada automáticamente.";
-            await RefreshHistoryAsync();
+            catch (Exception ex)
+            {
+                StatusMessage = $"Error al obtener cotizaci\u00f3n: {ex.Message}";
+            }
         }
 
         private async Task RefreshHistoryAsync()
@@ -104,6 +115,25 @@ namespace StockManufactura.Desktop.ViewModels
             foreach (var rate in history)
             {
                 History.Add(rate);
+            }
+        }
+
+        private async Task SetPrioritariaAsync()
+        {
+            if (SelectedHistoryRate is null)
+            {
+                StatusMessage = "Seleccioná una cotización de la tabla.";
+                return;
+            }
+            try
+            {
+                await _service.SetPrioritariaAsync(SelectedHistoryRate.Id, "desktop-user");
+                StatusMessage = $"Cotización prioritaria: ${SelectedHistoryRate.Valor:0.00} ({SelectedHistoryRate.Fuente})";
+                await LoadAsync();
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"Error: {ex.Message}";
             }
         }
     }

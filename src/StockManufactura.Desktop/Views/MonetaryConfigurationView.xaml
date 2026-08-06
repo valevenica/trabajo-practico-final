@@ -10,51 +10,161 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
         <TextBlock Text="Configuración Monetaria" FontSize="24" FontWeight="Bold" />
 
-        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0 14 0 10" VerticalAlignment="Center">
-            <TextBlock Text="Cotización actual:" FontWeight="SemiBold" />
-            <TextBlock Text=" {Binding CurrentRate}" Margin="6 0 18 0" />
-            <TextBlock Text="Última actualización:" FontWeight="SemiBold" />
-            <TextBlock Text=" {Binding LastUpdate}" Margin="6 0 18 0" />
-            <TextBlock Text="Fuente:" FontWeight="SemiBold" />
-            <TextBlock Text=" {Binding Source}" Margin="6 0 0 0" />
-        </StackPanel>
+        <!-- Fila de cotización activa -->
+        <Border Grid.Row="1" Background="{StaticResource CardSurfaceBrush}" BorderBrush="#DDD"
+                BorderThickness="1" CornerRadius="6" Padding="14 10" Margin="0 10 0 12">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="💲 Cotización activa:" FontWeight="Bold" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding CurrentRate, StringFormat=${0}}" FontSize="20" FontWeight="Bold"
+                           Foreground="{StaticResource PrimaryAccentBrush}" Margin="10 0 24 0" VerticalAlignment="Center"/>
+                <TextBlock Text="Fuente:" FontWeight="SemiBold" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding Source}" Margin="6 0 24 0" VerticalAlignment="Center" />
+                <TextBlock Text="Actualizado:" FontWeight="SemiBold" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding LastUpdate}" Margin="6 0 0 0" VerticalAlignment="Center"
+                           Foreground="{StaticResource TextMutedBrush}" />
+            </StackPanel>
+        </Border>
 
-        <Grid Grid.Row="2" Margin="0 0 0 12">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="2*" />
-                <ColumnDefinition Width="2*" />
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
+        <!-- Acciones -->
+        <Border Grid.Row="2" Style="{StaticResource CardBorderStyle}" Margin="0 0 0 10">
+            <StackPanel>
+                <Border Background="{StaticResource BackgroundDarkMetalBrush}" Padding="8" CornerRadius="4" Margin="0 0 0 10">
+                    <TextBlock Text="Agregar cotización" Foreground="{StaticResource SecondaryAccentBrush}" FontWeight="SemiBold" />
+                </Border>
 
-            <ComboBox Grid.Column="0"
-                      Margin="0 0 10 0"
-                      Height="34"
-                      ItemsSource="{Binding Providers}"
-                      DisplayMemberPath="DisplayName"
-                      SelectedValuePath="Key"
-                      SelectedValue="{Binding SelectedProviderKey, UpdateSourceTrigger=PropertyChanged}" />
+                <!-- Automática -->
+                <Grid Margin="0 0 0 10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="180" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock VerticalAlignment="Center" FontWeight="SemiBold" TextWrapping="Wrap">
+                        🔄 Dólar blue automático
+                    </TextBlock>
+                    <TextBlock Grid.Column="1" VerticalAlignment="Center" Margin="12 0"
+                               Text="Obtiene el precio de venta del dólar blue en tiempo real desde DolarHoy"
+                               Foreground="{StaticResource TextMutedBrush}" FontStyle="Italic" />
+                    <Button Grid.Column="2" Height="34" Width="160"
+                            Content="🔄 Actualizar blue"
+                            Command="{Binding AutomaticUpdateCommand}"
+                            Style="{StaticResource PrimaryButtonStyle}" />
+                </Grid>
 
-            <TextBox Grid.Column="1" Margin="0 0 10 0" Height="34" Text="{Binding ManualRateInput, UpdateSourceTrigger=PropertyChanged}" />
-            <Button Grid.Column="2" Margin="0 0 8 0" Height="34" Content="Manual" Command="{Binding ManualUpdateCommand}" />
-            <Button Grid.Column="3" Margin="0 0 8 0" Height="34" Content="Automática" Command="{Binding AutomaticUpdateCommand}" />
-            <Button Grid.Column="4" Height="34" Content="Historial" Command="{Binding RefreshHistoryCommand}" />
-        </Grid>
+                <Separator Margin="0 4 0 10" />
 
-        <DataGrid Grid.Row="3" ItemsSource="{Binding History}" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False">
-            <DataGrid.Columns>
-                <DataGridTextColumn Header="Fecha" Binding="{Binding Fecha}" Width="150" />
-                <DataGridTextColumn Header="Valor" Binding="{Binding Valor}" Width="100" />
-                <DataGridTextColumn Header="Fuente" Binding="{Binding Fuente}" Width="140" />
-                <DataGridTextColumn Header="Usuario" Binding="{Binding Usuario}" Width="120" />
-                <DataGridTextColumn Header="Automática" Binding="{Binding Automatica}" Width="90" />
-            </DataGrid.Columns>
-        </DataGrid>
+                <!-- Manual -->
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="180" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock VerticalAlignment="Center" FontWeight="SemiBold">
+                        ✏️ Carga manual
+                    </TextBlock>
+                    <StackPanel Grid.Column="1" Margin="12 0 8 0">
+                        <TextBlock Text="Valor ($)" FontSize="11" Foreground="Gray" />
+                        <TextBox Text="{Binding ManualRateInput, UpdateSourceTrigger=PropertyChanged}"
+                                 Height="34" ToolTip="Ej: 1530.00 (usar punto decimal)" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="2" Margin="0 0 10 0">
+                        <TextBlock Text="Fuente (de dónde lo sacás)" FontSize="11" Foreground="Gray" />
+                        <TextBox Text="{Binding ManualFuenteInput, UpdateSourceTrigger=PropertyChanged}"
+                                 Height="34" ToolTip="Ej: DolarHoy, Banco Nación, Ambito" />
+                    </StackPanel>
+                    <Button Grid.Column="3" Height="34" Width="130" Margin="0 16 0 0"
+                            Content="Guardar manual"
+                            Command="{Binding ManualUpdateCommand}"
+                            Style="{StaticResource SecondaryButtonStyle}" />
+                </Grid>
+            </StackPanel>
+        </Border>
+
+        <TextBlock Grid.Row="3" Text="{Binding StatusMessage}" Margin="0 0 0 8"
+                   Style="{StaticResource StatusMessageStyle}" />
+
+        <!-- Historial con selección de prioritaria -->
+        <Border Grid.Row="4" Style="{StaticResource CardBorderStyle}">
+            <DockPanel>
+                <Border DockPanel.Dock="Top" Background="{StaticResource BackgroundDarkMetalBrush}"
+                        Padding="8" CornerRadius="4" Margin="0 0 0 8">
+                    <Grid>
+                        <TextBlock Text="Historial de cotizaciones" Foreground="{StaticResource SecondaryAccentBrush}" FontWeight="SemiBold" VerticalAlignment="Center" />
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                            <TextBlock Text="Seleccioná una fila y hacé clic → " Foreground="{StaticResource TextMutedBrush}"
+                                       FontSize="11" VerticalAlignment="Center" Margin="0 0 8 0" />
+                            <Button Content="★ Usar esta cotización" Command="{Binding SetPrioritariaCommand}"
+                                    Height="28" Padding="10 0" Style="{StaticResource PrimaryButtonStyle}" />
+                        </StackPanel>
+                    </Grid>
+                </Border>
+                <DataGrid ItemsSource="{Binding History}"
+                          SelectedItem="{Binding SelectedHistoryRate}"
+                          AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False"
+                          GridLinesVisibility="Horizontal" AlternatingRowBackground="#F9F9F9">
+                    <DataGrid.RowStyle>
+                        <Style TargetType="DataGridRow">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding EsPrioritaria}" Value="True">
+                                    <Setter Property="Background" Value="#FFF8E7" />
+                                    <Setter Property="FontWeight" Value="Bold" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </DataGrid.RowStyle>
+                    <DataGrid.Columns>
+                        <DataGridTemplateColumn Header="" Width="40">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock HorizontalAlignment="Center" FontSize="14"
+                                               Text="{Binding EsPrioritaria, Converter={StaticResource BoolToVisibilityConverter}}"
+                                               Visibility="Visible">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Text" Value="" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding EsPrioritaria}" Value="True">
+                                                        <Setter Property="Text" Value="★" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTextColumn Header="Fecha" Binding="{Binding Fecha, StringFormat={}{0:dd/MM/yyyy HH:mm}}" Width="140" />
+                        <DataGridTextColumn Header="Valor" Binding="{Binding Valor, StringFormat=${0:0.00}}" Width="100" />
+                        <DataGridTextColumn Header="Fuente" Binding="{Binding Fuente}" Width="160" />
+                        <DataGridTemplateColumn Header="Tipo" Width="80">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock HorizontalAlignment="Center">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Text" Value="Manual" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Automatica}" Value="True">
+                                                        <Setter Property="Text" Value="Auto" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </DockPanel>
+        </Border>
     </Grid>
 </UserControl>

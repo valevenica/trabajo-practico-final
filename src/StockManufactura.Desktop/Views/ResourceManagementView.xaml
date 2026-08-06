@@ -116,6 +116,10 @@
                         </Grid>
                         <TextBlock Text="{Binding CostoEquivalentePesos, StringFormat=Equivalente en pesos: {0}}"
                                    Margin="0 6 0 0" Foreground="{StaticResource SecondaryAccentBrush}" />
+                        <Button Content="🔄 Recalcular todos los USD" Command="{Binding RecalcularTodosUSDCommand}"
+                                Height="32" Margin="0 8 0 0" HorizontalAlignment="Left" Padding="12 0"
+                                Style="{StaticResource PrimaryButtonStyle}"
+                                ToolTip="Recalcula el equivalente en pesos de todos los insumos en USD usando la cotización prioritaria y actualiza los precios de productos" />
                         <TextBlock Text="{Binding StatusMessage}" Margin="0 4 0 0" Style="{StaticResource StatusMessageStyle}" />
                     </StackPanel>
                 </Border>

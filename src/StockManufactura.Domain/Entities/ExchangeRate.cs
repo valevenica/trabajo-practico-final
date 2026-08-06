@@ -9,5 +9,6 @@ namespace StockManufactura.Domain.Entities
         public string Fuente { get; set; } = string.Empty;
         public string Usuario { get; set; } = string.Empty;
         public bool Automatica { get; set; }
+        public bool EsPrioritaria { get; set; }
     }
 }
