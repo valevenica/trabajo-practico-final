@@ -1,9 +1,11 @@
 using System;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Data;
 using System.Windows.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -84,6 +86,9 @@ namespace StockManufactura.Desktop.ViewModels
         [ObservableProperty]
         private string _proveedorSearchText = string.Empty;
 
+        private readonly CollectionViewSource _proveedoresViewSource = new();
+        public ICollectionView ProveedoresView => _proveedoresViewSource.View;
+
         public ResourceManagementViewModel(
             IResourcePricingService resourcePricingService,
             IMonetaryConfigurationService monetaryConfigurationService,
@@ -98,6 +103,16 @@ namespace StockManufactura.Desktop.ViewModels
             ProveedoresDisponibles = new ObservableCollection<Proveedor>();
             FilteredProveedoresDisponibles = new ObservableCollection<Proveedor>();
             ProveedoresDelInsumo = new ObservableCollection<RecursoProveedorRow>();
+
+            _proveedoresViewSource.Source = ProveedoresDisponibles;
+            _proveedoresViewSource.Filter += (s, e) =>
+            {
+                if (e.Item is Proveedor p)
+                {
+                    var q = ProveedorSearchText?.Trim().ToLower() ?? string.Empty;
+                    e.Accepted = string.IsNullOrEmpty(q) || p.Nombre.ToLower().Contains(q);
+                }
+            };
             LoadCommand = new AsyncRelayCommand(LoadAsync);
             SaveCommand = new AsyncRelayCommand(SaveAsync);
             SelectArsCommand = new RelayCommand(() => IsUsd = false);
@@ -146,7 +161,7 @@ namespace StockManufactura.Desktop.ViewModels
 
         partial void OnProveedorSearchTextChanged(string value)
         {
-            UpdateFilteredProveedores();
+            ProveedoresView.Refresh();
         }
 
         partial void OnIsUsdChanged(bool value)
@@ -241,14 +256,7 @@ namespace StockManufactura.Desktop.ViewModels
 
         private void UpdateFilteredProveedores()
         {
-            var search = ProveedorSearchText.ToLower().Trim();
-            var filtered = string.IsNullOrEmpty(search)
-                ? ProveedoresDisponibles
-                : ProveedoresDisponibles.Where(p => p.Nombre.ToLower().Contains(search));
-
-            FilteredProveedoresDisponibles.Clear();
-            foreach (var p in filtered)
-                FilteredProveedoresDisponibles.Add(p);
+            // No-op: filtering is handled by CollectionViewSource
         }
 
         private async Task SaveAsync()
