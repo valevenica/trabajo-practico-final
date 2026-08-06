@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -13,5 +14,6 @@ namespace StockManufactura.Application.Interfaces
         Task<ExchangeRate> UpdateManualAsync(decimal value, string fuente, string usuario, CancellationToken cancellationToken = default);
         Task<ExchangeRate> UpdateAutomaticAsync(string providerKey, string usuario, CancellationToken cancellationToken = default);
         Task<IReadOnlyList<ExchangeRate>> GetHistoryAsync(CancellationToken cancellationToken = default);
+        Task SetPrioritariaAsync(Guid id, string usuario, CancellationToken cancellationToken = default);
     }
 }

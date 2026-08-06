@@ -152,5 +152,11 @@ namespace StockManufactura.Application.Services
             var history = await _unitOfWork.ExchangeRates.ListAsync();
             return history.OrderByDescending(x => x.Fecha).ToArray();
         }
+
+        public async Task SetPrioritariaAsync(Guid id, string usuario, CancellationToken cancellationToken = default)
+        {
+            await _unitOfWork.ExchangeRates.SetPrioritariaAsync(id);
+            await _unitOfWork.SaveChangesAsync();
+        }
     }
 }

@@ -33,6 +33,9 @@ namespace StockManufactura.Desktop.ViewModels
         [ObservableProperty]
         private string _statusMessage = "Listo.";
 
+        [ObservableProperty]
+        private ExchangeRate? _selectedHistoryRate;
+
         public MonetaryConfigurationViewModel(IMonetaryConfigurationService service)
         {
             _service = service;
@@ -44,6 +47,7 @@ namespace StockManufactura.Desktop.ViewModels
             ManualUpdateCommand = new AsyncRelayCommand(ManualUpdateAsync);
             AutomaticUpdateCommand = new AsyncRelayCommand(AutomaticUpdateAsync);
             RefreshHistoryCommand = new AsyncRelayCommand(RefreshHistoryAsync);
+            SetPrioritariaCommand = new AsyncRelayCommand(SetPrioritariaAsync);
 
             _ = LoadAsync();
         }
@@ -55,6 +59,7 @@ namespace StockManufactura.Desktop.ViewModels
         public ICommand ManualUpdateCommand { get; }
         public ICommand AutomaticUpdateCommand { get; }
         public ICommand RefreshHistoryCommand { get; }
+        public ICommand SetPrioritariaCommand { get; }
 
         public async Task LoadAsync()
         {
@@ -106,6 +111,25 @@ namespace StockManufactura.Desktop.ViewModels
             foreach (var rate in history)
             {
                 History.Add(rate);
+            }
+        }
+
+        private async Task SetPrioritariaAsync()
+        {
+            if (SelectedHistoryRate is null)
+            {
+                StatusMessage = "Seleccioná una cotización de la tabla.";
+                return;
+            }
+            try
+            {
+                await _service.SetPrioritariaAsync(SelectedHistoryRate.Id, "desktop-user");
+                StatusMessage = $"Cotización prioritaria: ${SelectedHistoryRate.Valor:0.00} ({SelectedHistoryRate.Fuente})";
+                await LoadAsync();
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"Error: {ex.Message}";
             }
         }
     }

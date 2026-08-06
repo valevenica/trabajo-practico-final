@@ -158,5 +158,39 @@ namespace StockManufactura.Application.Services
         {
             return await _unitOfWork.ResourcePriceHistory.ListByResourceAsync(recursoId);
         }
+
+        public async Task<int> RecalcularTodosUSDAsync(string usuario, CancellationToken cancellationToken = default)
+        {
+            var rate = await _unitOfWork.ExchangeRates.GetLatestAsync();
+            if (rate is null) return 0;
+
+            var recursos = await _unitOfWork.Recursos.ListActivosAsync();
+            var usdResources = recursos.Where(x => x.Moneda == Moneda.USD).ToList();
+
+            foreach (var recurso in usdResources)
+            {
+                var request = new ResourceUpsertRequest
+                {
+                    ResourceId = recurso.Id,
+                    Codigo = recurso.Codigo,
+                    Nombre = recurso.Nombre,
+                    Descripcion = recurso.Descripcion,
+                    Categoria = recurso.Categoria,
+                    UnidadMedida = recurso.UnidadMedida,
+                    StockActual = recurso.StockActual,
+                    StockMinimo = recurso.StockMinimo,
+                    Precio = recurso.Precio,
+                    Moneda = recurso.Moneda,
+                    ProveedorHabitualId = recurso.ProveedorHabitualId,
+                    Observaciones = recurso.Observaciones,
+                    Activo = recurso.Activo,
+                    MotivoCambio = $"Recálculo masivo USD @ cotización {rate.Valor:0.00}",
+                    Usuario = usuario
+                };
+                await UpsertResourceAsync(request, cancellationToken);
+            }
+
+            return usdResources.Count;
+        }
     }
 }

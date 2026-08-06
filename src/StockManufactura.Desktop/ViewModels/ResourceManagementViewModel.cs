@@ -122,6 +122,7 @@ namespace StockManufactura.Desktop.ViewModels
             AddProveedorCommand = new AsyncRelayCommand(AddProveedorAsync);
             RemoveProveedorCommand = new AsyncRelayCommand(RemoveProveedorAsync);
             SetPrioritarioCommand = new AsyncRelayCommand(SetPrioritarioAsync);
+            RecalcularTodosUSDCommand = new AsyncRelayCommand(RecalcularTodosUSDAsync);
 
             _ = LoadAsync();
         }
@@ -141,6 +142,7 @@ namespace StockManufactura.Desktop.ViewModels
         public ICommand AddProveedorCommand { get; }
         public ICommand RemoveProveedorCommand { get; }
         public ICommand SetPrioritarioCommand { get; }
+        public ICommand RecalcularTodosUSDCommand { get; }
 
         public Visibility UsdDetailsVisibility => IsUsd ? Visibility.Visible : Visibility.Collapsed;
         public bool IsArs
@@ -496,6 +498,21 @@ namespace StockManufactura.Desktop.ViewModels
                 Usuario = "desktop-user"
             };
             await _resourcePricingService.UpsertResourceAsync(request);
+        }
+
+        private async Task RecalcularTodosUSDAsync()
+        {
+            try
+            {
+                StatusMessage = "Recalculando precios USD...";
+                var count = await _resourcePricingService.RecalcularTodosUSDAsync("desktop-user");
+                await LoadAsync();
+                StatusMessage = $"Recalculo completado: {count} insumo(s) USD actualizados con cotización prioritaria.";
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"Error en recálculo: {ex.Message}";
+            }
         }
     }
 
