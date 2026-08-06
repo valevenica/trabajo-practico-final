@@ -17,7 +17,7 @@
             <Border Background="{StaticResource BackgroundDarkMetalBrush}" Padding="8" CornerRadius="4" Margin="0 0 0 8">
                 <TextBlock Text="Listado" Foreground="{StaticResource SecondaryAccentBrush}" FontWeight="SemiBold" />
             </Border>
-            <TextBlock Text="Buscar por código o nombre:" Margin="0 0 0 4" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" />
+            <TextBlock Text="Buscar por código o nombre:" Margin="0 0 0 4" FontSize="12" Foreground="{StaticResource TextMutedBrush}" />
             <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" Height="30" Margin="0 0 0 8" Padding="8" />
             <ListBox ItemsSource="{Binding FilteredProducts}" SelectedItem="{Binding SelectedProduct}" Height="320">
                 <ListBox.ItemTemplate>
