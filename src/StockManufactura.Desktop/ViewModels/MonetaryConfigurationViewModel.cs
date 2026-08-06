@@ -83,18 +83,20 @@ namespace StockManufactura.Desktop.ViewModels
 
         private async Task AutomaticUpdateAsync()
         {
-            if (string.IsNullOrWhiteSpace(SelectedProviderKey))
+            try
             {
-                StatusMessage = "Seleccioná una fuente para actualización automática.";
-                return;
+                // Always fetch dolar blue from DolarHoy
+                var rate = await _service.UpdateAutomaticAsync("dolar-hoy", "desktop-user");
+                CurrentRate = rate.Valor.ToString("0.0000", CultureInfo.InvariantCulture);
+                LastUpdate = rate.Fecha.ToLocalTime().ToString("g");
+                Source = rate.Fuente;
+                StatusMessage = $"D\u00f3lar blue actualizado: ${rate.Valor:0.00}";
+                await RefreshHistoryAsync();
             }
-
-            var rate = await _service.UpdateAutomaticAsync(SelectedProviderKey, "desktop-user");
-            CurrentRate = rate.Valor.ToString("0.0000", CultureInfo.InvariantCulture);
-            LastUpdate = rate.Fecha.ToLocalTime().ToString("g");
-            Source = rate.Fuente;
-            StatusMessage = "Cotización actualizada automáticamente.";
-            await RefreshHistoryAsync();
+            catch (Exception ex)
+            {
+                StatusMessage = $"Error al obtener cotizaci\u00f3n: {ex.Message}";
+            }
         }
 
         private async Task RefreshHistoryAsync()

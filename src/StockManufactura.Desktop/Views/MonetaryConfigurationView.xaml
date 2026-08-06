@@ -10,6 +10,7 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
@@ -26,31 +27,37 @@
 
         <Grid Grid.Row="2" Margin="0 0 0 12">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="2*" />
+                <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="2*" />
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
 
-            <ComboBox Grid.Column="0"
-                      Margin="0 0 10 0"
-                      Height="34"
-                      ItemsSource="{Binding Providers}"
-                      DisplayMemberPath="DisplayName"
-                      SelectedValuePath="Key"
-                      SelectedValue="{Binding SelectedProviderKey, UpdateSourceTrigger=PropertyChanged}" />
-
-            <TextBox Grid.Column="1" Margin="0 0 10 0" Height="34" Text="{Binding ManualRateInput, UpdateSourceTrigger=PropertyChanged}" />
-            <Button Grid.Column="2" Margin="0 0 8 0" Height="34" Content="Manual" Command="{Binding ManualUpdateCommand}" />
-            <Button Grid.Column="3" Margin="0 0 8 0" Height="34" Content="Automática" Command="{Binding AutomaticUpdateCommand}" />
-            <Button Grid.Column="4" Height="34" Content="Historial" Command="{Binding RefreshHistoryCommand}" />
+            <TextBlock Grid.Column="0" Text="Cotización manual:" VerticalAlignment="Center" Margin="0 0 8 0" />
+            <TextBox Grid.Column="1" Margin="0 0 10 0" Height="34"
+                     Text="{Binding ManualRateInput, UpdateSourceTrigger=PropertyChanged}"
+                     ToolTip="Ingresá el valor del dólar blue manualmente" />
+            <Button Grid.Column="2" Margin="0 0 8 0" Height="34" Width="110"
+                    Content="Guardar manual" Command="{Binding ManualUpdateCommand}"
+                    Style="{StaticResource SecondaryButtonStyle}" />
+            <Button Grid.Column="3" Margin="0 0 8 0" Height="34" Width="160"
+                    Content="🔄 Actualizar blue"
+                    Command="{Binding AutomaticUpdateCommand}"
+                    Style="{StaticResource PrimaryButtonStyle}"
+                    ToolTip="Obtiene el precio de venta del dólar blue desde DolarHoy" />
+            <Button Grid.Column="4" Height="34" Width="90"
+                    Content="Historial" Command="{Binding RefreshHistoryCommand}"
+                    Style="{StaticResource SecondaryButtonStyle}" />
         </Grid>
 
-        <DataGrid Grid.Row="3" ItemsSource="{Binding History}" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False">
+        <TextBlock Grid.Row="3" Text="{Binding StatusMessage}" Margin="0 0 0 8"
+                   Style="{StaticResource StatusMessageStyle}" />
+
+        <DataGrid Grid.Row="4" ItemsSource="{Binding History}" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False">
             <DataGrid.Columns>
                 <DataGridTextColumn Header="Fecha" Binding="{Binding Fecha}" Width="150" />
-                <DataGridTextColumn Header="Valor" Binding="{Binding Valor}" Width="100" />
+                <DataGridTextColumn Header="Valor" Binding="{Binding Valor, StringFormat={}{0:0.00}}" Width="100" />
                 <DataGridTextColumn Header="Fuente" Binding="{Binding Fuente}" Width="140" />
                 <DataGridTextColumn Header="Usuario" Binding="{Binding Usuario}" Width="120" />
                 <DataGridTextColumn Header="Automática" Binding="{Binding Automatica}" Width="90" />
