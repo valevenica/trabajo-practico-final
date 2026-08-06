@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using StockManufactura.Domain.Entities;
 
 namespace StockManufactura.Application.Interfaces
 {
@@ -10,6 +11,7 @@ namespace StockManufactura.Application.Interfaces
         IRecursoRepository Recursos { get; }
         IExchangeRateRepository ExchangeRates { get; }
         IResourcePriceHistoryRepository ResourcePriceHistory { get; }
+        IRepository<ResourceCostCalculation> ResourceCostCalculations { get; }
         IProductoRepository Productos { get; }
         IOrdenProduccionRepository OrdenesProduccion { get; }
         IRecetaProductoItemRepository RecetaProductoItems { get; }

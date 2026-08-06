@@ -1,9 +1,11 @@
 using System;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Data;
 using System.Windows.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -81,6 +83,12 @@ namespace StockManufactura.Desktop.ViewModels
         [ObservableProperty]
         private string _searchText = string.Empty;
 
+        [ObservableProperty]
+        private string _proveedorSearchText = string.Empty;
+
+        private readonly CollectionViewSource _proveedoresViewSource = new();
+        public ICollectionView ProveedoresView => _proveedoresViewSource.View;
+
         public ResourceManagementViewModel(
             IResourcePricingService resourcePricingService,
             IMonetaryConfigurationService monetaryConfigurationService,
@@ -93,7 +101,18 @@ namespace StockManufactura.Desktop.ViewModels
             FilteredResources = new ObservableCollection<Recurso>();
             PriceHistory = new ObservableCollection<ResourcePriceHistory>();
             ProveedoresDisponibles = new ObservableCollection<Proveedor>();
+            FilteredProveedoresDisponibles = new ObservableCollection<Proveedor>();
             ProveedoresDelInsumo = new ObservableCollection<RecursoProveedorRow>();
+
+            _proveedoresViewSource.Source = ProveedoresDisponibles;
+            _proveedoresViewSource.Filter += (s, e) =>
+            {
+                if (e.Item is Proveedor p)
+                {
+                    var q = ProveedorSearchText?.Trim().ToLower() ?? string.Empty;
+                    e.Accepted = string.IsNullOrEmpty(q) || p.Nombre.ToLower().Contains(q);
+                }
+            };
             LoadCommand = new AsyncRelayCommand(LoadAsync);
             SaveCommand = new AsyncRelayCommand(SaveAsync);
             SelectArsCommand = new RelayCommand(() => IsUsd = false);
@@ -110,6 +129,7 @@ namespace StockManufactura.Desktop.ViewModels
         public ObservableCollection<Recurso> FilteredResources { get; }
         public ObservableCollection<ResourcePriceHistory> PriceHistory { get; }
         public ObservableCollection<Proveedor> ProveedoresDisponibles { get; }
+        public ObservableCollection<Proveedor> FilteredProveedoresDisponibles { get; }
         public ObservableCollection<RecursoProveedorRow> ProveedoresDelInsumo { get; }
 
         public ICommand LoadCommand { get; }
@@ -137,6 +157,11 @@ namespace StockManufactura.Desktop.ViewModels
         partial void OnSearchTextChanged(string value)
         {
             UpdateFilteredResources();
+        }
+
+        partial void OnProveedorSearchTextChanged(string value)
+        {
+            ProveedoresView.Refresh();
         }
 
         partial void OnIsUsdChanged(bool value)
@@ -205,6 +230,7 @@ namespace StockManufactura.Desktop.ViewModels
                 ProveedoresDisponibles.Clear();
                 foreach (var proveedor in p.Where(x => x.Activo).OrderBy(x => x.Nombre))
                     ProveedoresDisponibles.Add(proveedor);
+                UpdateFilteredProveedores();
 
                 CotizacionVigente = s.CurrentRate.ToString("0.0000", CultureInfo.InvariantCulture);
                 await RecalculateAsync();
@@ -226,6 +252,11 @@ namespace StockManufactura.Desktop.ViewModels
             FilteredResources.Clear();
             foreach (var resource in filtered)
                 FilteredResources.Add(resource);
+        }
+
+        private void UpdateFilteredProveedores()
+        {
+            // No-op: filtering is handled by CollectionViewSource
         }
 
         private async Task SaveAsync()

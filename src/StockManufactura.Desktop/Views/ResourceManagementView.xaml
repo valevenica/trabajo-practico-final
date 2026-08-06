@@ -19,7 +19,7 @@
                     <TextBlock Text="INSUMOS" Foreground="{StaticResource SecondaryAccentBrush}" FontWeight="SemiBold" />
                 </Border>
                 <StackPanel DockPanel.Dock="Top" Margin="0 0 0 8">
-                    <TextBlock Text="Buscar por código o nombre:" Margin="0 0 0 4" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" />
+                    <TextBlock Text="Buscar por código o nombre:" Margin="0 0 0 4" FontSize="12" Foreground="{StaticResource TextMutedBrush}" />
                     <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" Height="28" Padding="6" />
                 </StackPanel>
                 <DataGrid ItemsSource="{Binding FilteredResources}" SelectedItem="{Binding SelectedResource}"
@@ -147,8 +147,12 @@
                             </DataGrid>
 
                             <StackPanel Grid.Column="1">
+                                <TextBlock Text="Buscar proveedor" FontSize="11" Foreground="Gray" />
+                                <TextBox Text="{Binding ProveedorSearchText, UpdateSourceTrigger=PropertyChanged}"
+                                         Height="26" Margin="0 2 0 4"
+                                         ToolTip="Escribí para filtrar proveedores" />
                                 <TextBlock Text="Proveedor" FontSize="11" Foreground="Gray" />
-                                <ComboBox ItemsSource="{Binding ProveedoresDisponibles}"
+                                <ComboBox ItemsSource="{Binding ProveedoresView}"
                                           SelectedItem="{Binding SelectedNuevoProveedor}"
                                           DisplayMemberPath="Nombre" Height="28" Margin="0 2 0 6" />
                                 <TextBlock Text="Precio del proveedor" FontSize="11" Foreground="Gray" />
