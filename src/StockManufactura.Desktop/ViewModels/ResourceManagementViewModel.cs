@@ -3,6 +3,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Globalization;
 using System.Linq;
+using Serilog;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Data;
@@ -393,7 +394,11 @@ namespace StockManufactura.Desktop.ViewModels
             }
             catch (Exception ex)
             {
-                StatusMessage = $"Error: {ex.Message}";
+                Log.Error(ex, "AddProveedorAsync failed");
+                var msg = ex.Message;
+                if (ex.InnerException != null) msg += " | " + ex.InnerException.Message;
+                if (ex.InnerException?.InnerException != null) msg += " | " + ex.InnerException.InnerException.Message;
+                StatusMessage = $"Error: {msg}";
             }
         }
 

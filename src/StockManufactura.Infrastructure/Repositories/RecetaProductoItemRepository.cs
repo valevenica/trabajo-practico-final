@@ -28,8 +28,8 @@ namespace StockManufactura.Infrastructure.Repositories
 
         public async Task<IReadOnlyList<RecetaProductoItem>> ListByProductIdsAsync(IEnumerable<Guid> productIds)
         {
-            var ids = productIds as Guid[] ?? productIds.ToArray();
-            if (ids.Length == 0)
+            var ids = productIds.ToList();
+            if (ids.Count == 0)
             {
                 return Array.Empty<RecetaProductoItem>();
             }
