@@ -81,7 +81,6 @@ namespace StockManufactura.Application.Services
                 var history = new ProductCostHistory
                 {
                     ProductId = product.Id,
-                    Product = product,
                     Fecha = DateTime.UtcNow,
                     Usuario = request.Usuario,
                     CostoAnterior = previousCost,
@@ -99,7 +98,6 @@ namespace StockManufactura.Application.Services
                 var snapshot = new ProductCostSnapshot
                 {
                     ProductId = product.Id,
-                    Product = product,
                     Fecha = DateTime.UtcNow,
                     CostoTotal = newCost,
                     CotizacionUtilizada = exchangeRateValue,
@@ -112,9 +110,7 @@ namespace StockManufactura.Application.Services
                 {
                     var snapshotItem = new ProductCostSnapshotItem
                     {
-                        Snapshot = snapshot,
                         SnapshotId = snapshot.Id,
-                        Recurso = item.Recurso,
                         RecursoId = item.RecursoId,
                         CantidadUtilizada = item.Cantidad,
                         PrecioRecurso = item.Recurso.Precio,

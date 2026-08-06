@@ -20,13 +20,16 @@ namespace StockManufactura.Infrastructure.Repositories
 
         public async Task<IReadOnlyList<RecursoProveedor>> ListByRecursoIdAsync(Guid recursoId)
         {
-            return await _context.RecursoProveedores
+            var items = await _context.RecursoProveedores
                 .AsNoTracking()
                 .Include(x => x.Proveedor)
                 .Where(x => x.RecursoId == recursoId)
-                .OrderByDescending(x => x.EsPrioritario)
-                .ThenBy(x => x.Proveedor.Nombre)
                 .ToListAsync();
+
+            return items
+                .OrderByDescending(x => x.EsPrioritario)
+                .ThenBy(x => x.Proveedor?.Nombre ?? string.Empty)
+                .ToList();
         }
 
         public Task<RecursoProveedor?> GetPrioritarioAsync(Guid recursoId)
