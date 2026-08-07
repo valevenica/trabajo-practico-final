@@ -155,22 +155,26 @@
                                 </DataGridTemplateColumn>
                                 <DataGridTextColumn Header="FECHA" Binding="{Binding Fecha}" Width="1.45*" />
                                 <DataGridTextColumn Header="COSTO" Binding="{Binding Costo}" Width="1.1*" />
-                                <DataGridTemplateColumn Header="ACCIONES" Width="200">
+                                <DataGridTemplateColumn Header="ACCIONES" Width="100">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
                                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
-                                                <Button Content="{Binding AdvanceLabel}"
-                                                        IsEnabled="{Binding CanAdvance}"
+                                                <Button IsEnabled="{Binding CanAdvance}"
                                                         Command="{Binding DataContext.AdvanceOrderCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                         CommandParameter="{Binding}"
-                                                        Height="28" Width="110" Margin="0,0,6,0"
-                                                        Style="{StaticResource PrimaryButtonStyle}" FontSize="12" />
-                                                <Button Content="✕ Cancelar"
-                                                        IsEnabled="{Binding CanCancel}"
+                                                        Width="36" Height="36" Margin="0,0,6,0"
+                                                        Style="{StaticResource PrimaryButtonStyle}"
+                                                        ToolTip="{Binding AdvanceLabel}">
+                                                    <TextBlock Text="{Binding AdvanceIcon}" FontSize="16" />
+                                                </Button>
+                                                <Button IsEnabled="{Binding CanCancel}"
                                                         Command="{Binding DataContext.CancelOrderCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                         CommandParameter="{Binding}"
-                                                        Height="28" Width="110"
-                                                        Style="{StaticResource SecondaryButtonStyle}" FontSize="12" />
+                                                        Width="36" Height="36"
+                                                        Style="{StaticResource SecondaryButtonStyle}"
+                                                        ToolTip="Cancelar orden">
+                                                    <TextBlock Text="✕" FontSize="16" />
+                                                </Button>
                                             </StackPanel>
                                         </DataTemplate>
                                     </DataGridTemplateColumn.CellTemplate>

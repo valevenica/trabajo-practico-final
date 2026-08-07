@@ -25,6 +25,7 @@ namespace StockManufactura.Desktop.ViewModels
             CanAdvance = order.Estado != EstadoOrdenProduccion.Finalizada && order.Estado != EstadoOrdenProduccion.Cancelada;
             CanCancel  = order.Estado != EstadoOrdenProduccion.Finalizada && order.Estado != EstadoOrdenProduccion.Cancelada;
             AdvanceLabel = order.Estado is EstadoOrdenProduccion.EnProceso ? "✓ Finalizar" : "▶ Iniciar";
+            AdvanceIcon  = order.Estado is EstadoOrdenProduccion.EnProceso ? "✓" : "▶";
         }
 
         public Guid OrderId { get; }
@@ -32,6 +33,7 @@ namespace StockManufactura.Desktop.ViewModels
         public bool CanAdvance { get; }
         public bool CanCancel { get; }
         public string AdvanceLabel { get; }
+        public string AdvanceIcon { get; }
 
         public string Codigo { get; }
         public string ProductName { get; }
