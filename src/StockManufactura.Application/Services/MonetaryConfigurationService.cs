@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Serilog;
 using StockManufactura.Application.Interfaces;
 using StockManufactura.Application.Monetary;
 using StockManufactura.Domain.Entities;
@@ -86,7 +87,10 @@ namespace StockManufactura.Application.Services
                     CambioCotizacion = true
                 });
             }
-            catch { /* recalculation errors don't prevent the rate from being saved */ }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Recalculo de productos tras cambio manual de cotizacion fallo");
+            }
 
             return rate;
         }
@@ -150,7 +154,10 @@ namespace StockManufactura.Application.Services
                     CambioCotizacion = true
                 });
             }
-            catch { /* recalculation errors don't prevent the rate from being returned */ }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Recalculo de productos tras actualizacion de cotizacion fallo");
+            }
 
             return rate;
         }

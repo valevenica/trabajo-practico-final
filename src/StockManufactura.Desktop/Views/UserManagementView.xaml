@@ -22,7 +22,7 @@
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
 
-                    <TextBlock Text="Mi perfil" FontSize="20" FontWeight="SemiBold" Margin="0 0 0 12" />
+                    <TextBlock Text="Mi perfil" FontSize="15" FontWeight="SemiBold" Margin="0 0 0 12" />
 
                     <StackPanel Grid.Row="1" Margin="0 0 0 8">
                         <TextBlock Text="Nombre" />
@@ -49,7 +49,7 @@
                     </Grid.ColumnDefinitions>
 
                     <StackPanel Grid.Column="0" Margin="0 0 16 0">
-                        <TextBlock Text="Usuarios" FontSize="20" FontWeight="SemiBold" Margin="0 0 0 12" />
+                        <TextBlock Text="Usuarios" FontSize="15" FontWeight="SemiBold" Margin="0 0 0 12" />
                         <ListBox ItemsSource="{Binding Users}" SelectedItem="{Binding SelectedUser}" Height="320">
                             <ListBox.ItemTemplate>
                                 <DataTemplate>
@@ -66,7 +66,7 @@
                     </StackPanel>
 
                     <StackPanel Grid.Column="1">
-                        <TextBlock Text="Gestión de usuario" FontSize="20" FontWeight="SemiBold" Margin="0 0 0 12" />
+                        <TextBlock Text="Gestión de usuario" FontSize="15" FontWeight="SemiBold" Margin="0 0 0 12" />
 
                         <TextBlock Text="Nombre" />
                         <TextBox Text="{Binding Nombre, UpdateSourceTrigger=PropertyChanged}" Height="32" Margin="0 4 0 8" />

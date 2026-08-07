@@ -29,8 +29,11 @@ namespace StockManufactura.Infrastructure.Repositories
 
         public async Task SetPrioritariaAsync(Guid id)
         {
-            var all = await _context.ExchangeRates.ToListAsync();
-            foreach (var rate in all)
+            var affected = await _context.ExchangeRates
+                .Where(x => x.EsPrioritaria || x.Id == id)
+                .ToListAsync();
+
+            foreach (var rate in affected)
                 rate.EsPrioritaria = rate.Id == id;
         }
     }

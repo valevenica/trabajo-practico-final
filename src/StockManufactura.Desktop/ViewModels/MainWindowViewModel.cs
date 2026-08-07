@@ -168,6 +168,7 @@ namespace StockManufactura.Desktop.ViewModels
 
             _navigationService.NavigateTo(dashboard);
             SetActiveMenu("Dashboard");
+            ExecuteIfPossible(dashboard.RefreshStatusCommand);
         }
 
         private void NavigateProducts()
