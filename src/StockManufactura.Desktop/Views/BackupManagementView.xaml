@@ -13,7 +13,7 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <TextBlock Text="Backups" FontSize="24" FontWeight="Bold" />
+        <TextBlock Text="Backups" FontSize="18" FontWeight="Bold" />
 
         <Grid Grid.Row="1" Margin="0 12 0 12">
             <Grid.ColumnDefinitions>
