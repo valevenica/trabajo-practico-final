@@ -12,6 +12,7 @@
         </Grid.ColumnDefinitions>
 
         <Border Grid.Column="0" Margin="0 0 16 0" Style="{StaticResource CardBorderStyle}">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
             <StackPanel>
             <TextBlock Text="PRODUCTOS" Style="{StaticResource SectionTitleStyle}" Margin="0 0 0 12" />
             <Border Background="{StaticResource BackgroundDarkMetalBrush}" Padding="8" CornerRadius="4" Margin="0 0 0 8">
@@ -22,22 +23,39 @@
             <ListBox ItemsSource="{Binding FilteredProducts}" SelectedItem="{Binding SelectedProduct}" Height="320">
                 <ListBox.ItemTemplate>
                     <DataTemplate>
-                        <StackPanel>
-                            <TextBlock Text="{Binding Nombre}" FontWeight="SemiBold" />
-                            <TextBlock Text="{Binding Codigo, StringFormat=Código: {0}}" />
-                            <TextBlock Text="{Binding PrecioSugeridoActual, StringFormat=Precio sugerido: {0:F2}}" />
-                        </StackPanel>
+                        <Grid Margin="0 2 0 2">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="{Binding Nombre}" FontWeight="SemiBold" />
+                                <TextBlock Text="{Binding Codigo, StringFormat=Código: {0}}" />
+                                <TextBlock Text="{Binding PrecioSugeridoActual, StringFormat=Precio final: {0:F2}}" />
+                            </StackPanel>
+                            <Button Grid.Column="1" Content="🕒" ToolTip="Ver historial de costos"
+                                    Command="{Binding DataContext.ViewCostHistoryCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                    CommandParameter="{Binding}"
+                                    Width="28" Height="28" FontSize="13" VerticalAlignment="Center"
+                                    Style="{StaticResource SecondaryButtonStyle}" />
+                        </Grid>
                     </DataTemplate>
                 </ListBox.ItemTemplate>
             </ListBox>
-            <Button Content="Nuevo producto" Command="{Binding NewProductCommand}" Margin="0 12 0 0" Style="{StaticResource PrimaryButtonStyle}" />
-            <Button Content="Volver" Command="{Binding BackCommand}" Margin="0 8 0 0" Style="{StaticResource SecondaryButtonStyle}" />
         </StackPanel>
+            </ScrollViewer>
         </Border>
 
         <Border Grid.Column="1" Style="{StaticResource CardBorderStyle}">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
             <StackPanel>
-            <TextBlock Text="GESTION DE PRODUCTO" Style="{StaticResource SectionTitleStyle}" Margin="0 0 0 12" />
+            <Grid Margin="0 0 0 12">
+                <TextBlock Text="GESTION DE PRODUCTO" Style="{StaticResource SectionTitleStyle}" />
+                <Button Content="+" Command="{Binding NewProductCommand}" ToolTip="Nuevo producto"
+                        Width="30" Height="30" FontSize="16" FontWeight="Bold"
+                        HorizontalAlignment="Right" VerticalAlignment="Top"
+                        Style="{StaticResource PrimaryButtonStyle}" />
+            </Grid>
 
             <TextBlock Text="Código" />
             <TextBox Text="{Binding Codigo, UpdateSourceTrigger=PropertyChanged}" Height="32" Margin="0 4 0 8" />
@@ -58,13 +76,14 @@
                     <TextBox Text="{Binding Margen, UpdateSourceTrigger=PropertyChanged}" Height="32" Margin="0 4 0 0" />
                 </StackPanel>
                 <StackPanel>
-                    <TextBlock Text="Precio sugerido" />
+                    <TextBlock Text="Precio final" />
                     <TextBox Text="{Binding PrecioSugerido, UpdateSourceTrigger=PropertyChanged}" Height="32" Margin="0 4 0 0" />
                 </StackPanel>
             </UniformGrid>
 
-            <TextBlock Text="Insumos del producto (BOM)" FontWeight="SemiBold" Margin="0 6 0 6" />
+            <TextBlock Text="Componentes del producto (insumos o sub-productos)" FontWeight="SemiBold" Margin="0 6 0 6" />
             <DataGrid ItemsSource="{Binding RecipeItems}"
+                      SelectedItem="{Binding SelectedRecipeItem}"
                       AutoGenerateColumns="False"
                       CanUserAddRows="False"
                       CanUserDeleteRows="False"
@@ -73,13 +92,45 @@
                       Height="150"
                       Margin="0 0 0 8">
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="Insumo" Binding="{Binding Recurso}" Width="*" />
-                    <DataGridTextColumn Header="Unidad" Binding="{Binding Unidad}" Width="90" />
-                    <DataGridTextColumn Header="Cantidad" Binding="{Binding Cantidad, StringFormat={}{0:0.0000}}" Width="100" />
-                    <DataGridTextColumn Header="Costo unidad" Binding="{Binding CostoUnitario, StringFormat={}{0:0.0000}}" Width="120" />
-                    <DataGridTextColumn Header="Subtotal" Binding="{Binding CostoTotal, StringFormat={}{0:0.0000}}" Width="120" />
+                    <DataGridTextColumn Header="Componente" Binding="{Binding Recurso}" Width="*" />
+                    <DataGridTextColumn Header="Unidad" Binding="{Binding Unidad}" Width="70" />
+                    <DataGridTextColumn Header="Cantidad" Binding="{Binding Cantidad, StringFormat={}{0:0.00}}" Width="90" />
+                    <DataGridTextColumn Header="Costo unidad" Binding="{Binding CostoUnitario, StringFormat={}{0:0.00}}" Width="100" />
+                    <DataGridTextColumn Header="Subtotal" Binding="{Binding CostoTotal, StringFormat={}{0:0.00}}" Width="100" />
+                    <DataGridTemplateColumn Header="" Width="40">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Button Content="✕" ToolTip="Quitar componente"
+                                        Command="{Binding DataContext.RemoveRecipeItemCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                        CommandParameter="{Binding}"
+                                        Width="28" Height="28" FontSize="12"
+                                        Style="{StaticResource SecondaryButtonStyle}" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
                 </DataGrid.Columns>
             </DataGrid>
+
+            <Grid Margin="0 0 0 12" IsEnabled="{Binding CanEditRecipeItems}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="2*" />
+                    <ColumnDefinition Width="1*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0" Margin="0 0 8 0">
+                    <TextBlock Text="Insumo o producto" FontSize="11" Foreground="Gray" />
+                    <ComboBox ItemsSource="{Binding AvailableComponents}" SelectedItem="{Binding SelectedComponent}" Height="32" />
+                </StackPanel>
+                <StackPanel Grid.Column="1" Margin="0 0 8 0">
+                    <TextBlock Text="Cantidad" FontSize="11" Foreground="Gray" />
+                    <TextBox Text="{Binding ComponentQuantity, UpdateSourceTrigger=PropertyChanged}" Height="32" />
+                </StackPanel>
+                <Button Grid.Column="2" Content="{Binding RecipeItemActionLabel}" Command="{Binding SaveRecipeItemCommand}"
+                        Height="32" Margin="0 0 8 0" VerticalAlignment="Bottom" Style="{StaticResource PrimaryButtonStyle}" />
+                <Button Grid.Column="3" Content="Cancelar" Command="{Binding CancelRecipeItemEditCommand}"
+                        Height="32" VerticalAlignment="Bottom" Style="{StaticResource SecondaryButtonStyle}" />
+            </Grid>
 
             <CheckBox Content="Producto activo" IsChecked="{Binding Activo}" Margin="0 2 0 8" />
 
@@ -90,6 +141,7 @@
 
             <TextBlock Text="{Binding StatusMessage}" Margin="0 12 0 0" Style="{StaticResource StatusMessageStyle}" />
         </StackPanel>
+            </ScrollViewer>
         </Border>
     </Grid>
 </UserControl>

@@ -68,7 +68,7 @@ namespace StockManufactura.Desktop.ViewModels
         public async Task LoadAsync()
         {
             var state = await _service.GetCurrentStateAsync();
-            CurrentRate = state.CurrentRate.ToString("0.0000", CultureInfo.InvariantCulture);
+            CurrentRate = state.CurrentRate.ToString("0.00", CultureInfo.InvariantCulture);
             LastUpdate = state.LastUpdate == DateTime.MinValue ? "-" : state.LastUpdate.ToLocalTime().ToString("g");
             Source = state.Source;
             await RefreshHistoryAsync();
@@ -86,7 +86,7 @@ namespace StockManufactura.Desktop.ViewModels
             try
             {
                 var rate = await _service.UpdateManualAsync(value, fuente, "desktop-user");
-                CurrentRate = rate.Valor.ToString("0.0000", CultureInfo.InvariantCulture);
+                CurrentRate = rate.Valor.ToString("0.00", CultureInfo.InvariantCulture);
                 LastUpdate = rate.Fecha.ToLocalTime().ToString("g");
                 Source = rate.Fuente;
                 StatusMessage = $"Cotizaci\u00f3n manual guardada: ${value:0.00} ({fuente})";
@@ -106,7 +106,7 @@ namespace StockManufactura.Desktop.ViewModels
             {
                 // Always fetch dolar blue from DolarHoy
                 var rate = await _service.UpdateAutomaticAsync("dolar-hoy", "desktop-user");
-                CurrentRate = rate.Valor.ToString("0.0000", CultureInfo.InvariantCulture);
+                CurrentRate = rate.Valor.ToString("0.00", CultureInfo.InvariantCulture);
                 LastUpdate = rate.Fecha.ToLocalTime().ToString("g");
                 Source = rate.Fuente;
                 StatusMessage = $"D\u00f3lar blue actualizado: ${rate.Valor:0.00}";

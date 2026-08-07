@@ -65,21 +65,29 @@
                 </Border>
                 <Border Style="{StaticResource DashboardMetricCardStyle}" Margin="12,0,0,0">
                     <StackPanel>
-                        <TextBlock Text="COSTOS TOTALES MES" Style="{StaticResource DashboardMetricTitleStyle}" />
-                        <TextBlock Text="{Binding Status.MonthlyCostTotal, FallbackValue=0, TargetNullValue=0, StringFormat={}{0:C2}}" Margin="0,18,0,0" FontSize="27" FontWeight="Bold" Foreground="#050505" HorizontalAlignment="Center" />
+                        <TextBlock Text="VENTAS MENSUALES" Style="{StaticResource DashboardMetricTitleStyle}" Foreground="{StaticResource SecondaryAccentBrush}" />
+                        <TextBlock Text="{Binding Status.MonthlySalesTotal, FallbackValue=0, TargetNullValue=0, StringFormat={}{0:C2}}" Margin="0,18,0,0" FontSize="27" FontWeight="Bold" Foreground="#050505" HorizontalAlignment="Center" />
                     </StackPanel>
                 </Border>
             </UniformGrid>
 
             <Border Grid.Row="1" Style="{StaticResource DashboardPanelStyle}">
                 <StackPanel>
-                    <TextBlock Text="Módulo: Órdenes de Producción" FontSize="18" FontWeight="Bold" Foreground="#050505" Margin="0,0,0,16" />
+                    <Grid Margin="0,0,0,16">
+                        <TextBlock Text="Módulo: Órdenes de Producción" FontSize="18" FontWeight="Bold" Foreground="#050505" />
+                        <Button Content="+" Command="{Binding NavigateToProductionOrdersCommand}" ToolTip="Nueva orden de producción"
+                                Width="30" Height="30" FontSize="16" FontWeight="Bold"
+                                HorizontalAlignment="Right" VerticalAlignment="Top"
+                                Style="{StaticResource PrimaryButtonStyle}" />
+                    </Grid>
 
                     <Border Margin="0,0,0,12" Padding="12" Background="#FFFFFF" BorderBrush="#D7CBAE" BorderThickness="1" CornerRadius="10">
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="1.2*" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
 
                             <!-- Filtro desplegable multi-estado -->
@@ -125,6 +133,24 @@
                                     <ComboBox Style="{StaticResource DashboardFilterComboStyle}"
                                               ItemsSource="{Binding OrderSortOptions}"
                                               SelectedItem="{Binding SelectedOrderSortOption, UpdateSourceTrigger=PropertyChanged}" />
+                                </Border>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="2" Margin="0,0,10,0">
+                                <TextBlock Text="Buscar por ID" Style="{StaticResource DashboardFilterLabelStyle}" />
+                                <TextBox Text="{Binding OrderIdSearchText, UpdateSourceTrigger=PropertyChanged}"
+                                         Height="34" MinWidth="150" Padding="10,0" VerticalContentAlignment="Center"
+                                         BorderBrush="#B48B3A" BorderThickness="1" Background="#FFFFFF" />
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="3">
+                                <TextBlock Text="Período" Style="{StaticResource DashboardFilterLabelStyle}" />
+                                <Border Background="#FFFFFF" BorderBrush="#B48B3A" BorderThickness="1" CornerRadius="8" Padding="8,0">
+                                    <ComboBox Style="{StaticResource DashboardFilterComboStyle}"
+                                              MinWidth="170"
+                                              ItemsSource="{Binding PeriodOptions}"
+                                              SelectedItem="{Binding SelectedPeriod, UpdateSourceTrigger=PropertyChanged}"
+                                              DisplayMemberPath="Label" />
                                 </Border>
                             </StackPanel>
                         </Grid>

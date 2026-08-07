@@ -31,7 +31,6 @@ namespace StockManufactura.Desktop.ViewModels
             NavigateDashboardCommand = new RelayCommand(NavigateDashboard);
             NavigateProductsCommand = new RelayCommand(NavigateProducts);
             NavigateNewProductCommand = new RelayCommand(NavigateNewProduct);
-            NavigateBomCommand = new RelayCommand(NavigateBom);
             NavigateResourcesCommand = new RelayCommand(NavigateResources);
             NavigateNewResourceCommand = new RelayCommand(NavigateNewResource);
             NavigateProvidersCommand = new RelayCommand(NavigateProviders);
@@ -40,7 +39,6 @@ namespace StockManufactura.Desktop.ViewModels
             NavigateAuditCommand = new RelayCommand(NavigateAudit);
             NavigateBackupsCommand = new RelayCommand(NavigateBackups);
             NavigateUsersCommand = new RelayCommand(NavigateUsers);
-            NavigateCostsCommand = new RelayCommand(NavigateCosts);
         }
 
         public string WindowTitle => "Integra Manufacturing";
@@ -53,7 +51,6 @@ namespace StockManufactura.Desktop.ViewModels
 
         public bool CanManageUsers => true;
         public bool CanViewProducts => true;
-        public bool CanEditBom => true;
         public bool CanManageProviders => true;
         public bool CanManageProductionOrders => true;
 
@@ -64,8 +61,6 @@ namespace StockManufactura.Desktop.ViewModels
         public bool IsNewResourceSelected => _activeMenuKey == "NewResource";
         public bool IsProvidersSelected => _activeMenuKey == "Providers";
         public bool IsProductionOrdersSelected => _activeMenuKey == "ProductionOrders";
-        public bool IsBomSelected => _activeMenuKey == "Bom";
-        public bool IsCostsSelected => _activeMenuKey == "Costs";
         public bool IsMonetarySelected => _activeMenuKey == "Monetary";
         public bool IsBackupsSelected => _activeMenuKey == "Backups";
         public bool IsUsersSelected => _activeMenuKey == "Users";
@@ -74,7 +69,6 @@ namespace StockManufactura.Desktop.ViewModels
         public ICommand NavigateDashboardCommand { get; }
         public ICommand NavigateProductsCommand { get; }
         public ICommand NavigateNewProductCommand { get; }
-        public ICommand NavigateBomCommand { get; }
         public ICommand NavigateResourcesCommand { get; }
         public ICommand NavigateNewResourceCommand { get; }
         public ICommand NavigateProvidersCommand { get; }
@@ -83,7 +77,6 @@ namespace StockManufactura.Desktop.ViewModels
         public ICommand NavigateAuditCommand { get; }
         public ICommand NavigateBackupsCommand { get; }
         public ICommand NavigateUsersCommand { get; }
-        public ICommand NavigateCostsCommand { get; }
 
         public object CurrentViewModel
         {
@@ -105,7 +98,6 @@ namespace StockManufactura.Desktop.ViewModels
                 OnPropertyChanged(nameof(CurrentUserName));
                 OnPropertyChanged(nameof(CanManageUsers));
                 OnPropertyChanged(nameof(CanViewProducts));
-                OnPropertyChanged(nameof(CanEditBom));
                 OnPropertyChanged(nameof(CanManageProviders));
                 OnPropertyChanged(nameof(CanManageProductionOrders));
             }
@@ -179,6 +171,7 @@ namespace StockManufactura.Desktop.ViewModels
                 _navigationService.NavigateTo(new ProductManagementViewModel(
                     _serviceProvider.GetRequiredService<IUnitOfWork>(),
                     _serviceProvider.GetRequiredService<IAuditLogService>(),
+                    _serviceProvider.GetRequiredService<IProductCostService>(),
                     _navigationService,
                     dashboard));
                 SetActiveMenu("Products");
@@ -196,24 +189,11 @@ namespace StockManufactura.Desktop.ViewModels
                 _navigationService.NavigateTo(new ProductManagementViewModel(
                     _serviceProvider.GetRequiredService<IUnitOfWork>(),
                     _serviceProvider.GetRequiredService<IAuditLogService>(),
+                    _serviceProvider.GetRequiredService<IProductCostService>(),
                     _navigationService,
                     dashboard,
                     startInCreateMode: true));
                 SetActiveMenu("NewProduct");
-            }
-        }
-
-        private void NavigateBom()
-        {
-            if (EnsureDashboardAvailable(out var dashboard))
-            {
-                _navigationService.NavigateTo(new BomManagementViewModel(
-                    _serviceProvider.GetRequiredService<IUnitOfWork>(),
-                    _serviceProvider.GetRequiredService<IAuditLogService>(),
-                    _serviceProvider.GetRequiredService<IProductCostService>(),
-                    _navigationService,
-                    dashboard));
-                SetActiveMenu("Bom");
             }
         }
 
@@ -308,19 +288,6 @@ namespace StockManufactura.Desktop.ViewModels
             }
         }
 
-        private void NavigateCosts()
-        {
-            if (EnsureDashboardAvailable(out var dashboard))
-            {
-                _navigationService.NavigateTo(new ProductCostHistoryViewModel(
-                    _serviceProvider.GetRequiredService<IUnitOfWork>(),
-                    _serviceProvider.GetRequiredService<IProductCostService>(),
-                    _navigationService,
-                    dashboard));
-                SetActiveMenu("Costs");
-            }
-        }
-
         private void SetActiveMenu(string key)
         {
             if (_activeMenuKey == key)
@@ -336,8 +303,6 @@ namespace StockManufactura.Desktop.ViewModels
             OnPropertyChanged(nameof(IsNewResourceSelected));
             OnPropertyChanged(nameof(IsProvidersSelected));
             OnPropertyChanged(nameof(IsProductionOrdersSelected));
-            OnPropertyChanged(nameof(IsBomSelected));
-            OnPropertyChanged(nameof(IsCostsSelected));
             OnPropertyChanged(nameof(IsMonetarySelected));
             OnPropertyChanged(nameof(IsBackupsSelected));
             OnPropertyChanged(nameof(IsUsersSelected));

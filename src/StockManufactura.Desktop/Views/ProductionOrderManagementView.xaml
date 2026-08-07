@@ -40,9 +40,10 @@
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
 
-                <Border Grid.Column="0" Style="{StaticResource CardBorderStyle}" Margin="0 0 10 0">
+                <Border Grid.Column="0" Style="{StaticResource CardBorderStyle}" Margin="0 0 8 0">
                     <StackPanel>
                         <TextBlock Text="STOCK CRITICO" Foreground="{StaticResource PrimaryAccentBrush}" FontWeight="Bold" FontSize="18" />
                         <Border Background="#F3F1EC" CornerRadius="8" Padding="10" Margin="0 10 0 0">
@@ -51,7 +52,7 @@
                     </StackPanel>
                 </Border>
 
-                <Border Grid.Column="1" Style="{StaticResource CardBorderStyle}" Margin="5 0 5 0">
+                <Border Grid.Column="1" Style="{StaticResource CardBorderStyle}" Margin="4 0 4 0">
                     <StackPanel>
                         <TextBlock Text="ORDENES DE PRODUCCION" Foreground="{StaticResource SecondaryAccentBrush}" FontWeight="Bold" FontSize="18" />
                         <Border Background="#F3F1EC" CornerRadius="8" Padding="10" Margin="0 10 0 0">
@@ -60,10 +61,17 @@
                     </StackPanel>
                 </Border>
 
-                <Border Grid.Column="2" Style="{StaticResource CardBorderStyle}" Margin="10 0 0 0">
+                <Border Grid.Column="2" Style="{StaticResource CardBorderStyle}" Margin="4 0 4 0">
                     <StackPanel>
                         <TextBlock Text="COSTOS TOTALES MES" Foreground="{StaticResource PrimaryAccentBrush}" FontWeight="Bold" FontSize="18" />
-                        <TextBlock Text="{Binding EstimatedOrdersCost, StringFormat=$ {0:N2}}" FontWeight="Bold" FontSize="37" Margin="0 14 0 0" HorizontalAlignment="Center" />
+                        <TextBlock Text="{Binding EstimatedOrdersCost, StringFormat=$ {0:N2}}" FontWeight="Bold" FontSize="28" Margin="0 14 0 0" HorizontalAlignment="Center" />
+                    </StackPanel>
+                </Border>
+
+                <Border Grid.Column="3" Style="{StaticResource CardBorderStyle}" Margin="8 0 0 0">
+                    <StackPanel>
+                        <TextBlock Text="VENTAS MENSUALES" Foreground="{StaticResource SecondaryAccentBrush}" FontWeight="Bold" FontSize="18" />
+                        <TextBlock Text="{Binding MonthlySalesTotal, StringFormat=$ {0:N2}}" FontWeight="Bold" FontSize="28" Margin="0 14 0 0" HorizontalAlignment="Center" />
                     </StackPanel>
                 </Border>
             </Grid>

@@ -15,8 +15,10 @@
 
         <!-- Encabezado -->
         <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0 0 0 12">
+            <Button Content="←" Command="{Binding BackCommand}" ToolTip="Volver a Productos"
+                    Width="32" Height="32" FontSize="16" FontWeight="Bold" Margin="0 0 12 0"
+                    Style="{StaticResource SecondaryButtonStyle}" />
             <TextBlock Text="HISTORIAL DE PRODUCTO" Style="{StaticResource SectionTitleStyle}" VerticalAlignment="Center" />
-            <Button Content="Volver" Command="{Binding BackCommand}" Width="100" Height="32" Margin="16 0 0 0" Style="{StaticResource SecondaryButtonStyle}" />
         </StackPanel>
 
         <!-- Selector de producto -->

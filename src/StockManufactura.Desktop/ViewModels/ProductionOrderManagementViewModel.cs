@@ -80,6 +80,14 @@ namespace StockManufactura.Desktop.ViewModels
             var product = Products.FirstOrDefault(x => x.Id == order.ProductoId);
             return (product?.CostoFabricacionActual ?? 0m) * order.CantidadPlaneada;
         });
+        public decimal MonthlySalesTotal => Orders
+            .Where(order => order.Estado == EstadoOrdenProduccion.Finalizada)
+            .Where(order => IsCurrentMonth(order.FechaFin ?? order.CreatedAt))
+            .Sum(order =>
+            {
+                var product = Products.FirstOrDefault(x => x.Id == order.ProductoId);
+                return (product?.PrecioSugeridoActual ?? 0m) * order.CantidadProducida;
+            });
 
         public string EstadoActual => SelectedOrder?.Estado.ToString() ?? "Sin selección";
 
@@ -91,8 +99,8 @@ namespace StockManufactura.Desktop.ViewModels
             }
 
             SelectedProduct = Products.FirstOrDefault(x => x.Id == value.ProductoId);
-            CantidadPlaneada = value.CantidadPlaneada.ToString("0.0000", CultureInfo.InvariantCulture);
-            CantidadProducida = value.CantidadProducida.ToString("0.0000", CultureInfo.InvariantCulture);
+            CantidadPlaneada = value.CantidadPlaneada.ToString("0.00", CultureInfo.InvariantCulture);
+            CantidadProducida = value.CantidadProducida.ToString("0.00", CultureInfo.InvariantCulture);
             Observaciones = value.Observaciones;
             OnPropertyChanged(nameof(EstadoActual));
         }
@@ -148,7 +156,7 @@ namespace StockManufactura.Desktop.ViewModels
                 return;
             }
 
-            var codigo = string.IsNullOrWhiteSpace(CodigoInput) ? GenerateCode() : CodigoInput.Trim();
+            var codigo = string.IsNullOrWhiteSpace(CodigoInput) ? GenerateCode() : CodigoInput.Trim().ToUpperInvariant();
             var order = new OrdenProduccion(codigo, SelectedProduct.Id, planned, Observaciones.Trim());
             await _unitOfWork.OrdenesProduccion.AddAsync(order);
             await _unitOfWork.SaveChangesAsync();
@@ -283,6 +291,7 @@ namespace StockManufactura.Desktop.ViewModels
             OnPropertyChanged(nameof(OrdersInProcessCount));
             OnPropertyChanged(nameof(OrdersCompletedCount));
             OnPropertyChanged(nameof(EstimatedOrdersCost));
+            OnPropertyChanged(nameof(MonthlySalesTotal));
             OnPropertyChanged(nameof(CriticalStockCount));
         }
 
@@ -305,9 +314,9 @@ namespace StockManufactura.Desktop.ViewModels
                 return;
             }
 
-            foreach (var recipeItem in recipeItems)
+            foreach (var recipeItem in recipeItems.Where(x => x.RecursoId.HasValue))
             {
-                var resource = await _unitOfWork.Recursos.GetByIdAsync(recipeItem.RecursoId);
+                var resource = await _unitOfWork.Recursos.GetByIdAsync(recipeItem.RecursoId!.Value);
                 if (resource is null)
                 {
                     throw new InvalidOperationException($"No se encontró el insumo {recipeItem.RecursoId}.");
@@ -332,6 +341,12 @@ namespace StockManufactura.Desktop.ViewModels
                 resource.FechaUltimaActualizacion = DateTime.UtcNow;
                 _unitOfWork.Recursos.Update(resource);
             }
+        }
+
+        private static bool IsCurrentMonth(DateTime value)
+        {
+            var now = DateTime.UtcNow;
+            return value.Year == now.Year && value.Month == now.Month;
         }
 
         private string GenerateCode()

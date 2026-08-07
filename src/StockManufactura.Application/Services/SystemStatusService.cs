@@ -28,7 +28,13 @@ namespace StockManufactura.Application.Services
             _cloudSyncService = cloudSyncService;
         }
 
-        public async Task<SystemStatusSnapshot> GetSnapshotAsync(CancellationToken cancellationToken = default)
+        public Task<SystemStatusSnapshot> GetSnapshotAsync(CancellationToken cancellationToken = default)
+        {
+            var now = DateTime.UtcNow;
+            return GetSnapshotAsync(now.Year, now.Month, cancellationToken);
+        }
+
+        public async Task<SystemStatusSnapshot> GetSnapshotAsync(int? year, int? month, CancellationToken cancellationToken = default)
         {
             var products = await _unitOfWork.Productos.ListAsync();
             var resources = await _unitOfWork.Recursos.ListAsync();
@@ -48,11 +54,16 @@ namespace StockManufactura.Application.Services
             var statusTone = latestBackup is null ? "Warning" : "Success";
             var criticalStockCount = resources.Count(resource => resource.StockActual <= resource.StockMinimo);
             var ordersInProcessCount = orders.Count(order => order.Estado == EstadoOrdenProduccion.EnProceso);
-            var currentMonth = DateTime.UtcNow.Month;
-            var currentYear = DateTime.UtcNow.Year;
+
             var monthlyCostTotal = costHistory
-                .Where(history => history.Fecha.Month == currentMonth && history.Fecha.Year == currentYear)
+                .Where(history => year is null || (history.Fecha.Month == month && history.Fecha.Year == year))
                 .Sum(history => history.CostoNuevo);
+
+            var productsById = products.ToDictionary(product => product.Id, product => product);
+            var monthlySalesTotal = orders
+                .Where(order => order.Estado == EstadoOrdenProduccion.Finalizada)
+                .Where(order => year is null || IsInPeriod(order.FechaFin ?? order.CreatedAt, year.Value, month!.Value))
+                .Sum(order => (productsById.TryGetValue(order.ProductoId, out var product) ? product.PrecioSugeridoActual : 0m) * order.CantidadProducida);
 
             return new SystemStatusSnapshot
             {
@@ -62,6 +73,7 @@ namespace StockManufactura.Application.Services
                 CriticalStockCount = criticalStockCount,
                 OrdersInProcessCount = ordersInProcessCount,
                 MonthlyCostTotal = monthlyCostTotal,
+                MonthlySalesTotal = monthlySalesTotal,
                 LastBackupAt = latestBackup?.FechaHora,
                 LastDollarUpdateAt = monetaryState?.LastUpdate,
                 LastDollarSource = monetaryState?.Source ?? string.Empty,
@@ -76,5 +88,7 @@ namespace StockManufactura.Application.Services
                 StatusTone = statusTone
             };
         }
+
+        private static bool IsInPeriod(DateTime value, int year, int month) => value.Year == year && value.Month == month;
     }
 }

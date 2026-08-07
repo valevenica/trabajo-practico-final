@@ -19,6 +19,8 @@ namespace StockManufactura.Desktop.ViewModels
         private readonly IProductCostService _productCostService;
         private readonly NavigationService? _navigationService;
         private readonly DashboardViewModel? _dashboardViewModel;
+        private readonly ProductManagementViewModel? _returnTarget;
+        private readonly Guid? _initialProductId;
 
         [ObservableProperty]
         private Producto? _selectedProduct;
@@ -30,12 +32,16 @@ namespace StockManufactura.Desktop.ViewModels
             IUnitOfWork unitOfWork,
             IProductCostService productCostService,
             NavigationService? navigationService = null,
-            DashboardViewModel? dashboardViewModel = null)
+            DashboardViewModel? dashboardViewModel = null,
+            Producto? initialProduct = null,
+            ProductManagementViewModel? returnTarget = null)
         {
             _unitOfWork = unitOfWork;
             _productCostService = productCostService;
             _navigationService = navigationService;
             _dashboardViewModel = dashboardViewModel;
+            _returnTarget = returnTarget;
+            _initialProductId = initialProduct?.Id;
             Products = new ObservableCollection<Producto>();
             Timeline = new ObservableCollection<ProductHistoryRow>();
             LoadHistoryCommand = new AsyncRelayCommand(LoadHistoryAsync);
@@ -63,7 +69,9 @@ namespace StockManufactura.Desktop.ViewModels
                 Products.Add(product);
             }
 
-            SelectedProduct = Products.FirstOrDefault();
+            SelectedProduct = _initialProductId.HasValue
+                ? Products.FirstOrDefault(x => x.Id == _initialProductId.Value) ?? Products.FirstOrDefault()
+                : Products.FirstOrDefault();
         }
 
         private async Task LoadHistoryAsync()
@@ -126,7 +134,16 @@ namespace StockManufactura.Desktop.ViewModels
 
         private void GoBack()
         {
-            if (_navigationService is not null && _dashboardViewModel is not null)
+            if (_navigationService is null)
+            {
+                return;
+            }
+
+            if (_returnTarget is not null)
+            {
+                _navigationService.NavigateTo(_returnTarget);
+            }
+            else if (_dashboardViewModel is not null)
             {
                 _navigationService.NavigateTo(_dashboardViewModel);
             }
