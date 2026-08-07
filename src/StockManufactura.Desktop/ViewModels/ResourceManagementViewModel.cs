@@ -235,7 +235,7 @@ namespace StockManufactura.Desktop.ViewModels
                     ProveedoresDisponibles.Add(proveedor);
                 UpdateFilteredProveedores();
 
-                CotizacionVigente = s.CurrentRate.ToString("0.0000", CultureInfo.InvariantCulture);
+                CotizacionVigente = s.CurrentRate.ToString("0.00", CultureInfo.InvariantCulture);
                 await RecalculateAsync();
                 StatusMessage = "Recursos cargados.";
             }
@@ -319,10 +319,10 @@ namespace StockManufactura.Desktop.ViewModels
             }
 
             var state = await _monetaryConfigurationService.GetCurrentStateAsync();
-            CotizacionVigente = state.CurrentRate.ToString("0.0000", CultureInfo.InvariantCulture);
+            CotizacionVigente = state.CurrentRate.ToString("0.00", CultureInfo.InvariantCulture);
             var rate = state.CurrentRate <= 0 ? 1 : state.CurrentRate;
             var result = IsUsd ? parsedPrice * rate : parsedPrice;
-            CostoEquivalentePesos = result.ToString("0.0000", CultureInfo.InvariantCulture);
+            CostoEquivalentePesos = result.ToString("0.00", CultureInfo.InvariantCulture);
         }
 
         private async Task LoadHistoryAsync(Guid resourceId)
@@ -470,7 +470,7 @@ namespace StockManufactura.Desktop.ViewModels
 
                 await LoadProveedoresDelInsumoAsync(SelectedResource.Id);
                 Precio = prioritario.Precio.ToString(CultureInfo.InvariantCulture);
-                StatusMessage = $"Proveedor prioritario actualizado. Precio del insumo: {prioritario.Precio:0.0000}";
+                StatusMessage = $"Proveedor prioritario actualizado. Precio del insumo: {prioritario.Precio:0.00}";
             }
             catch (Exception ex)
             {
