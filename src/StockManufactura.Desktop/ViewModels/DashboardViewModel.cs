@@ -98,6 +98,7 @@ namespace StockManufactura.Desktop.ViewModels
                 {
                     _ordersView.Refresh();
                     OnPropertyChanged(nameof(SelectAllStatusFilters));
+                    OnPropertyChanged(nameof(FilterSummary));
                 };
             }
             OrderSortOptions = new ObservableCollection<string>(new[] { "Más recientes", "Más antiguas", "Estado", "Costo mayor", "Costo menor" });
@@ -142,6 +143,17 @@ namespace StockManufactura.Desktop.ViewModels
                 foreach (var f in OrderStatusFilters) f.IsChecked = value;
                 _ordersView.Refresh();
                 OnPropertyChanged();
+            }
+        }
+
+        public string FilterSummary
+        {
+            get
+            {
+                var active = OrderStatusFilters.Where(f => f.IsChecked).ToList();
+                if (active.Count == 0) return "Sin filtro";
+                if (active.Count == OrderStatusFilters.Count) return "Todos los estados";
+                return string.Join(", ", active.Select(f => f.Label));
             }
         }
 

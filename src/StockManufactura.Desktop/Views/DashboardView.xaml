@@ -78,27 +78,41 @@
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
 
-                            <!-- Multi-select status filter con dropdown y Todos -->
+                            <!-- Filtro desplegable multi-estado -->
                             <StackPanel Grid.Column="0" Margin="0,0,16,0">
                                 <TextBlock Text="Filtrar por estado" Style="{StaticResource DashboardFilterLabelStyle}" />
-                                <Border Background="#FFFFFF" BorderBrush="#B48B3A" BorderThickness="1" CornerRadius="8" Padding="10,6">
-                                    <StackPanel Orientation="Horizontal">
-                                        <CheckBox Content="Todos" IsChecked="{Binding SelectAllStatusFilters, Mode=TwoWay}"
-                                                  Margin="0,0,14,0" VerticalAlignment="Center" FontSize="13" FontWeight="SemiBold" />
-                                        <Rectangle Width="1" Fill="#CCC" Margin="0,0,14,0" />
-                                        <ItemsControl ItemsSource="{Binding OrderStatusFilters}">
-                                            <ItemsControl.ItemsPanel>
-                                                <ItemsPanelTemplate><StackPanel Orientation="Horizontal" /></ItemsPanelTemplate>
-                                            </ItemsControl.ItemsPanel>
-                                            <ItemsControl.ItemTemplate>
-                                                <DataTemplate>
-                                                    <CheckBox Content="{Binding Label}" IsChecked="{Binding IsChecked, Mode=TwoWay}"
-                                                              Margin="0,0,12,0" VerticalAlignment="Center" FontSize="13" />
-                                                </DataTemplate>
-                                            </ItemsControl.ItemTemplate>
-                                        </ItemsControl>
-                                    </StackPanel>
-                                </Border>
+                                <Grid>
+                                    <ToggleButton x:Name="StatusFilterToggle"
+                                                  Height="34" MinWidth="190"
+                                                  Background="#FFFFFF" BorderBrush="#B48B3A" BorderThickness="1"
+                                                  Padding="10,0" HorizontalContentAlignment="Left">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="{Binding FilterSummary}" VerticalAlignment="Center" FontSize="13" />
+                                            <TextBlock Text=" ▾" VerticalAlignment="Center" FontSize="11" Foreground="#888" />
+                                        </StackPanel>
+                                    </ToggleButton>
+                                    <Popup IsOpen="{Binding IsChecked, ElementName=StatusFilterToggle}"
+                                           PlacementTarget="{Binding ElementName=StatusFilterToggle}"
+                                           Placement="Bottom" StaysOpen="False"
+                                           PopupAnimation="Slide" AllowsTransparency="True">
+                                        <Border Background="#FFFFFF" BorderBrush="#B48B3A" BorderThickness="1"
+                                                CornerRadius="6" Padding="10,8" MinWidth="190">
+                                            <StackPanel>
+                                                <CheckBox Content="Todos" IsChecked="{Binding SelectAllStatusFilters, Mode=TwoWay}"
+                                                          Margin="0,0,0,6" FontSize="13" FontWeight="SemiBold" />
+                                                <Separator Margin="0,0,0,6" />
+                                                <ItemsControl ItemsSource="{Binding OrderStatusFilters}">
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <CheckBox Content="{Binding Label}" IsChecked="{Binding IsChecked, Mode=TwoWay}"
+                                                                      Margin="0,0,0,4" FontSize="13" />
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                            </StackPanel>
+                                        </Border>
+                                    </Popup>
+                                </Grid>
                             </StackPanel>
 
                             <StackPanel Grid.Column="1" Margin="0,0,10,0">
@@ -127,9 +141,9 @@
                                   RowBackground="#FCFBF8"
                                   AlternatingRowBackground="#F5F3EF"
                                   IsReadOnly="True"
-                                  RowHeight="56"
-                                  ColumnHeaderHeight="52"
-                                  FontSize="16">
+                                  RowHeight="40"
+                                  ColumnHeaderHeight="40"
+                                  FontSize="13">
                             <DataGrid.Resources>
                                 <Style TargetType="DataGridColumnHeader">
                                     <Setter Property="Background" Value="{StaticResource TableHeaderBrush}" />

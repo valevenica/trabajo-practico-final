@@ -27,6 +27,7 @@ namespace StockManufactura.Desktop.ViewModels
         [ObservableProperty] private string _cantidadProducida = "0";
         [ObservableProperty] private string _observaciones = string.Empty;
         [ObservableProperty] private string _statusMessage = string.Empty;
+        [ObservableProperty] private string _codigoInput = string.Empty;
 
         public ProductionOrderManagementViewModel(
             IUnitOfWork unitOfWork,
@@ -147,15 +148,17 @@ namespace StockManufactura.Desktop.ViewModels
                 return;
             }
 
-            var order = new OrdenProduccion(GenerateCode(), SelectedProduct.Id, planned, Observaciones.Trim());
+            var codigo = string.IsNullOrWhiteSpace(CodigoInput) ? GenerateCode() : CodigoInput.Trim();
+            var order = new OrdenProduccion(codigo, SelectedProduct.Id, planned, Observaciones.Trim());
             await _unitOfWork.OrdenesProduccion.AddAsync(order);
             await _unitOfWork.SaveChangesAsync();
             await RegisterAuditAsync("Crear", order, "Alta de orden de producción.");
 
+            CodigoInput = codigo; // keep code visible so user can reuse it for next product
             await LoadAsync();
             SelectedOrder = Orders.FirstOrDefault(x => x.Id == order.Id);
             RefreshIndicators();
-            StatusMessage = "Orden creada en borrador.";
+            StatusMessage = $"Orden {codigo} creada. Para agregar otro producto a la misma orden, mantené el código y seleccioná otro producto.";
         }
 
         private async Task SetDraftAsync()
