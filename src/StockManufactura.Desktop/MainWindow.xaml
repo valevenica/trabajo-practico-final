@@ -134,7 +134,6 @@
                         </Expander.Header>
                         <StackPanel Margin="0,6,0,0">
                             <Button Content="Configuración monetaria" Margin="0,0,0,6" Command="{Binding NavigateMonetaryCommand}" Tag="{Binding IsMonetarySelected}" Style="{StaticResource SidebarMenuButtonStyle}" />
-                            <Button Content="Backups" Margin="0,0,0,6" Command="{Binding NavigateBackupsCommand}" Tag="{Binding IsBackupsSelected}" Style="{StaticResource SidebarMenuButtonStyle}" />
                         </StackPanel>
                     </Expander>
 
@@ -144,6 +143,7 @@
                         </Expander.Header>
                         <StackPanel Margin="0,6,0,0">
                             <Button Content="Usuarios" Margin="0,0,0,6" Command="{Binding NavigateUsersCommand}" Tag="{Binding IsUsersSelected}" Style="{StaticResource SidebarMenuButtonStyle}" />
+                            <Button Content="Backups" Margin="0,0,0,6" Command="{Binding NavigateBackupsCommand}" Tag="{Binding IsBackupsSelected}" Style="{StaticResource SidebarMenuButtonStyle}" />
                             <Button Content="Bitácora" Margin="0,0,0,6" Command="{Binding NavigateAuditCommand}" Tag="{Binding IsAuditSelected}" Style="{StaticResource SidebarMenuButtonStyle}" />
                         </StackPanel>
                     </Expander>

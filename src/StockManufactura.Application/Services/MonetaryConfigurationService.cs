@@ -77,12 +77,16 @@ namespace StockManufactura.Application.Services
                 Equipo = Environment.MachineName
             });
 
-            await _productCostService.RecalculateAffectedProductsAsync(new Products.ProductRecalculationRequest
+            try
             {
-                Usuario = usuario,
-                Motivo = "Cambio manual de cotizacion",
-                CambioCotizacion = true
-            });
+                await _productCostService.RecalculateAffectedProductsAsync(new Products.ProductRecalculationRequest
+                {
+                    Usuario = usuario,
+                    Motivo = "Cambio manual de cotizacion",
+                    CambioCotizacion = true
+                });
+            }
+            catch { /* recalculation errors don't prevent the rate from being saved */ }
 
             return rate;
         }
@@ -137,12 +141,16 @@ namespace StockManufactura.Application.Services
                 });
             }
 
-            await _productCostService.RecalculateAffectedProductsAsync(new Products.ProductRecalculationRequest
+            try
             {
-                Usuario = usuario,
-                Motivo = "Actualizacion de cotizacion",
-                CambioCotizacion = true
-            });
+                await _productCostService.RecalculateAffectedProductsAsync(new Products.ProductRecalculationRequest
+                {
+                    Usuario = usuario,
+                    Motivo = "Actualizacion de cotizacion",
+                    CambioCotizacion = true
+                });
+            }
+            catch { /* recalculation errors don't prevent the rate from being returned */ }
 
             return rate;
         }

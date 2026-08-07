@@ -82,24 +82,30 @@
 
                     <Grid Grid.Row="1" Margin="0 0 0 8">
                         <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="1.4*" />
                             <ColumnDefinition Width="2*" />
                             <ColumnDefinition Width="2*" />
-                            <ColumnDefinition Width="1.4*" />
-                            <ColumnDefinition Width="1.4*" />
+                            <ColumnDefinition Width="1.2*" />
+                            <ColumnDefinition Width="1.2*" />
                         </Grid.ColumnDefinitions>
                         <StackPanel Grid.Column="0" Margin="0 0 8 0">
+                            <TextBlock Text="Código orden" />
+                            <TextBox Text="{Binding CodigoInput, UpdateSourceTrigger=PropertyChanged}"
+                                     Height="34" ToolTip="Dejá vacío para generar automáticamente. Ingresá el mismo código para agrupar varios productos en una orden." />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Margin="0 0 8 0">
                             <TextBlock Text="Producto" />
                             <ComboBox ItemsSource="{Binding Products}" SelectedItem="{Binding SelectedProduct}" DisplayMemberPath="Nombre" Height="34" />
                         </StackPanel>
-                        <StackPanel Grid.Column="1" Margin="0 0 8 0">
+                        <StackPanel Grid.Column="2" Margin="0 0 8 0">
                             <TextBlock Text="Observaciones" />
                             <TextBox Text="{Binding Observaciones, UpdateSourceTrigger=PropertyChanged}" Height="34" />
                         </StackPanel>
-                        <StackPanel Grid.Column="2" Margin="0 0 8 0">
+                        <StackPanel Grid.Column="3" Margin="0 0 8 0">
                             <TextBlock Text="Cant. planeada" />
                             <TextBox Text="{Binding CantidadPlaneada, UpdateSourceTrigger=PropertyChanged}" Height="34" />
                         </StackPanel>
-                        <StackPanel Grid.Column="3">
+                        <StackPanel Grid.Column="4">
                             <TextBlock Text="Cant. producida" />
                             <TextBox Text="{Binding CantidadProducida, UpdateSourceTrigger=PropertyChanged}" Height="34" />
                         </StackPanel>

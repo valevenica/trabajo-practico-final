@@ -73,18 +73,46 @@
                     <Border Margin="0,0,0,12" Padding="12" Background="#FFFFFF" BorderBrush="#D7CBAE" BorderThickness="1" CornerRadius="10">
                         <Grid>
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="1.2*" />
+                                <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="1.2*" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
 
-                            <StackPanel Grid.Column="0" Margin="0,0,10,0">
+                            <!-- Filtro desplegable multi-estado -->
+                            <StackPanel Grid.Column="0" Margin="0,0,16,0">
                                 <TextBlock Text="Filtrar por estado" Style="{StaticResource DashboardFilterLabelStyle}" />
-                                <Border Background="#FFFFFF" BorderBrush="#B48B3A" BorderThickness="1" CornerRadius="8" Padding="8,0">
-                                    <ComboBox Style="{StaticResource DashboardFilterComboStyle}"
-                                              ItemsSource="{Binding OrderStatusFilters}"
-                                              SelectedItem="{Binding SelectedOrderStatusFilter, UpdateSourceTrigger=PropertyChanged}" />
-                                </Border>
+                                <Grid>
+                                    <ToggleButton x:Name="StatusFilterToggle"
+                                                  Height="34" MinWidth="190"
+                                                  Background="#FFFFFF" BorderBrush="#B48B3A" BorderThickness="1"
+                                                  Padding="10,0" HorizontalContentAlignment="Left">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="{Binding FilterSummary}" VerticalAlignment="Center" FontSize="13" />
+                                            <TextBlock Text=" ▾" VerticalAlignment="Center" FontSize="11" Foreground="#888" />
+                                        </StackPanel>
+                                    </ToggleButton>
+                                    <Popup IsOpen="{Binding IsChecked, ElementName=StatusFilterToggle}"
+                                           PlacementTarget="{Binding ElementName=StatusFilterToggle}"
+                                           Placement="Bottom" StaysOpen="False"
+                                           PopupAnimation="Slide" AllowsTransparency="True">
+                                        <Border Background="#FFFFFF" BorderBrush="#B48B3A" BorderThickness="1"
+                                                CornerRadius="6" Padding="10,8" MinWidth="190">
+                                            <StackPanel>
+                                                <CheckBox Content="Todos" IsChecked="{Binding SelectAllStatusFilters, Mode=TwoWay}"
+                                                          Margin="0,0,0,6" FontSize="13" FontWeight="SemiBold" />
+                                                <Separator Margin="0,0,0,6" />
+                                                <ItemsControl ItemsSource="{Binding OrderStatusFilters}">
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <CheckBox Content="{Binding Label}" IsChecked="{Binding IsChecked, Mode=TwoWay}"
+                                                                      Margin="0,0,0,4" FontSize="13" />
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                            </StackPanel>
+                                        </Border>
+                                    </Popup>
+                                </Grid>
                             </StackPanel>
 
                             <StackPanel Grid.Column="1" Margin="0,0,10,0">
@@ -113,9 +141,9 @@
                                   RowBackground="#FCFBF8"
                                   AlternatingRowBackground="#F5F3EF"
                                   IsReadOnly="True"
-                                  RowHeight="56"
-                                  ColumnHeaderHeight="52"
-                                  FontSize="16">
+                                  RowHeight="40"
+                                  ColumnHeaderHeight="40"
+                                  FontSize="13">
                             <DataGrid.Resources>
                                 <Style TargetType="DataGridColumnHeader">
                                     <Setter Property="Background" Value="{StaticResource TableHeaderBrush}" />
@@ -141,14 +169,34 @@
                                 </DataGridTemplateColumn>
                                 <DataGridTextColumn Header="FECHA" Binding="{Binding Fecha}" Width="1.45*" />
                                 <DataGridTextColumn Header="COSTO" Binding="{Binding Costo}" Width="1.1*" />
+                                <DataGridTemplateColumn Header="ACCIONES" Width="100">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                <Button IsEnabled="{Binding CanAdvance}"
+                                                        Command="{Binding DataContext.AdvanceOrderCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                        CommandParameter="{Binding}"
+                                                        Width="36" Height="36" Margin="0,0,6,0"
+                                                        Style="{StaticResource PrimaryButtonStyle}"
+                                                        ToolTip="{Binding AdvanceLabel}">
+                                                    <TextBlock Text="{Binding AdvanceIcon}" FontSize="16" />
+                                                </Button>
+                                                <Button IsEnabled="{Binding CanCancel}"
+                                                        Command="{Binding DataContext.CancelOrderCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                        CommandParameter="{Binding}"
+                                                        Width="36" Height="36"
+                                                        Style="{StaticResource SecondaryButtonStyle}"
+                                                        ToolTip="Cancelar orden">
+                                                    <TextBlock Text="✕" FontSize="16" />
+                                                </Button>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
                             </DataGrid.Columns>
                         </DataGrid>
                     </Border>
 
-                    <DockPanel Margin="0,20,0,0">
-                        <Button Content="Confirmar Orden" Width="230" Style="{StaticResource PrimaryButtonStyle}" DockPanel.Dock="Left" />
-                        <Button Content="Generar Reporte" Width="190" Style="{StaticResource SecondaryButtonStyle}" HorizontalAlignment="Right" DockPanel.Dock="Right" />
-                    </DockPanel>
                 </StackPanel>
             </Border>
 

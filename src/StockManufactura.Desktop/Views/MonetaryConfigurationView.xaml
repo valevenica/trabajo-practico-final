@@ -16,20 +16,17 @@
 
         <TextBlock Text="Configuración Monetaria" FontSize="24" FontWeight="Bold" />
 
-        <!-- Fila de cotización activa -->
-        <Border Grid.Row="1" Background="{StaticResource CardSurfaceBrush}" BorderBrush="#DDD"
-                BorderThickness="1" CornerRadius="6" Padding="14 10" Margin="0 10 0 12">
-            <StackPanel Orientation="Horizontal">
-                <TextBlock Text="💲 Cotización activa:" FontWeight="Bold" VerticalAlignment="Center" />
-                <TextBlock Text="{Binding CurrentRate, StringFormat=${0}}" FontSize="20" FontWeight="Bold"
-                           Foreground="{StaticResource PrimaryAccentBrush}" Margin="10 0 24 0" VerticalAlignment="Center"/>
-                <TextBlock Text="Fuente:" FontWeight="SemiBold" VerticalAlignment="Center" />
-                <TextBlock Text="{Binding Source}" Margin="6 0 24 0" VerticalAlignment="Center" />
-                <TextBlock Text="Actualizado:" FontWeight="SemiBold" VerticalAlignment="Center" />
-                <TextBlock Text="{Binding LastUpdate}" Margin="6 0 0 0" VerticalAlignment="Center"
-                           Foreground="{StaticResource TextMutedBrush}" />
-            </StackPanel>
-        </Border>
+        <!-- Cotización activa -->
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0 12 0 10">
+            <TextBlock Text="💲 Cotización activa:" FontWeight="Bold" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding CurrentRate, StringFormat=\${0}}" FontSize="20" FontWeight="Bold"
+                       Foreground="{StaticResource PrimaryAccentBrush}" Margin="10 0 24 0" VerticalAlignment="Center"/>
+            <TextBlock Text="Fuente:" FontWeight="SemiBold" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding Source}" Margin="6 0 24 0" VerticalAlignment="Center" />
+            <TextBlock Text="Actualizado:" FontWeight="SemiBold" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding LastUpdate}" Margin="6 0 0 0" VerticalAlignment="Center"
+                       Foreground="{StaticResource TextMutedBrush}" />
+        </StackPanel>
 
         <!-- Acciones -->
         <Border Grid.Row="2" Style="{StaticResource CardBorderStyle}" Margin="0 0 0 10">
@@ -39,48 +36,37 @@
                 </Border>
 
                 <!-- Automática -->
-                <Grid Margin="0 0 0 10">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="180" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <TextBlock VerticalAlignment="Center" FontWeight="SemiBold" TextWrapping="Wrap">
-                        🔄 Dólar blue automático
-                    </TextBlock>
-                    <TextBlock Grid.Column="1" VerticalAlignment="Center" Margin="12 0"
-                               Text="Obtiene el precio de venta del dólar blue en tiempo real desde DolarHoy"
-                               Foreground="{StaticResource TextMutedBrush}" FontStyle="Italic" />
-                    <Button Grid.Column="2" Height="34" Width="160"
-                            Content="🔄 Actualizar blue"
+                <StackPanel Orientation="Horizontal" Margin="0 0 0 10">
+                    <Button Width="180" Height="34" Content="🔄 Actualizar blue"
                             Command="{Binding AutomaticUpdateCommand}"
                             Style="{StaticResource PrimaryButtonStyle}" />
-                </Grid>
+                    <TextBlock Margin="12 0 0 0" VerticalAlignment="Center"
+                               Text="Obtiene el precio de venta del dólar blue en tiempo real desde DolarHoy"
+                               Foreground="{StaticResource TextMutedBrush}" FontStyle="Italic" />
+                </StackPanel>
 
-                <Separator Margin="0 4 0 10" />
+                <Separator Margin="0 0 0 10" />
 
                 <!-- Manual -->
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="180" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="200" />
+                        <ColumnDefinition Width="240" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
-                    <TextBlock VerticalAlignment="Center" FontWeight="SemiBold">
-                        ✏️ Carga manual
-                    </TextBlock>
-                    <StackPanel Grid.Column="1" Margin="12 0 8 0">
+                    <TextBlock VerticalAlignment="Center" FontWeight="SemiBold">✏️ Carga manual:</TextBlock>
+                    <StackPanel Grid.Column="1" Margin="10 0 8 0">
                         <TextBlock Text="Valor ($)" FontSize="11" Foreground="Gray" />
                         <TextBox Text="{Binding ManualRateInput, UpdateSourceTrigger=PropertyChanged}"
-                                 Height="34" ToolTip="Ej: 1530.00 (usar punto decimal)" />
+                                 Height="30" ToolTip="Ej: 1530.00 (usar punto decimal)" />
                     </StackPanel>
                     <StackPanel Grid.Column="2" Margin="0 0 10 0">
                         <TextBlock Text="Fuente (de dónde lo sacás)" FontSize="11" Foreground="Gray" />
                         <TextBox Text="{Binding ManualFuenteInput, UpdateSourceTrigger=PropertyChanged}"
-                                 Height="34" ToolTip="Ej: DolarHoy, Banco Nación, Ambito" />
+                                 Height="30" ToolTip="Ej: DolarHoy, Banco Nación, Ambito" />
                     </StackPanel>
-                    <Button Grid.Column="3" Height="34" Width="130" Margin="0 16 0 0"
+                    <Button Grid.Column="3" Height="30" Width="130" Margin="0 16 0 0"
                             Content="Guardar manual"
                             Command="{Binding ManualUpdateCommand}"
                             Style="{StaticResource SecondaryButtonStyle}" />
@@ -91,77 +77,28 @@
         <TextBlock Grid.Row="3" Text="{Binding StatusMessage}" Margin="0 0 0 8"
                    Style="{StaticResource StatusMessageStyle}" />
 
-        <!-- Historial con selección de prioritaria -->
+        <!-- Historial -->
         <Border Grid.Row="4" Style="{StaticResource CardBorderStyle}">
             <DockPanel>
-                <Border DockPanel.Dock="Top" Background="{StaticResource BackgroundDarkMetalBrush}"
-                        Padding="8" CornerRadius="4" Margin="0 0 0 8">
-                    <Grid>
-                        <TextBlock Text="Historial de cotizaciones" Foreground="{StaticResource SecondaryAccentBrush}" FontWeight="SemiBold" VerticalAlignment="Center" />
-                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                            <TextBlock Text="Seleccioná una fila y hacé clic → " Foreground="{StaticResource TextMutedBrush}"
-                                       FontSize="11" VerticalAlignment="Center" Margin="0 0 8 0" />
-                            <Button Content="★ Usar esta cotización" Command="{Binding SetPrioritariaCommand}"
-                                    Height="28" Padding="10 0" Style="{StaticResource PrimaryButtonStyle}" />
-                        </StackPanel>
-                    </Grid>
-                </Border>
+                <Grid DockPanel.Dock="Top" Margin="0 0 0 8">
+                    <TextBlock Text="Historial de cotizaciones" FontWeight="SemiBold" VerticalAlignment="Center" />
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <TextBlock Text="Seleccioná una fila → " Foreground="{StaticResource TextMutedBrush}"
+                                   FontSize="11" VerticalAlignment="Center" Margin="0 0 8 0" />
+                        <Button Content="★ Usar esta cotización" Command="{Binding SetPrioritariaCommand}"
+                                Height="28" Padding="10 0" Style="{StaticResource PrimaryButtonStyle}" />
+                    </StackPanel>
+                </Grid>
                 <DataGrid ItemsSource="{Binding History}"
                           SelectedItem="{Binding SelectedHistoryRate}"
                           AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False"
-                          GridLinesVisibility="Horizontal" AlternatingRowBackground="#F9F9F9">
-                    <DataGrid.RowStyle>
-                        <Style TargetType="DataGridRow">
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding EsPrioritaria}" Value="True">
-                                    <Setter Property="Background" Value="#FFF8E7" />
-                                    <Setter Property="FontWeight" Value="Bold" />
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </DataGrid.RowStyle>
+                          GridLinesVisibility="Horizontal">
                     <DataGrid.Columns>
-                        <DataGridTemplateColumn Header="" Width="40">
-                            <DataGridTemplateColumn.CellTemplate>
-                                <DataTemplate>
-                                    <TextBlock HorizontalAlignment="Center" FontSize="14"
-                                               Text="{Binding EsPrioritaria, Converter={StaticResource BoolToVisibilityConverter}}"
-                                               Visibility="Visible">
-                                        <TextBlock.Style>
-                                            <Style TargetType="TextBlock">
-                                                <Setter Property="Text" Value="" />
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding EsPrioritaria}" Value="True">
-                                                        <Setter Property="Text" Value="★" />
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </TextBlock.Style>
-                                    </TextBlock>
-                                </DataTemplate>
-                            </DataGridTemplateColumn.CellTemplate>
-                        </DataGridTemplateColumn>
+                        <DataGridTextColumn Header="★" Binding="{Binding EsPrioritaria}" Width="40" />
                         <DataGridTextColumn Header="Fecha" Binding="{Binding Fecha, StringFormat={}{0:dd/MM/yyyy HH:mm}}" Width="140" />
-                        <DataGridTextColumn Header="Valor" Binding="{Binding Valor, StringFormat=${0:0.00}}" Width="100" />
+                        <DataGridTextColumn Header="Valor ($)" Binding="{Binding Valor, StringFormat={}{0:0.00}}" Width="100" />
                         <DataGridTextColumn Header="Fuente" Binding="{Binding Fuente}" Width="160" />
-                        <DataGridTemplateColumn Header="Tipo" Width="80">
-                            <DataGridTemplateColumn.CellTemplate>
-                                <DataTemplate>
-                                    <TextBlock HorizontalAlignment="Center">
-                                        <TextBlock.Style>
-                                            <Style TargetType="TextBlock">
-                                                <Setter Property="Text" Value="Manual" />
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding Automatica}" Value="True">
-                                                        <Setter Property="Text" Value="Auto" />
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </TextBlock.Style>
-                                    </TextBlock>
-                                </DataTemplate>
-                            </DataGridTemplateColumn.CellTemplate>
-                        </DataGridTemplateColumn>
+                        <DataGridTextColumn Header="Tipo" Binding="{Binding Automatica}" Width="80" />
                     </DataGrid.Columns>
                 </DataGrid>
             </DockPanel>
