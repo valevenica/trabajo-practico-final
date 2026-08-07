@@ -92,7 +92,14 @@ namespace StockManufactura.Desktop.ViewModels
                 new StatusFilterItem("Finalizada", "Finalizada"),
                 new StatusFilterItem("Cancelada",  "Cancelada", isChecked: false)
             };
-            foreach (var f in OrderStatusFilters) f.PropertyChanged += (_, _) => _ordersView.Refresh();
+            foreach (var f in OrderStatusFilters)
+            {
+                f.PropertyChanged += (_, _) =>
+                {
+                    _ordersView.Refresh();
+                    OnPropertyChanged(nameof(SelectAllStatusFilters));
+                };
+            }
             OrderSortOptions = new ObservableCollection<string>(new[] { "Más recientes", "Más antiguas", "Estado", "Costo mayor", "Costo menor" });
             Orders = new ObservableCollection<DashboardOrderRow>();
             _ordersView = CollectionViewSource.GetDefaultView(Orders);
@@ -126,6 +133,17 @@ namespace StockManufactura.Desktop.ViewModels
         public ObservableCollection<string> OrderSortOptions { get; }
 
         public ICollectionView OrdersView => _ordersView;
+
+        public bool SelectAllStatusFilters
+        {
+            get => OrderStatusFilters.All(f => f.IsChecked);
+            set
+            {
+                foreach (var f in OrderStatusFilters) f.IsChecked = value;
+                _ordersView.Refresh();
+                OnPropertyChanged();
+            }
+        }
 
         [ObservableProperty] private string _selectedOrderStatusFilter = string.Empty;
         [ObservableProperty] private string _selectedOrderSortOption = string.Empty;

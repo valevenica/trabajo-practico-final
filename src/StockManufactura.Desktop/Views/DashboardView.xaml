@@ -78,23 +78,26 @@
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
 
-                            <!-- Multi-select status filter -->
+                            <!-- Multi-select status filter con dropdown y Todos -->
                             <StackPanel Grid.Column="0" Margin="0,0,16,0">
                                 <TextBlock Text="Filtrar por estado" Style="{StaticResource DashboardFilterLabelStyle}" />
                                 <Border Background="#FFFFFF" BorderBrush="#B48B3A" BorderThickness="1" CornerRadius="8" Padding="10,6">
-                                    <ItemsControl ItemsSource="{Binding OrderStatusFilters}">
-                                        <ItemsControl.ItemsPanel>
-                                            <ItemsPanelTemplate>
-                                                <StackPanel Orientation="Horizontal" />
-                                            </ItemsPanelTemplate>
-                                        </ItemsControl.ItemsPanel>
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate>
-                                                <CheckBox Content="{Binding Label}" IsChecked="{Binding IsChecked, Mode=TwoWay}"
-                                                          Margin="0,0,14,0" VerticalAlignment="Center" FontSize="13" />
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
+                                    <StackPanel Orientation="Horizontal">
+                                        <CheckBox Content="Todos" IsChecked="{Binding SelectAllStatusFilters, Mode=TwoWay}"
+                                                  Margin="0,0,14,0" VerticalAlignment="Center" FontSize="13" FontWeight="SemiBold" />
+                                        <Rectangle Width="1" Fill="#CCC" Margin="0,0,14,0" />
+                                        <ItemsControl ItemsSource="{Binding OrderStatusFilters}">
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate><StackPanel Orientation="Horizontal" /></ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <CheckBox Content="{Binding Label}" IsChecked="{Binding IsChecked, Mode=TwoWay}"
+                                                              Margin="0,0,12,0" VerticalAlignment="Center" FontSize="13" />
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
                                 </Border>
                             </StackPanel>
 
@@ -160,13 +163,13 @@
                                                         IsEnabled="{Binding CanAdvance}"
                                                         Command="{Binding DataContext.AdvanceOrderCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                         CommandParameter="{Binding}"
-                                                        Height="28" Padding="8,0" Margin="0,0,6,0"
+                                                        Height="28" Width="110" Margin="0,0,6,0"
                                                         Style="{StaticResource PrimaryButtonStyle}" FontSize="12" />
                                                 <Button Content="✕ Cancelar"
                                                         IsEnabled="{Binding CanCancel}"
                                                         Command="{Binding DataContext.CancelOrderCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                         CommandParameter="{Binding}"
-                                                        Height="28" Padding="8,0"
+                                                        Height="28" Width="110"
                                                         Style="{StaticResource SecondaryButtonStyle}" FontSize="12" />
                                             </StackPanel>
                                         </DataTemplate>
@@ -176,10 +179,6 @@
                         </DataGrid>
                     </Border>
 
-                    <DockPanel Margin="0,20,0,0">
-                        <Button Content="Confirmar Orden" Width="230" Style="{StaticResource PrimaryButtonStyle}" DockPanel.Dock="Left" />
-                        <Button Content="Generar Reporte" Width="190" Style="{StaticResource SecondaryButtonStyle}" HorizontalAlignment="Right" DockPanel.Dock="Right" />
-                    </DockPanel>
                 </StackPanel>
             </Border>
 
