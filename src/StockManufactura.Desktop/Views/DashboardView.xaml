@@ -6,6 +6,11 @@
              mc:Ignorable="d"
              d:DesignHeight="700" d:DesignWidth="980">
     <UserControl.Resources>
+        <Style x:Key="CenteredCellStyle" TargetType="TextBlock">
+            <Setter Property="TextAlignment" Value="Center" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+        </Style>
+
         <Style x:Key="DashboardFilterLabelStyle" TargetType="TextBlock">
             <Setter Property="FontWeight" Value="SemiBold" />
             <Setter Property="FontSize" Value="13" />
@@ -68,14 +73,13 @@
 
             <Border Grid.Row="1" Style="{StaticResource DashboardPanelStyle}">
                 <StackPanel>
-                    <TextBlock Text="Módulo: Órdenes de Producción" FontSize="24" FontWeight="Bold" Foreground="#050505" Margin="0,0,0,16" />
+                    <TextBlock Text="Módulo: Órdenes de Producción" FontSize="18" FontWeight="Bold" Foreground="#050505" Margin="0,0,0,16" />
 
                     <Border Margin="0,0,0,12" Padding="12" Background="#FFFFFF" BorderBrush="#D7CBAE" BorderThickness="1" CornerRadius="10">
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="1.2*" />
-                                <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
 
                             <!-- Filtro desplegable multi-estado -->
@@ -123,8 +127,6 @@
                                               SelectedItem="{Binding SelectedOrderSortOption, UpdateSourceTrigger=PropertyChanged}" />
                                 </Border>
                             </StackPanel>
-
-                            <Button Grid.Column="2" Content="Actualizar" Command="{Binding RefreshStatusCommand}" Width="130" Height="34" VerticalAlignment="Bottom" Style="{StaticResource SecondaryButtonStyle}" />
                         </Grid>
                     </Border>
 
@@ -135,7 +137,8 @@
                                   CanUserDeleteRows="False"
                                   CanUserResizeRows="False"
                                   HeadersVisibility="Column"
-                                  GridLinesVisibility="None"
+                                  GridLinesVisibility="Vertical"
+                                  VerticalGridLinesBrush="#D9D3C8"
                                   Background="Transparent"
                                   BorderThickness="0"
                                   RowBackground="#FCFBF8"
@@ -149,16 +152,25 @@
                                     <Setter Property="Background" Value="{StaticResource TableHeaderBrush}" />
                                     <Setter Property="Foreground" Value="White" />
                                     <Setter Property="FontWeight" Value="SemiBold" />
-                                    <Setter Property="FontSize" Value="16" />
+                                    <Setter Property="FontSize" Value="12" />
+                                    <Setter Property="BorderBrush" Value="#3DFFFFFF" />
+                                    <Setter Property="BorderThickness" Value="0,0,1,0" />
+                                    <Setter Property="Padding" Value="12,0" />
+                                    <Setter Property="HorizontalContentAlignment" Value="Center" />
+                                </Style>
+                                <Style TargetType="DataGridCell">
+                                    <Setter Property="Padding" Value="10,0" />
                                     <Setter Property="BorderThickness" Value="0" />
-                                    <Setter Property="Padding" Value="14,0" />
+                                </Style>
+                                <Style x:Key="IdOrdenCellStyle" TargetType="DataGridCell" BasedOn="{StaticResource {x:Type DataGridCell}}">
+                                    <Setter Property="Padding" Value="10,0,26,0" />
                                 </Style>
                             </DataGrid.Resources>
                             <DataGrid.Columns>
-                                <DataGridTextColumn Header="ID ORDEN" Binding="{Binding Codigo}" Width="1.1*" />
-                                <DataGridTextColumn Header="PRODUCTO" Binding="{Binding ProductName}" Width="1.8*" />
-                                <DataGridTextColumn Header="CANTIDAD" Binding="{Binding Quantity}" Width="1*" />
-                                <DataGridTemplateColumn Header="ESTADO" Width="1.25*">
+                                <DataGridTextColumn Header="ID ORDEN" Binding="{Binding Codigo}" Width="Auto" MinWidth="90" CellStyle="{StaticResource IdOrdenCellStyle}" ElementStyle="{StaticResource CenteredCellStyle}" />
+                                <DataGridTextColumn Header="PRODUCTO" Binding="{Binding ProductName}" Width="*" MinWidth="160" />
+                                <DataGridTextColumn Header="CANTIDAD" Binding="{Binding Quantity}" Width="Auto" MinWidth="80" ElementStyle="{StaticResource CenteredCellStyle}" />
+                                <DataGridTemplateColumn Header="ESTADO" Width="Auto" MinWidth="100">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
                                             <Border Background="{Binding StatusBackground}" CornerRadius="7" Padding="10,6" HorizontalAlignment="Center" VerticalAlignment="Center">
@@ -167,9 +179,9 @@
                                         </DataTemplate>
                                     </DataGridTemplateColumn.CellTemplate>
                                 </DataGridTemplateColumn>
-                                <DataGridTextColumn Header="FECHA" Binding="{Binding Fecha}" Width="1.45*" />
-                                <DataGridTextColumn Header="COSTO" Binding="{Binding Costo}" Width="1.1*" />
-                                <DataGridTemplateColumn Header="ACCIONES" Width="100">
+                                <DataGridTextColumn Header="FECHA" Binding="{Binding Fecha}" Width="Auto" MinWidth="80" ElementStyle="{StaticResource CenteredCellStyle}" />
+                                <DataGridTextColumn Header="COSTO" Binding="{Binding Costo}" Width="Auto" MinWidth="75" ElementStyle="{StaticResource CenteredCellStyle}" />
+                                <DataGridTemplateColumn Header="ACCIONES" Width="Auto" MinWidth="92">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
                                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
