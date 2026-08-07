@@ -83,12 +83,20 @@ namespace StockManufactura.Desktop.ViewModels
             }
 
             var fuente = string.IsNullOrWhiteSpace(ManualFuenteInput) ? "Manual" : ManualFuenteInput.Trim();
-            var rate = await _service.UpdateManualAsync(value, fuente, "desktop-user");
-            CurrentRate = rate.Valor.ToString("0.0000", CultureInfo.InvariantCulture);
-            LastUpdate = rate.Fecha.ToLocalTime().ToString("g");
-            Source = rate.Fuente;
-            StatusMessage = $"Cotizaci\u00f3n manual guardada: ${value:0.00} ({fuente})";
-            await RefreshHistoryAsync();
+            try
+            {
+                var rate = await _service.UpdateManualAsync(value, fuente, "desktop-user");
+                CurrentRate = rate.Valor.ToString("0.0000", CultureInfo.InvariantCulture);
+                LastUpdate = rate.Fecha.ToLocalTime().ToString("g");
+                Source = rate.Fuente;
+                StatusMessage = $"Cotizaci\u00f3n manual guardada: ${value:0.00} ({fuente})";
+                await RefreshHistoryAsync();
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "ManualUpdateAsync failed");
+                StatusMessage = $"Error al guardar la cotizaci\u00f3n manual: {ex.Message}";
+            }
         }
 
         private async Task AutomaticUpdateAsync()
@@ -137,6 +145,7 @@ namespace StockManufactura.Desktop.ViewModels
             }
             catch (Exception ex)
             {
+                Log.Error(ex, "SetPrioritariaAsync failed");
                 StatusMessage = $"Error: {ex.Message}";
             }
         }
