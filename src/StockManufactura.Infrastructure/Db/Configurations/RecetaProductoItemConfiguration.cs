@@ -29,7 +29,13 @@ namespace StockManufactura.Infrastructure.Db.Configurations
                 .HasForeignKey(x => x.RecursoId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            builder.HasOne(x => x.ComponenteProducto)
+                .WithMany()
+                .HasForeignKey(x => x.ComponenteProductoId)
+                .OnDelete(DeleteBehavior.Restrict);
+
             builder.HasIndex(x => new { x.ProductoId, x.RecursoId }).IsUnique();
+            builder.HasIndex(x => new { x.ProductoId, x.ComponenteProductoId }).IsUnique();
         }
     }
 }

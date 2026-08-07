@@ -123,8 +123,6 @@
                         </Expander.Header>
                         <StackPanel Margin="0,6,0,0">
                             <Button Content="Órdenes" Margin="0,0,0,6" Command="{Binding NavigateProductionOrdersCommand}" Tag="{Binding IsProductionOrdersSelected}" Style="{StaticResource SidebarMenuButtonStyle}" />
-                            <Button Content="Recetas BOM" Margin="0,0,0,6" Command="{Binding NavigateBomCommand}" Tag="{Binding IsBomSelected}" Style="{StaticResource SidebarMenuButtonStyle}" />
-                            <Button Content="Historial costos" Margin="0,0,0,6" Command="{Binding NavigateCostsCommand}" Tag="{Binding IsCostsSelected}" Style="{StaticResource SidebarMenuButtonStyle}" />
                         </StackPanel>
                     </Expander>
 
@@ -176,9 +174,6 @@
                 </DataTemplate>
                 <DataTemplate DataType="{x:Type viewModels:ProductManagementViewModel}">
                     <views:ProductManagementView />
-                </DataTemplate>
-                <DataTemplate DataType="{x:Type viewModels:BomManagementViewModel}">
-                    <views:BomManagementView />
                 </DataTemplate>
                 <DataTemplate DataType="{x:Type viewModels:ProviderManagementViewModel}">
                     <views:ProviderManagementView />

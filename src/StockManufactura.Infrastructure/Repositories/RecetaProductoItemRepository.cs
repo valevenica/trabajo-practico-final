@@ -22,6 +22,7 @@ namespace StockManufactura.Infrastructure.Repositories
         {
             return await _context.RecetaProductoItems
                 .Include(x => x.Recurso)
+                .Include(x => x.ComponenteProducto)
                 .Where(x => x.ProductoId == productId)
                 .ToListAsync();
         }
@@ -36,6 +37,7 @@ namespace StockManufactura.Infrastructure.Repositories
 
             return await _context.RecetaProductoItems
                 .Include(x => x.Recurso)
+                .Include(x => x.ComponenteProducto)
                 .Where(x => ids.Contains(x.ProductoId))
                 .ToListAsync();
         }
