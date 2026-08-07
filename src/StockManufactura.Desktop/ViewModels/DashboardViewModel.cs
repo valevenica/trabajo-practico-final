@@ -16,6 +16,27 @@ using StockManufactura.Domain.Entities;
 
 namespace StockManufactura.Desktop.ViewModels
 {
+    public sealed class StatusFilterItem : INotifyPropertyChanged
+    {
+        private bool _isChecked;
+        public string Label { get; }
+        public string Value { get; }
+
+        public StatusFilterItem(string label, string value, bool isChecked = true)
+        {
+            Label = label;
+            Value = value;
+            _isChecked = isChecked;
+        }
+
+        public bool IsChecked
+        {
+            get => _isChecked;
+            set { _isChecked = value; PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsChecked))); }
+        }
+
+        public event PropertyChangedEventHandler? PropertyChanged;
+    }
     public sealed partial class DashboardViewModel : ObservableObject
     {
         private readonly NavigationService _navigationService;
@@ -64,7 +85,14 @@ namespace StockManufactura.Desktop.ViewModels
             NavigateToProductionOrdersCommand = new RelayCommand(NavigateToProductionOrders);
             NavigateToUserManagementCommand = new RelayCommand(NavigateToUserManagement);
             RefreshStatusCommand = new AsyncRelayCommand(LoadStatusAsync);
-            OrderStatusFilters = new ObservableCollection<string>(new[] { "Todas", "En espera", "En proceso", "Finalizada", "Cancelada" });
+            OrderStatusFilters = new ObservableCollection<StatusFilterItem>
+            {
+                new StatusFilterItem("En espera",  "En espera"),
+                new StatusFilterItem("En proceso", "En proceso"),
+                new StatusFilterItem("Finalizada", "Finalizada"),
+                new StatusFilterItem("Cancelada",  "Cancelada", isChecked: false)
+            };
+            foreach (var f in OrderStatusFilters) f.PropertyChanged += (_, _) => _ordersView.Refresh();
             OrderSortOptions = new ObservableCollection<string>(new[] { "Más recientes", "Más antiguas", "Estado", "Costo mayor", "Costo menor" });
             Orders = new ObservableCollection<DashboardOrderRow>();
             _ordersView = CollectionViewSource.GetDefaultView(Orders);
@@ -73,6 +101,8 @@ namespace StockManufactura.Desktop.ViewModels
 
             SelectedOrderStatusFilter = "Todas";
             SelectedOrderSortOption = "Más recientes";
+            AdvanceOrderCommand = new AsyncRelayCommand<DashboardOrderRow>(AdvanceOrderAsync);
+            CancelOrderCommand = new AsyncRelayCommand<DashboardOrderRow>(CancelOrderAsync);
             _ = LoadStatusAsync();
         }
 
@@ -89,8 +119,10 @@ namespace StockManufactura.Desktop.ViewModels
         public ICommand NavigateToProductionOrdersCommand { get; }
         public ICommand NavigateToUserManagementCommand { get; }
         public ICommand RefreshStatusCommand { get; }
+        public ICommand AdvanceOrderCommand { get; }
+        public ICommand CancelOrderCommand { get; }
         public ObservableCollection<DashboardOrderRow> Orders { get; }
-        public ObservableCollection<string> OrderStatusFilters { get; }
+        public ObservableCollection<StatusFilterItem> OrderStatusFilters { get; }
         public ObservableCollection<string> OrderSortOptions { get; }
 
         public ICollectionView OrdersView => _ordersView;
@@ -269,13 +301,51 @@ namespace StockManufactura.Desktop.ViewModels
 
         private bool FilterOrder(object obj)
         {
-            if (obj is not DashboardOrderRow row)
-            {
-                return false;
-            }
+            if (obj is not DashboardOrderRow row) return false;
+            var activeFilters = OrderStatusFilters.Where(f => f.IsChecked).Select(f => f.Value).ToHashSet();
+            return activeFilters.Count == 0 || activeFilters.Contains(row.StatusFilter);
+        }
 
-            return string.Equals(SelectedOrderStatusFilter, "Todas", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(row.StatusFilter, SelectedOrderStatusFilter, StringComparison.OrdinalIgnoreCase);
+        private async Task AdvanceOrderAsync(DashboardOrderRow? row)
+        {
+            if (row is null) return;
+            try
+            {
+                var order = await _unitOfWork.OrdenesProduccion.GetByIdAsync(row.OrderId);
+                if (order is null) return;
+
+                if (order.Estado is EstadoOrdenProduccion.EnProceso)
+                    order.Completar();
+                else
+                    order.MarcarEnProgreso();
+
+                _unitOfWork.OrdenesProduccion.Update(order);
+                await _unitOfWork.SaveChangesAsync();
+                await LoadStatusAsync();
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"Error al cambiar estado: {ex.Message}";
+            }
+        }
+
+        private async Task CancelOrderAsync(DashboardOrderRow? row)
+        {
+            if (row is null) return;
+            try
+            {
+                var order = await _unitOfWork.OrdenesProduccion.GetByIdAsync(row.OrderId);
+                if (order is null) return;
+
+                order.Cancelar("Cancelada desde panel principal");
+                _unitOfWork.OrdenesProduccion.Update(order);
+                await _unitOfWork.SaveChangesAsync();
+                await LoadStatusAsync();
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"Error al cancelar: {ex.Message}";
+            }
         }
 
         private void ApplyOrderSorting()

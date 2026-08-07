@@ -9,6 +9,8 @@ namespace StockManufactura.Desktop.ViewModels
     {
         public DashboardOrderRow(OrdenProduccion order, string productName, decimal estimatedCost)
         {
+            OrderId = order.Id;
+            RawEstado = order.Estado;
             Codigo = order.Codigo;
             ProductName = productName;
             Quantity = order.CantidadPlaneada.ToString("0.##", CultureInfo.InvariantCulture);
@@ -20,7 +22,16 @@ namespace StockManufactura.Desktop.ViewModels
             EstimatedCostValue = estimatedCost;
             StatusSortOrder = GetStatusSortOrder(order.Estado);
             (StatusBackground, StatusForeground) = GetStatusBrushes(order.Estado);
+            CanAdvance = order.Estado != EstadoOrdenProduccion.Finalizada && order.Estado != EstadoOrdenProduccion.Cancelada;
+            CanCancel  = order.Estado != EstadoOrdenProduccion.Finalizada && order.Estado != EstadoOrdenProduccion.Cancelada;
+            AdvanceLabel = order.Estado is EstadoOrdenProduccion.EnProceso ? "✓ Finalizar" : "▶ Iniciar";
         }
+
+        public Guid OrderId { get; }
+        public EstadoOrdenProduccion RawEstado { get; }
+        public bool CanAdvance { get; }
+        public bool CanCancel { get; }
+        public string AdvanceLabel { get; }
 
         public string Codigo { get; }
         public string ProductName { get; }
