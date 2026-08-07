@@ -11,58 +11,71 @@ namespace StockManufactura.Application.Services
 {
     public sealed class ProductCostService : IProductCostService
     {
-        private readonly IProductoRepository _productoRepository;
-        private readonly IRecetaProductoItemRepository _recetaRepository;
-        private readonly IProductCostHistoryRepository _historyRepository;
-        private readonly IProductCostSnapshotRepository _snapshotRepository;
-        private readonly IProductCostSnapshotItemRepository _snapshotItemRepository;
-        private readonly IExchangeRateRepository _exchangeRateRepository;
         private readonly IUnitOfWork _unitOfWork;
 
-        public ProductCostService(
-            IProductoRepository productoRepository,
-            IRecetaProductoItemRepository recetaRepository,
-            IProductCostHistoryRepository historyRepository,
-            IProductCostSnapshotRepository snapshotRepository,
-            IProductCostSnapshotItemRepository snapshotItemRepository,
-            IExchangeRateRepository exchangeRateRepository,
-            IUnitOfWork unitOfWork)
+        public ProductCostService(IUnitOfWork unitOfWork)
         {
-            _productoRepository = productoRepository;
-            _recetaRepository = recetaRepository;
-            _historyRepository = historyRepository;
-            _snapshotRepository = snapshotRepository;
-            _snapshotItemRepository = snapshotItemRepository;
-            _exchangeRateRepository = exchangeRateRepository;
             _unitOfWork = unitOfWork;
         }
 
         public async Task RecalculateAffectedProductsAsync(ProductRecalculationRequest request, CancellationToken cancellationToken = default)
         {
-            IReadOnlyList<Producto> impactedProducts;
-            if (request.RecursoDisparadorId.HasValue)
-            {
-                var recipeItems = await _recetaRepository.ListByResourceIdAsync(request.RecursoDisparadorId.Value);
-                var productIds = recipeItems.Select(x => x.ProductoId).Distinct().ToArray();
-                var allProducts = await _productoRepository.ListActivosAsync();
-                impactedProducts = allProducts.Where(x => productIds.Contains(x.Id)).ToArray();
-            }
-            else
-            {
-                impactedProducts = await _productoRepository.ListActivosAsync();
-            }
-
-            var latestRate = await _exchangeRateRepository.GetLatestAsync();
-            var exchangeRateValue = latestRate?.Valor ?? 1m;
-
-            // Batch-load all recipe items for all impacted products in one query
-            var allRecipeItems = await _recetaRepository.ListByProductIdsAsync(impactedProducts.Select(x => x.Id));
+            var allProducts = await _unitOfWork.Productos.ListActivosAsync();
+            var allRecipeItems = await _unitOfWork.RecetaProductoItems.ListByProductIdsAsync(allProducts.Select(x => x.Id));
             var recipeByProduct = allRecipeItems
                 .GroupBy(x => x.ProductoId)
                 .ToDictionary(g => g.Key, g => (IReadOnlyList<RecetaProductoItem>)g.ToList());
 
-            foreach (var product in impactedProducts)
+            HashSet<Guid> impactedIds;
+            if (request.RecursoDisparadorId.HasValue)
             {
+                impactedIds = allRecipeItems
+                    .Where(x => x.RecursoId == request.RecursoDisparadorId.Value)
+                    .Select(x => x.ProductoId)
+                    .ToHashSet();
+            }
+            else if (request.ProductoDisparadorId.HasValue)
+            {
+                impactedIds = new HashSet<Guid> { request.ProductoDisparadorId.Value };
+            }
+            else
+            {
+                impactedIds = allProducts.Select(x => x.Id).ToHashSet();
+            }
+
+            // A product that uses an impacted product as a sub-component is impacted too (transitively).
+            var grew = true;
+            while (grew)
+            {
+                grew = false;
+                foreach (var (productId, items) in recipeByProduct)
+                {
+                    if (impactedIds.Contains(productId))
+                    {
+                        continue;
+                    }
+
+                    if (items.Any(item => item.ComponenteProductoId.HasValue && impactedIds.Contains(item.ComponenteProductoId.Value)))
+                    {
+                        impactedIds.Add(productId);
+                        grew = true;
+                    }
+                }
+            }
+
+            var productsById = allProducts.ToDictionary(x => x.Id);
+            var orderedIds = OrderByComponentDependency(impactedIds, recipeByProduct);
+
+            var latestRate = await _unitOfWork.ExchangeRates.GetLatestAsync();
+            var exchangeRateValue = latestRate?.Valor ?? 1m;
+
+            foreach (var productId in orderedIds)
+            {
+                if (!productsById.TryGetValue(productId, out var product))
+                {
+                    continue;
+                }
+
                 var recipeItems = recipeByProduct.TryGetValue(product.Id, out var items)
                     ? items
                     : Array.Empty<RecetaProductoItem>();
@@ -70,13 +83,13 @@ namespace StockManufactura.Application.Services
                 var previousCost = product.CostoFabricacionActual;
                 var previousSuggested = product.PrecioSugeridoActual;
 
-                var total = recipeItems.Sum(x => x.Cantidad * x.Recurso.Precio);
-                var newCost = total;
+                var newCost = recipeItems.Sum(x => x.Cantidad * GetUnitCost(x));
                 var newSuggested = newCost * (1 + product.MargenActual);
 
                 product.CostoFabricacionActual = newCost;
                 product.PrecioSugeridoActual = newSuggested;
                 product.FechaUltimoCalculo = DateTime.UtcNow;
+                _unitOfWork.Productos.Update(product);
 
                 var history = new ProductCostHistory
                 {
@@ -93,7 +106,7 @@ namespace StockManufactura.Application.Services
                     Observaciones = "Recalculo automatico"
                 };
 
-                await _historyRepository.AddAsync(history);
+                await _unitOfWork.ProductCostHistory.AddAsync(history);
 
                 var snapshot = new ProductCostSnapshot
                 {
@@ -104,40 +117,78 @@ namespace StockManufactura.Application.Services
                     CostoFinal = newCost
                 };
 
-                await _snapshotRepository.AddAsync(snapshot);
+                await _unitOfWork.ProductCostSnapshots.AddAsync(snapshot);
 
-                foreach (var item in recipeItems)
+                foreach (var item in recipeItems.Where(x => x.RecursoId.HasValue))
                 {
                     var snapshotItem = new ProductCostSnapshotItem
                     {
                         SnapshotId = snapshot.Id,
-                        RecursoId = item.RecursoId,
+                        RecursoId = item.RecursoId!.Value,
                         CantidadUtilizada = item.Cantidad,
-                        PrecioRecurso = item.Recurso.Precio,
+                        PrecioRecurso = item.Recurso!.Precio,
                         CotizacionUtilizada = exchangeRateValue,
                         CostoParcial = item.Cantidad * item.Recurso.Precio
                     };
 
-                    await _snapshotItemRepository.AddAsync(snapshotItem);
+                    await _unitOfWork.ProductCostSnapshotItems.AddAsync(snapshotItem);
                 }
             }
 
             await _unitOfWork.SaveChangesAsync();
         }
 
+        private static decimal GetUnitCost(RecetaProductoItem item)
+        {
+            return item.RecursoId.HasValue ? item.Recurso!.Precio : item.ComponenteProducto!.CostoFabricacionActual;
+        }
+
+        private static List<Guid> OrderByComponentDependency(HashSet<Guid> impactedIds, Dictionary<Guid, IReadOnlyList<RecetaProductoItem>> recipeByProduct)
+        {
+            var ordered = new List<Guid>();
+            var visited = new HashSet<Guid>();
+            var visiting = new HashSet<Guid>();
+
+            void Visit(Guid productId)
+            {
+                if (visited.Contains(productId) || !impactedIds.Contains(productId) || !visiting.Add(productId))
+                {
+                    return;
+                }
+
+                if (recipeByProduct.TryGetValue(productId, out var items))
+                {
+                    foreach (var item in items.Where(x => x.ComponenteProductoId.HasValue))
+                    {
+                        Visit(item.ComponenteProductoId!.Value);
+                    }
+                }
+
+                visited.Add(productId);
+                ordered.Add(productId);
+            }
+
+            foreach (var id in impactedIds)
+            {
+                Visit(id);
+            }
+
+            return ordered;
+        }
+
         public Task<IReadOnlyList<ProductCostHistory>> GetProductCostHistoryAsync(Guid productId, CancellationToken cancellationToken = default)
         {
-            return _historyRepository.ListByProductAsync(productId);
+            return _unitOfWork.ProductCostHistory.ListByProductAsync(productId);
         }
 
         public Task<IReadOnlyList<ProductCostSnapshot>> GetProductSnapshotsAsync(Guid productId, CancellationToken cancellationToken = default)
         {
-            return _snapshotRepository.ListByProductAsync(productId);
+            return _unitOfWork.ProductCostSnapshots.ListByProductAsync(productId);
         }
 
         public async Task<IReadOnlyList<ProductCostSummary>> GetCostSummaryAsync(CancellationToken cancellationToken = default)
         {
-            var products = await _productoRepository.ListActivosAsync();
+            var products = await _unitOfWork.Productos.ListActivosAsync();
             return products
                 .Select(product => new ProductCostSummary
                 {
@@ -152,8 +203,8 @@ namespace StockManufactura.Application.Services
 
         public async Task<ProductCostComparison> CompareVersionsAsync(Guid olderHistoryId, Guid newerHistoryId, CancellationToken cancellationToken = default)
         {
-            var older = await _historyRepository.GetByIdAsync(olderHistoryId) ?? throw new InvalidOperationException("Version antigua no encontrada.");
-            var newer = await _historyRepository.GetByIdAsync(newerHistoryId) ?? throw new InvalidOperationException("Version nueva no encontrada.");
+            var older = await _unitOfWork.ProductCostHistory.GetByIdAsync(olderHistoryId) ?? throw new InvalidOperationException("Version antigua no encontrada.");
+            var newer = await _unitOfWork.ProductCostHistory.GetByIdAsync(newerHistoryId) ?? throw new InvalidOperationException("Version nueva no encontrada.");
 
             var absolute = newer.CostoNuevo - older.CostoNuevo;
             var percentage = older.CostoNuevo == 0 ? 0 : absolute / older.CostoNuevo;
