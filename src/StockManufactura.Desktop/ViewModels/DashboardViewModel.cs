@@ -2,6 +2,7 @@ using System;
 using System.Collections.ObjectModel;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Input;
@@ -37,6 +38,23 @@ namespace StockManufactura.Desktop.ViewModels
 
         public event PropertyChangedEventHandler? PropertyChanged;
     }
+
+    public sealed class PeriodOption
+    {
+        public int? Year { get; }
+        public int? Month { get; }
+        public string Label { get; }
+
+        public PeriodOption(int? year, int? month, string label)
+        {
+            Year = year;
+            Month = month;
+            Label = label;
+        }
+
+        public override string ToString() => Label;
+    }
+
     public sealed partial class DashboardViewModel : ObservableObject
     {
         private readonly NavigationService _navigationService;
@@ -80,7 +98,6 @@ namespace StockManufactura.Desktop.ViewModels
             NavigateToBackupsCommand = new RelayCommand(NavigateToBackups);
             NavigateToProductCostHistoryCommand = new RelayCommand(NavigateToProductCostHistory);
             NavigateToProductsCommand = new RelayCommand(NavigateToProducts);
-            NavigateToBomCommand = new RelayCommand(NavigateToBom);
             NavigateToProvidersCommand = new RelayCommand(NavigateToProviders);
             NavigateToProductionOrdersCommand = new RelayCommand(NavigateToProductionOrders);
             NavigateToUserManagementCommand = new RelayCommand(NavigateToUserManagement);
@@ -101,7 +118,7 @@ namespace StockManufactura.Desktop.ViewModels
                     OnPropertyChanged(nameof(FilterSummary));
                 };
             }
-            OrderSortOptions = new ObservableCollection<string>(new[] { "Más recientes", "Más antiguas", "Estado", "Costo mayor", "Costo menor" });
+            OrderSortOptions = new ObservableCollection<string>(new[] { "Más recientes", "Más antiguas", "ID", "Estado", "Costo mayor", "Costo menor" });
             Orders = new ObservableCollection<DashboardOrderRow>();
             _ordersView = CollectionViewSource.GetDefaultView(Orders);
             _ordersView.Filter = FilterOrder;
@@ -109,6 +126,9 @@ namespace StockManufactura.Desktop.ViewModels
 
             SelectedOrderStatusFilter = "Todas";
             SelectedOrderSortOption = "Más recientes";
+            PeriodOptions = new ObservableCollection<PeriodOption>(BuildPeriodOptions());
+            SelectedPeriod = PeriodOptions.FirstOrDefault(p => p.Year == DateTime.UtcNow.Year && p.Month == DateTime.UtcNow.Month)
+                ?? PeriodOptions[0];
             AdvanceOrderCommand = new AsyncRelayCommand<DashboardOrderRow>(AdvanceOrderAsync);
             CancelOrderCommand = new AsyncRelayCommand<DashboardOrderRow>(CancelOrderAsync);
             _ = LoadStatusAsync();
@@ -122,7 +142,6 @@ namespace StockManufactura.Desktop.ViewModels
         public ICommand NavigateToBackupsCommand { get; }
         public ICommand NavigateToProductCostHistoryCommand { get; }
         public ICommand NavigateToProductsCommand { get; }
-        public ICommand NavigateToBomCommand { get; }
         public ICommand NavigateToProvidersCommand { get; }
         public ICommand NavigateToProductionOrdersCommand { get; }
         public ICommand NavigateToUserManagementCommand { get; }
@@ -132,6 +151,7 @@ namespace StockManufactura.Desktop.ViewModels
         public ObservableCollection<DashboardOrderRow> Orders { get; }
         public ObservableCollection<StatusFilterItem> OrderStatusFilters { get; }
         public ObservableCollection<string> OrderSortOptions { get; }
+        public ObservableCollection<PeriodOption> PeriodOptions { get; }
 
         public ICollectionView OrdersView => _ordersView;
 
@@ -159,12 +179,13 @@ namespace StockManufactura.Desktop.ViewModels
 
         [ObservableProperty] private string _selectedOrderStatusFilter = string.Empty;
         [ObservableProperty] private string _selectedOrderSortOption = string.Empty;
+        [ObservableProperty] private string _orderIdSearchText = string.Empty;
+        [ObservableProperty] private PeriodOption? _selectedPeriod;
 
         public bool CanManageUsers => AuthSession.Current?.TienePermiso("USUARIOS_ADMIN") == true;
         public bool CanViewProducts => AuthSession.Current?.TienePermiso("PRODUCTOS_VER") == true
             || AuthSession.Current?.TienePermiso("PRODUCTOS_CREAR") == true
             || AuthSession.Current?.TienePermiso("PRODUCTOS_EDITAR") == true;
-        public bool CanEditBom => AuthSession.Current?.TienePermiso("PRODUCTOS_EDITAR") == true;
         public bool CanManageProviders => AuthSession.Current?.TienePermiso("USUARIOS_ADMIN") == true
             || AuthSession.Current?.TienePermiso("PRODUCTOS_EDITAR") == true;
         public bool CanManageProductionOrders => AuthSession.Current?.TienePermiso("PRODUCTOS_EDITAR") == true;
@@ -208,6 +229,31 @@ namespace StockManufactura.Desktop.ViewModels
             _ordersView.Refresh();
         }
 
+        partial void OnOrderIdSearchTextChanged(string value)
+        {
+            _ordersView.Refresh();
+        }
+
+        partial void OnSelectedPeriodChanged(PeriodOption? value)
+        {
+            _ = LoadStatusAsync();
+        }
+
+        private static IEnumerable<PeriodOption> BuildPeriodOptions()
+        {
+            yield return new PeriodOption(null, null, "Todos los períodos");
+
+            var culture = CultureInfo.GetCultureInfo("es-AR");
+            var cursor = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1);
+            for (var i = 0; i < 12; i++)
+            {
+                var label = cursor.ToString("MMMM yyyy", culture);
+                label = char.ToUpperInvariant(label[0]) + label[1..];
+                yield return new PeriodOption(cursor.Year, cursor.Month, label);
+                cursor = cursor.AddMonths(-1);
+            }
+        }
+
         private void NavigateToResources()
         {
             _navigationService.NavigateTo(new ResourceManagementViewModel(_resourcePricingService, _monetaryConfigurationService, _unitOfWork));
@@ -241,18 +287,7 @@ namespace StockManufactura.Desktop.ViewModels
                 return;
             }
 
-            _navigationService.NavigateTo(new ProductManagementViewModel(_unitOfWork, _auditLogService, _navigationService, this));
-        }
-
-        private void NavigateToBom()
-        {
-            if (!CanEditBom)
-            {
-                StatusMessage = "No tiene permisos para editar recetas BOM.";
-                return;
-            }
-
-            _navigationService.NavigateTo(new BomManagementViewModel(_unitOfWork, _auditLogService, _productCostService, _navigationService, this));
+            _navigationService.NavigateTo(new ProductManagementViewModel(_unitOfWork, _auditLogService, _productCostService, _navigationService, this));
         }
 
         private void NavigateToProviders()
@@ -292,9 +327,10 @@ namespace StockManufactura.Desktop.ViewModels
         {
             try
             {
+                var period = SelectedPeriod;
                 var (snapshot, orders) = await Task.Run(async () =>
                 {
-                    var s = await _systemStatusService.GetSnapshotAsync();
+                    var s = await _systemStatusService.GetSnapshotAsync(period?.Year, period?.Month);
                     var o = await _unitOfWork.OrdenesProduccion.ListByCreatedDescAsync();
                     return (s, o);
                 });
@@ -332,6 +368,19 @@ namespace StockManufactura.Desktop.ViewModels
         private bool FilterOrder(object obj)
         {
             if (obj is not DashboardOrderRow row) return false;
+
+            if (SelectedPeriod is { Year: not null, Month: not null } period
+                && (row.CreatedAt.Year != period.Year || row.CreatedAt.Month != period.Month))
+            {
+                return false;
+            }
+
+            if (!string.IsNullOrWhiteSpace(OrderIdSearchText)
+                && row.Codigo.IndexOf(OrderIdSearchText, StringComparison.OrdinalIgnoreCase) < 0)
+            {
+                return false;
+            }
+
             var activeFilters = OrderStatusFilters.Where(f => f.IsChecked).Select(f => f.Value).ToHashSet();
             return activeFilters.Count == 0 || activeFilters.Contains(row.StatusFilter);
         }
@@ -386,6 +435,9 @@ namespace StockManufactura.Desktop.ViewModels
             {
                 case "Más antiguas":
                     _ordersView.SortDescriptions.Add(new SortDescription(nameof(DashboardOrderRow.CreatedAt), ListSortDirection.Ascending));
+                    break;
+                case "ID":
+                    _ordersView.SortDescriptions.Add(new SortDescription(nameof(DashboardOrderRow.Codigo), ListSortDirection.Ascending));
                     break;
                 case "Estado":
                     _ordersView.SortDescriptions.Add(new SortDescription(nameof(DashboardOrderRow.StatusSortOrder), ListSortDirection.Ascending));

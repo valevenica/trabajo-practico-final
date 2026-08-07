@@ -22,5 +22,6 @@ namespace StockManufactura.Application.Services
         public int CriticalStockCount { get; set; }
         public int OrdersInProcessCount { get; set; }
         public decimal MonthlyCostTotal { get; set; }
+        public decimal MonthlySalesTotal { get; set; }
     }
 }

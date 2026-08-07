@@ -7,5 +7,7 @@ namespace StockManufactura.Application.Interfaces
     public interface ISystemStatusService
     {
         Task<SystemStatusSnapshot> GetSnapshotAsync(CancellationToken cancellationToken = default);
+
+        Task<SystemStatusSnapshot> GetSnapshotAsync(int? year, int? month, CancellationToken cancellationToken = default);
     }
 }
