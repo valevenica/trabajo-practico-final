@@ -11,11 +11,9 @@ namespace StockManufactura.Application.Interfaces
         IRecursoRepository Recursos { get; }
         IExchangeRateRepository ExchangeRates { get; }
         IResourcePriceHistoryRepository ResourcePriceHistory { get; }
-        IRepository<ResourceCostCalculation> ResourceCostCalculations { get; }
         IProductoRepository Productos { get; }
         IOrdenProduccionRepository OrdenesProduccion { get; }
         IRecetaProductoItemRepository RecetaProductoItems { get; }
-        IStockRepository Stocks { get; }
         IRecursoProveedorRepository RecursoProveedores { get; }
         IRecursoTramoPrecioRepository RecursoTramosPrecio { get; }
         IProductCostHistoryRepository ProductCostHistory { get; }

@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -51,6 +52,7 @@ namespace StockManufactura.Desktop.ViewModels
             RegisterProductionCommand = new AsyncRelayCommand(RegisterProductionAsync);
             CompleteCommand = new AsyncRelayCommand(CompleteAsync);
             CancelCommand = new AsyncRelayCommand(CancelAsync);
+            DeleteOrderCommand = new AsyncRelayCommand(DeleteOrderAsync);
             BackCommand = new RelayCommand(GoBack);
 
             _ = LoadAsync();
@@ -67,6 +69,7 @@ namespace StockManufactura.Desktop.ViewModels
         public ICommand RegisterProductionCommand { get; }
         public ICommand CompleteCommand { get; }
         public ICommand CancelCommand { get; }
+        public ICommand DeleteOrderCommand { get; }
         public ICommand BackCommand { get; }
 
         public bool CanManageOrders => AuthSession.Current?.TienePermiso("PRODUCTOS_EDITAR") == true;
@@ -234,6 +237,50 @@ namespace StockManufactura.Desktop.ViewModels
 
             var reason = string.IsNullOrWhiteSpace(Observaciones) ? "Cancelada desde módulo de producción." : Observaciones;
             await TryTransitionAsync(() => order.Cancelar(reason), "Cancelada", order, "Orden cancelada.");
+        }
+
+        private async Task DeleteOrderAsync()
+        {
+            if (!TryEnsureSelectedOrder(out var order))
+            {
+                return;
+            }
+
+            if (order.Estado == EstadoOrdenProduccion.EnProceso)
+            {
+                StatusMessage = "No se puede eliminar una orden en proceso. Cancelala primero para liberar el stock reservado.";
+                return;
+            }
+
+            if (order.Estado == EstadoOrdenProduccion.Finalizada)
+            {
+                StatusMessage = "No se pueden eliminar órdenes finalizadas; forman parte del historial.";
+                return;
+            }
+
+            var confirm = MessageBox.Show(
+                $"¿Eliminar la orden '{order.Codigo}'? Esta acción no se puede deshacer.",
+                "Confirmar eliminación", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+            if (confirm != MessageBoxResult.Yes)
+            {
+                return;
+            }
+
+            try
+            {
+                _unitOfWork.OrdenesProduccion.Delete(order);
+                await _unitOfWork.SaveChangesAsync();
+                await RegisterAuditAsync("Eliminar", order, "Orden eliminada.");
+
+                SelectedOrder = null;
+                await LoadAsync();
+                RefreshIndicators();
+                StatusMessage = "Orden eliminada.";
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"No se pudo eliminar: {ex.Message}";
+            }
         }
 
         private void GoBack()

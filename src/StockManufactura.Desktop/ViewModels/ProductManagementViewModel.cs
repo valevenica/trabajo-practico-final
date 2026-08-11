@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Globalization;
+using System.Windows;
 using System.Windows.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -108,6 +109,7 @@ namespace StockManufactura.Desktop.ViewModels
             RemoveRecipeItemCommand = new AsyncRelayCommand<ProductRecipeRow>(RemoveRecipeItemAsync);
             CancelRecipeItemEditCommand = new RelayCommand(ResetRecipeItemForm);
             ViewCostHistoryCommand = new RelayCommand<Producto>(ViewCostHistory);
+            DeleteProductCommand = new AsyncRelayCommand(DeleteProductAsync);
             BackCommand = new RelayCommand(GoBack);
 
             _ = LoadAsync();
@@ -128,6 +130,7 @@ namespace StockManufactura.Desktop.ViewModels
         public ICommand RemoveRecipeItemCommand { get; }
         public ICommand CancelRecipeItemEditCommand { get; }
         public ICommand ViewCostHistoryCommand { get; }
+        public ICommand DeleteProductCommand { get; }
         public ICommand BackCommand { get; }
 
         public bool CanViewProducts => AuthSession.Current?.TienePermiso("PRODUCTOS_VER") == true || CanCreateProducts || CanEditProducts;
@@ -647,6 +650,59 @@ namespace StockManufactura.Desktop.ViewModels
             return decimal.TryParse(CostoFabricacionCalculado, NumberStyles.Number, CultureInfo.InvariantCulture, out var cost)
                 ? cost
                 : 0m;
+        }
+
+        private async Task DeleteProductAsync()
+        {
+            if (!CanEditProducts)
+            {
+                StatusMessage = "No tiene permisos para editar productos.";
+                return;
+            }
+
+            if (SelectedProduct is null)
+            {
+                StatusMessage = "Seleccioná un producto para eliminar.";
+                return;
+            }
+
+            var allRecipeItems = await _unitOfWork.RecetaProductoItems.ListAsync();
+            if (allRecipeItems.Any(x => x.ComponenteProductoId == SelectedProduct.Id))
+            {
+                StatusMessage = "No se puede eliminar: el producto está siendo usado como componente de otro producto.";
+                return;
+            }
+
+            var orders = await _unitOfWork.OrdenesProduccion.ListAsync();
+            if (orders.Any(x => x.ProductoId == SelectedProduct.Id))
+            {
+                StatusMessage = "No se puede eliminar: el producto tiene órdenes de producción asociadas.";
+                return;
+            }
+
+            var confirm = MessageBox.Show(
+                $"¿Eliminar el producto '{SelectedProduct.Nombre}'? Esta acción no se puede deshacer.",
+                "Confirmar eliminación", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+            if (confirm != MessageBoxResult.Yes)
+            {
+                return;
+            }
+
+            try
+            {
+                var producto = SelectedProduct;
+                _unitOfWork.Productos.Delete(producto);
+                await _unitOfWork.SaveChangesAsync();
+                await RegisterAuditAsync("Eliminar", producto, "Producto eliminado.");
+
+                SelectedProduct = null;
+                await LoadAsync();
+                StatusMessage = "Producto eliminado.";
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"No se pudo eliminar: {ex.Message}";
+            }
         }
 
         private void GoBack()

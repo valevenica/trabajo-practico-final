@@ -172,49 +172,6 @@ namespace StockManufactura.Infrastructure.Migrations
                     b.ToTable("BackupSettings", (string)null);
                 });
 
-            modelBuilder.Entity("StockManufactura.Domain.Entities.CostoIndirecto", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
-
-                    b.Property<bool>("Activo")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
-                        .HasDefaultValue(true);
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT");
-
-                    b.Property<decimal>("FactorAplicacion")
-                        .HasColumnType("decimal(18,6)");
-
-                    b.Property<bool>("IsDeleted")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
-                        .HasDefaultValue(false);
-
-                    b.Property<string>("Nombre")
-                        .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Observaciones")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("TEXT");
-
-                    b.Property<decimal>("ValorMensual")
-                        .HasColumnType("decimal(18,4)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("CostosIndirectos", (string)null);
-                });
-
             modelBuilder.Entity("StockManufactura.Domain.Entities.ExchangeRate", b =>
                 {
                     b.Property<Guid>("Id")
@@ -830,42 +787,6 @@ namespace StockManufactura.Infrastructure.Migrations
                     b.ToTable("RecursoTramosPrecio", (string)null);
                 });
 
-            modelBuilder.Entity("StockManufactura.Domain.Entities.ResourceCostCalculation", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
-
-                    b.Property<decimal>("CostoEnPesos")
-                        .HasColumnType("decimal(18,4)");
-
-                    b.Property<decimal>("CotizacionUtilizada")
-                        .HasColumnType("decimal(18,4)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("FechaCalculo")
-                        .HasColumnType("TEXT");
-
-                    b.Property<bool>("IsDeleted")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
-                        .HasDefaultValue(false);
-
-                    b.Property<Guid>("RecursoId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("RecursoId");
-
-                    b.ToTable("ResourceCostCalculations", (string)null);
-                });
-
             modelBuilder.Entity("StockManufactura.Domain.Entities.ResourcePriceHistory", b =>
                 {
                     b.Property<Guid>("Id")
@@ -962,46 +883,6 @@ namespace StockManufactura.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Roles", (string)null);
-                });
-
-            modelBuilder.Entity("StockManufactura.Domain.Entities.Stock", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
-
-                    b.Property<decimal>("CantidadDisponible")
-                        .HasColumnType("decimal(18,4)");
-
-                    b.Property<decimal>("CantidadReservada")
-                        .HasColumnType("decimal(18,4)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT");
-
-                    b.Property<bool>("IsDeleted")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
-                        .HasDefaultValue(false);
-
-                    b.Property<Guid>("ProductoId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<Guid>("UbicacionId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("UltimaActualizacion")
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ProductoId", "UbicacionId")
-                        .IsUnique();
-
-                    b.ToTable("Stocks", (string)null);
                 });
 
             modelBuilder.Entity("StockManufactura.Domain.Entities.Usuario", b =>
@@ -1185,17 +1066,6 @@ namespace StockManufactura.Infrastructure.Migrations
                     b.Navigation("Recurso");
                 });
 
-            modelBuilder.Entity("StockManufactura.Domain.Entities.ResourceCostCalculation", b =>
-                {
-                    b.HasOne("StockManufactura.Domain.Entities.Recurso", "Recurso")
-                        .WithMany()
-                        .HasForeignKey("RecursoId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Recurso");
-                });
-
             modelBuilder.Entity("StockManufactura.Domain.Entities.ResourcePriceHistory", b =>
                 {
                     b.HasOne("StockManufactura.Domain.Entities.Recurso", "Recurso")
@@ -1205,17 +1075,6 @@ namespace StockManufactura.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Recurso");
-                });
-
-            modelBuilder.Entity("StockManufactura.Domain.Entities.Stock", b =>
-                {
-                    b.HasOne("StockManufactura.Domain.Entities.Producto", "Producto")
-                        .WithMany()
-                        .HasForeignKey("ProductoId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Producto");
                 });
 
             modelBuilder.Entity("StockManufactura.Domain.Entities.Usuario", b =>

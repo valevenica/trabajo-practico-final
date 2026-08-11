@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Windows;
 using System.Windows.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -109,6 +110,8 @@ namespace StockManufactura.Desktop.ViewModels
             ToggleNewRolePanelCommand = new RelayCommand(ToggleNewRolePanel);
             CreateRoleCommand = new AsyncRelayCommand(CreateRoleAsync);
             SaveRolePermissionsCommand = new AsyncRelayCommand(SaveRolePermissionsAsync);
+            DeleteUserCommand = new AsyncRelayCommand(DeleteUserAsync);
+            DeleteRoleCommand = new AsyncRelayCommand(DeleteRoleAsync);
             BackCommand = new RelayCommand(GoBack);
 
             SelectedTabIndex = 0;
@@ -138,6 +141,8 @@ namespace StockManufactura.Desktop.ViewModels
         public ICommand ToggleNewRolePanelCommand { get; }
         public ICommand CreateRoleCommand { get; }
         public ICommand SaveRolePermissionsCommand { get; }
+        public ICommand DeleteUserCommand { get; }
+        public ICommand DeleteRoleCommand { get; }
         public ICommand BackCommand { get; }
 
         public bool CanManageUsers => AuthSession.Current?.TienePermiso("USUARIOS_ADMIN") == true;
@@ -535,6 +540,84 @@ namespace StockManufactura.Desktop.ViewModels
                 await _userManagementService.UpdateRolePermissionsAsync(SelectedRoleForPermissions.Id, permisos, actor);
                 await LoadAsync();
                 StatusMessage = "Permisos actualizados.";
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = ex.Message;
+            }
+        }
+
+        private async Task DeleteUserAsync()
+        {
+            if (!CanManageUsers)
+            {
+                StatusMessage = "No tiene permisos para administrar usuarios.";
+                return;
+            }
+
+            if (SelectedUser is null)
+            {
+                StatusMessage = "Debe seleccionar un usuario.";
+                return;
+            }
+
+            if (SelectedUser.Id == AuthSession.Current?.Usuario.Id)
+            {
+                StatusMessage = "No podés eliminar tu propio usuario.";
+                return;
+            }
+
+            var confirm = MessageBox.Show(
+                $"¿Eliminar el usuario '{SelectedUser.Nombre}' ({SelectedUser.Email})? Esta acción no se puede deshacer.",
+                "Confirmar eliminación", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+            if (confirm != MessageBoxResult.Yes)
+            {
+                return;
+            }
+
+            try
+            {
+                var actor = AuthSession.Current?.Usuario.Email ?? "desktop-user";
+                await _userManagementService.DeleteUserAsync(SelectedUser.Id, actor);
+                SelectedUser = null;
+                await LoadAsync();
+                StatusMessage = "Usuario eliminado.";
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = ex.Message;
+            }
+        }
+
+        private async Task DeleteRoleAsync()
+        {
+            if (!CanManageRoles)
+            {
+                StatusMessage = "No tiene permisos para administrar roles.";
+                return;
+            }
+
+            if (SelectedRoleForPermissions is null)
+            {
+                StatusMessage = "Debe seleccionar un rol.";
+                return;
+            }
+
+            var confirm = MessageBox.Show(
+                $"¿Eliminar el rol '{SelectedRoleForPermissions.Nombre}'? Esta acción no se puede deshacer.",
+                "Confirmar eliminación", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+            if (confirm != MessageBoxResult.Yes)
+            {
+                return;
+            }
+
+            try
+            {
+                var actor = AuthSession.Current?.Usuario.Email ?? "desktop-user";
+                await _userManagementService.DeleteRoleAsync(SelectedRoleForPermissions.Id, actor);
+                SelectedRoleForPermissions = null;
+                await LoadAsync();
+                StatusMessage = "Rol eliminado.";
             }
             catch (Exception ex)
             {

@@ -12,6 +12,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using StockManufactura.Application.Interfaces;
 using StockManufactura.Application.Resources;
+using StockManufactura.Desktop.Infrastructure;
 using StockManufactura.Domain.Entities;
 
 namespace StockManufactura.Desktop.ViewModels
@@ -21,6 +22,7 @@ namespace StockManufactura.Desktop.ViewModels
         private readonly IResourcePricingService _resourcePricingService;
         private readonly IMonetaryConfigurationService _monetaryConfigurationService;
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IAuditLogService _auditLogService;
 
         [ObservableProperty]
         private Recurso? _selectedResource;
@@ -96,11 +98,13 @@ namespace StockManufactura.Desktop.ViewModels
         public ResourceManagementViewModel(
             IResourcePricingService resourcePricingService,
             IMonetaryConfigurationService monetaryConfigurationService,
-            IUnitOfWork unitOfWork)
+            IUnitOfWork unitOfWork,
+            IAuditLogService auditLogService)
         {
             _resourcePricingService = resourcePricingService;
             _monetaryConfigurationService = monetaryConfigurationService;
             _unitOfWork = unitOfWork;
+            _auditLogService = auditLogService;
             Resources = new ObservableCollection<Recurso>();
             FilteredResources = new ObservableCollection<Recurso>();
             PriceHistory = new ObservableCollection<ResourcePriceHistory>();
@@ -126,6 +130,7 @@ namespace StockManufactura.Desktop.ViewModels
             RemoveProveedorCommand = new AsyncRelayCommand(RemoveProveedorAsync);
             SetPrioritarioCommand = new AsyncRelayCommand(SetPrioritarioAsync);
             RecalcularTodosUSDCommand = new AsyncRelayCommand(RecalcularTodosUSDAsync);
+            DeleteResourceCommand = new AsyncRelayCommand(DeleteResourceAsync);
 
             _ = LoadAsync();
         }
@@ -146,6 +151,7 @@ namespace StockManufactura.Desktop.ViewModels
         public ICommand RemoveProveedorCommand { get; }
         public ICommand SetPrioritarioCommand { get; }
         public ICommand RecalcularTodosUSDCommand { get; }
+        public ICommand DeleteResourceCommand { get; }
 
         public Visibility UsdDetailsVisibility => IsUsd ? Visibility.Visible : Visibility.Collapsed;
         public bool StockFieldsEnabled => !EsServicio;
@@ -243,7 +249,7 @@ namespace StockManufactura.Desktop.ViewModels
                 var p = await _unitOfWork.Proveedores.ListAsync();
 
                 Resources.Clear();
-                foreach (var resource in r)
+                foreach (var resource in r.Where(x => !x.EsServicio))
                     Resources.Add(resource);
 
                 UpdateFilteredResources();
@@ -531,6 +537,57 @@ namespace StockManufactura.Desktop.ViewModels
             catch (Exception ex)
             {
                 StatusMessage = $"Error en recálculo: {ex.Message}";
+            }
+        }
+
+        private async Task DeleteResourceAsync()
+        {
+            if (SelectedResource is null)
+            {
+                StatusMessage = "Seleccioná un insumo para eliminar.";
+                return;
+            }
+
+            var enUso = await _unitOfWork.RecetaProductoItems.ListByResourceIdAsync(SelectedResource.Id);
+            if (enUso.Count > 0)
+            {
+                StatusMessage = "No se puede eliminar: el insumo está siendo usado en la receta de uno o más productos.";
+                return;
+            }
+
+            var confirm = MessageBox.Show(
+                $"¿Eliminar el insumo '{SelectedResource.Nombre}'? Esta acción no se puede deshacer.",
+                "Confirmar eliminación", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+            if (confirm != MessageBoxResult.Yes)
+            {
+                return;
+            }
+
+            try
+            {
+                var nombre = SelectedResource.Nombre;
+                var id = SelectedResource.Id;
+                _unitOfWork.Recursos.Delete(SelectedResource);
+                await _unitOfWork.SaveChangesAsync();
+
+                await _auditLogService.RegisterAsync(new AuditLog
+                {
+                    Usuario = AuthSession.Current?.Usuario?.Email ?? "desktop-user",
+                    Modulo = "Insumos",
+                    Accion = "Eliminar",
+                    Entidad = "Recurso",
+                    IdEntidad = id.ToString(),
+                    Descripcion = $"Insumo eliminado: {nombre}",
+                    Equipo = Environment.MachineName
+                });
+
+                SelectedResource = null;
+                await LoadAsync();
+                StatusMessage = "Insumo eliminado.";
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"No se pudo eliminar: {ex.Message}";
             }
         }
     }

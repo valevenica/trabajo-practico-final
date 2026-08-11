@@ -10,6 +10,5 @@ namespace StockManufactura.Application.Products
         public Guid? ProductoDisparadorId { get; set; }
         public bool CambioCotizacion { get; set; }
         public bool CambioReceta { get; set; }
-        public bool CambioCostoIndirecto { get; set; }
     }
 }

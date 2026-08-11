@@ -213,6 +213,38 @@ namespace StockManufactura.Application.Services
             }, cancellationToken);
         }
 
+        public async Task DeleteUserAsync(Guid userId, string actor, CancellationToken cancellationToken = default)
+        {
+            var usuario = await _unitOfWork.Usuarios.GetByIdAsync(userId);
+            if (usuario is null)
+            {
+                throw new InvalidOperationException("Usuario no encontrado.");
+            }
+
+            _unitOfWork.Usuarios.Delete(usuario);
+            await _unitOfWork.SaveChangesAsync();
+            await RegisterAuditAsync(actor, "Eliminar", usuario, $"Eliminación de usuario {usuario.Email}", cancellationToken);
+        }
+
+        public async Task DeleteRoleAsync(Guid rolId, string actor, CancellationToken cancellationToken = default)
+        {
+            var usuarios = await _unitOfWork.Usuarios.ListAsync();
+            if (usuarios.Any(u => u.RolId == rolId))
+            {
+                throw new InvalidOperationException("No se puede eliminar: hay usuarios asignados a este rol.");
+            }
+
+            var rol = await _unitOfWork.Roles.GetByIdAsync(rolId);
+            if (rol is null)
+            {
+                throw new InvalidOperationException("Rol no encontrado.");
+            }
+
+            _unitOfWork.Roles.Delete(rol);
+            await _unitOfWork.SaveChangesAsync();
+            await RegisterRoleAuditAsync(actor, "Eliminar", rol, $"Eliminación de rol {rol.Nombre}", cancellationToken);
+        }
+
         private static void ValidatePassword(string password)
         {
             if (string.IsNullOrWhiteSpace(password) || password.Length < 8)

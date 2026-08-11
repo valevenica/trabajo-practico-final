@@ -173,6 +173,7 @@
                         <Button Content="Registrar" Command="{Binding RegisterProductionCommand}" Width="98" Margin="0 0 8 8" Style="{StaticResource PrimaryButtonStyle}" />
                         <Button Content="Borrador" Command="{Binding SetDraftCommand}" Width="95" Margin="0 0 8 8" Style="{StaticResource SecondaryButtonStyle}" />
                         <Button Content="Cancelar" Command="{Binding CancelCommand}" Width="95" Margin="0 0 8 8" Style="{StaticResource SecondaryButtonStyle}" />
+                        <Button Content="Eliminar" Command="{Binding DeleteOrderCommand}" Width="95" Margin="0 0 8 8" Style="{StaticResource SecondaryButtonStyle}" />
                     </WrapPanel>
 
                     <Grid Grid.Row="4">

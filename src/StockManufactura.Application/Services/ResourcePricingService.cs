@@ -112,49 +112,6 @@ namespace StockManufactura.Application.Services
             return resource;
         }
 
-        public async Task<ResourceCostQuote> CalculateCostAsync(Guid recursoId, CancellationToken cancellationToken = default)
-        {
-            var resource = await _unitOfWork.Recursos.GetByIdAsync(recursoId);
-            if (resource is null)
-            {
-                throw new InvalidOperationException("Recurso no encontrado.");
-            }
-
-            decimal rateValue = 1m;
-            if (resource.Moneda == Moneda.USD)
-            {
-                var rate = await _unitOfWork.ExchangeRates.GetLatestAsync();
-                if (rate is null)
-                {
-                    throw new InvalidOperationException("No hay cotización registrada para convertir USD a ARS.");
-                }
-                rateValue = rate.Valor;
-            }
-
-            var quote = new ResourceCostQuote
-            {
-                RecursoId = resource.Id,
-                Moneda = resource.Moneda,
-                PrecioOriginal = resource.Precio,
-                CotizacionUtilizada = rateValue,
-                CostoEnPesos = resource.Moneda == Moneda.USD ? resource.Precio * rateValue : resource.Precio,
-                FechaCalculo = DateTime.UtcNow
-            };
-
-            var calculation = new ResourceCostCalculation
-            {
-                RecursoId = resource.Id,
-                Recurso = resource,
-                FechaCalculo = quote.FechaCalculo,
-                CotizacionUtilizada = quote.CotizacionUtilizada,
-                CostoEnPesos = quote.CostoEnPesos
-            };
-
-            await _unitOfWork.ResourceCostCalculations.AddAsync(calculation);
-            await _unitOfWork.SaveChangesAsync();
-            return quote;
-        }
-
         public async Task<IReadOnlyList<ResourcePriceHistory>> GetPriceHistoryAsync(Guid recursoId, CancellationToken cancellationToken = default)
         {
             return await _unitOfWork.ResourcePriceHistory.ListByResourceAsync(recursoId);

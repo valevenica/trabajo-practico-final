@@ -52,10 +52,14 @@
             <StackPanel>
             <Grid Margin="0 0 0 12">
                 <TextBlock Text="GESTION DE PRODUCTO" Style="{StaticResource SectionTitleStyle}" />
-                <Button Content="+" Command="{Binding NewProductCommand}" ToolTip="Nuevo producto"
-                        Width="30" Height="30" FontSize="16" FontWeight="Bold"
-                        HorizontalAlignment="Right" VerticalAlignment="Top"
-                        Style="{StaticResource PrimaryButtonStyle}" />
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top">
+                    <Button Content="Eliminar" Command="{Binding DeleteProductCommand}" ToolTip="Eliminar producto"
+                            Height="30" Margin="0 0 8 0" Padding="10 0"
+                            Style="{StaticResource SecondaryButtonStyle}" />
+                    <Button Content="+" Command="{Binding NewProductCommand}" ToolTip="Nuevo producto"
+                            Width="30" Height="30" FontSize="16" FontWeight="Bold"
+                            Style="{StaticResource PrimaryButtonStyle}" />
+                </StackPanel>
             </Grid>
 
             <TextBlock Text="Código" />

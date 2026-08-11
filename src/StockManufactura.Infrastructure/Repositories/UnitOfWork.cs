@@ -19,11 +19,9 @@ namespace StockManufactura.Infrastructure.Repositories
             Recursos = new RecursoRepository(context);
             ExchangeRates = new ExchangeRateRepository(context);
             ResourcePriceHistory = new ResourcePriceHistoryRepository(context);
-            ResourceCostCalculations = new Repository<ResourceCostCalculation>(context);
             Productos = new ProductoRepository(context);
             OrdenesProduccion = new OrdenProduccionRepository(context);
             RecetaProductoItems = new RecetaProductoItemRepository(context);
-            Stocks = new StockRepository(context);
             ProductCostHistory = new ProductCostHistoryRepository(context);
             ProductCostSnapshots = new ProductCostSnapshotRepository(context);
             ProductCostSnapshotItems = new ProductCostSnapshotItemRepository(context);
@@ -40,11 +38,9 @@ namespace StockManufactura.Infrastructure.Repositories
         public IRecursoRepository Recursos { get; }
         public IExchangeRateRepository ExchangeRates { get; }
         public IResourcePriceHistoryRepository ResourcePriceHistory { get; }
-        public IRepository<ResourceCostCalculation> ResourceCostCalculations { get; }
         public IProductoRepository Productos { get; }
         public IOrdenProduccionRepository OrdenesProduccion { get; }
         public IRecetaProductoItemRepository RecetaProductoItems { get; }
-        public IStockRepository Stocks { get; }
         public IProductCostHistoryRepository ProductCostHistory { get; }
         public IProductCostSnapshotRepository ProductCostSnapshots { get; }
         public IProductCostSnapshotItemRepository ProductCostSnapshotItems { get; }

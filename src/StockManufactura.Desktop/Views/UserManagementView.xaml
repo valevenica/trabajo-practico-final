@@ -133,7 +133,11 @@
                                         Visibility="{Binding EsExistente, Converter={StaticResource BoolToVisibilityConverter}}" />
                             </StackPanel>
 
-                            <Button Content="Guardar" Command="{Binding SaveCommand}" Width="140" Height="34" Margin="0 16 0 0" HorizontalAlignment="Left" />
+                            <StackPanel Orientation="Horizontal" Margin="0 16 0 0">
+                                <Button Content="Guardar" Command="{Binding SaveCommand}" Width="140" Height="34" Margin="0 0 8 0" />
+                                <Button Content="Eliminar usuario" Command="{Binding DeleteUserCommand}" Width="150" Height="34"
+                                        Visibility="{Binding EsExistente, Converter={StaticResource BoolToVisibilityConverter}}" />
+                            </StackPanel>
                         </StackPanel>
                     </ScrollViewer>
                 </Grid>
@@ -181,7 +185,10 @@
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
 
-                            <Button Content="Guardar permisos" Command="{Binding SaveRolePermissionsCommand}" Width="160" Height="34" Margin="0 16 0 0" HorizontalAlignment="Left" />
+                            <StackPanel Orientation="Horizontal" Margin="0 16 0 0">
+                                <Button Content="Guardar permisos" Command="{Binding SaveRolePermissionsCommand}" Width="160" Height="34" Margin="0 0 8 0" />
+                                <Button Content="Eliminar rol" Command="{Binding DeleteRoleCommand}" Width="140" Height="34" />
+                            </StackPanel>
                         </StackPanel>
                     </ScrollViewer>
 

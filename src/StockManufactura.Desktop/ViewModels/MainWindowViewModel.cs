@@ -211,7 +211,8 @@ namespace StockManufactura.Desktop.ViewModels
                 _navigationService.NavigateTo(new ResourceManagementViewModel(
                     _serviceProvider.GetRequiredService<IResourcePricingService>(),
                     _serviceProvider.GetRequiredService<IMonetaryConfigurationService>(),
-                    _serviceProvider.GetRequiredService<IUnitOfWork>()));
+                    _serviceProvider.GetRequiredService<IUnitOfWork>(),
+                    _serviceProvider.GetRequiredService<IAuditLogService>()));
                 SetActiveMenu("Resources");
             }
             else

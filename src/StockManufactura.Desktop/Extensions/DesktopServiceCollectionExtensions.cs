@@ -50,7 +50,6 @@ namespace StockManufactura.Desktop.Extensions
             services.AddTransient<IProductoRepository, ProductoRepository>();
             services.AddTransient<IOrdenProduccionRepository, OrdenProduccionRepository>();
             services.AddTransient<IRecetaProductoItemRepository, RecetaProductoItemRepository>();
-            services.AddTransient<IStockRepository, StockRepository>();
             services.AddTransient<IProductCostHistoryRepository, ProductCostHistoryRepository>();
             services.AddTransient<IProductCostSnapshotRepository, ProductCostSnapshotRepository>();
             services.AddTransient<IProductCostSnapshotItemRepository, ProductCostSnapshotItemRepository>();

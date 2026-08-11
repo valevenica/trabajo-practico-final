@@ -53,7 +53,6 @@ public class SystemStatusServiceTests
         public IProductoRepository Productos { get; } = new StubProductoRepository();
         public IOrdenProduccionRepository OrdenesProduccion { get; } = new StubOrdenProduccionRepository();
         public IRecetaProductoItemRepository RecetaProductoItems { get; } = new StubRecetaProductoItemRepository();
-        public IStockRepository Stocks { get; } = new StubStockRepository();
         public IProductCostHistoryRepository ProductCostHistory { get; } = new StubProductCostHistoryRepository();
         public IProductCostSnapshotRepository ProductCostSnapshots { get; } = new StubProductCostSnapshotRepository();
         public IProductCostSnapshotItemRepository ProductCostSnapshotItems { get; } = new StubProductCostSnapshotItemRepository();
@@ -97,12 +96,6 @@ public class SystemStatusServiceTests
         public Task<IReadOnlyList<RecetaProductoItem>> ListByProductIdAsync(Guid productId) => Task.FromResult<IReadOnlyList<RecetaProductoItem>>(Array.Empty<RecetaProductoItem>());
         public Task<IReadOnlyList<RecetaProductoItem>> ListByProductIdsAsync(IEnumerable<Guid> productIds) => Task.FromResult<IReadOnlyList<RecetaProductoItem>>(Array.Empty<RecetaProductoItem>());
         public Task<IReadOnlyList<RecetaProductoItem>> ListByResourceIdAsync(Guid resourceId) => Task.FromResult<IReadOnlyList<RecetaProductoItem>>(Array.Empty<RecetaProductoItem>());
-    }
-
-    private sealed class StubStockRepository : StubRepository<Stock>, IStockRepository
-    {
-        public Task<Stock?> GetByProductoYUbicacionAsync(Guid productoId, Guid ubicacionId) => Task.FromResult<Stock?>(null);
-        public Task<IReadOnlyList<Stock>> ListByProductoAsync(Guid productoId) => Task.FromResult<IReadOnlyList<Stock>>(Array.Empty<Stock>());
     }
 
     private sealed class StubProductCostHistoryRepository : StubRepository<ProductCostHistory>, IProductCostHistoryRepository
