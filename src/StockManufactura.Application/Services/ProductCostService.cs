@@ -26,6 +26,16 @@ namespace StockManufactura.Application.Services
                 .GroupBy(x => x.ProductoId)
                 .ToDictionary(g => g.Key, g => (IReadOnlyList<RecetaProductoItem>)g.ToList());
 
+            var tramosByRecursoId = new Dictionary<Guid, IReadOnlyList<RecursoTramoPrecio>>();
+            var specialResourceIds = allRecipeItems
+                .Where(x => x.RecursoId.HasValue && x.Recurso is not null && x.Recurso.EsServicio)
+                .Select(x => x.RecursoId!.Value)
+                .Distinct();
+            foreach (var recursoId in specialResourceIds)
+            {
+                tramosByRecursoId[recursoId] = await _unitOfWork.RecursoTramosPrecio.ListByRecursoIdAsync(recursoId);
+            }
+
             HashSet<Guid> impactedIds;
             if (request.RecursoDisparadorId.HasValue)
             {
@@ -83,7 +93,7 @@ namespace StockManufactura.Application.Services
                 var previousCost = product.CostoFabricacionActual;
                 var previousSuggested = product.PrecioSugeridoActual;
 
-                var newCost = recipeItems.Sum(x => x.Cantidad * GetUnitCost(x));
+                var newCost = recipeItems.Sum(x => GetItemCost(x, tramosByRecursoId));
                 var newSuggested = newCost * (1 + product.MargenActual);
 
                 product.CostoFabricacionActual = newCost;
@@ -121,14 +131,30 @@ namespace StockManufactura.Application.Services
 
                 foreach (var item in recipeItems.Where(x => x.RecursoId.HasValue))
                 {
+                    var recurso = item.Recurso!;
+                    decimal precioUnitario;
+                    decimal costoParcial;
+
+                    if (recurso.EsServicio && tramosByRecursoId.TryGetValue(recurso.Id, out var tramos) && tramos.Count > 0)
+                    {
+                        var resultado = TramoPrecioCalculator.Calcular(tramos, item.Cantidad);
+                        precioUnitario = resultado.PrecioPromedio;
+                        costoParcial = resultado.CostoTotal;
+                    }
+                    else
+                    {
+                        precioUnitario = recurso.Precio;
+                        costoParcial = item.Cantidad * recurso.Precio;
+                    }
+
                     var snapshotItem = new ProductCostSnapshotItem
                     {
                         SnapshotId = snapshot.Id,
                         RecursoId = item.RecursoId!.Value,
                         CantidadUtilizada = item.Cantidad,
-                        PrecioRecurso = item.Recurso!.Precio,
+                        PrecioRecurso = precioUnitario,
                         CotizacionUtilizada = exchangeRateValue,
-                        CostoParcial = item.Cantidad * item.Recurso.Precio
+                        CostoParcial = costoParcial
                     };
 
                     await _unitOfWork.ProductCostSnapshotItems.AddAsync(snapshotItem);
@@ -138,9 +164,20 @@ namespace StockManufactura.Application.Services
             await _unitOfWork.SaveChangesAsync();
         }
 
-        private static decimal GetUnitCost(RecetaProductoItem item)
+        private static decimal GetItemCost(RecetaProductoItem item, IReadOnlyDictionary<Guid, IReadOnlyList<RecursoTramoPrecio>> tramosByRecursoId)
         {
-            return item.RecursoId.HasValue ? item.Recurso!.Precio : item.ComponenteProducto!.CostoFabricacionActual;
+            if (!item.RecursoId.HasValue)
+            {
+                return item.Cantidad * item.ComponenteProducto!.CostoFabricacionActual;
+            }
+
+            var recurso = item.Recurso!;
+            if (recurso.EsServicio && tramosByRecursoId.TryGetValue(recurso.Id, out var tramos) && tramos.Count > 0)
+            {
+                return TramoPrecioCalculator.Calcular(tramos, item.Cantidad).CostoTotal;
+            }
+
+            return item.Cantidad * recurso.Precio;
         }
 
         private static List<Guid> OrderByComponentDependency(HashSet<Guid> impactedIds, Dictionary<Guid, IReadOnlyList<RecetaProductoItem>> recipeByProduct)

@@ -28,6 +28,7 @@ namespace StockManufactura.Infrastructure.Db
         public DbSet<BackupRecord> BackupRecords { get; set; } = null!;
         public DbSet<BackupSettings> BackupSettings { get; set; } = null!;
         public DbSet<RecursoProveedor> RecursoProveedores { get; set; } = null!;
+        public DbSet<RecursoTramoPrecio> RecursoTramosPrecio { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

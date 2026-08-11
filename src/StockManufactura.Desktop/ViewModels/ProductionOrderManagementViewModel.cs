@@ -322,6 +322,11 @@ namespace StockManufactura.Desktop.ViewModels
                     throw new InvalidOperationException($"No se encontró el insumo {recipeItem.RecursoId}.");
                 }
 
+                if (resource.EsServicio)
+                {
+                    continue;
+                }
+
                 var requiredQuantity = recipeItem.Cantidad * order.CantidadPlaneada;
 
                 if (shouldConsume)

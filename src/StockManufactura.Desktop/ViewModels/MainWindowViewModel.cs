@@ -35,6 +35,8 @@ namespace StockManufactura.Desktop.ViewModels
             NavigateNewResourceCommand = new RelayCommand(NavigateNewResource);
             NavigateProvidersCommand = new RelayCommand(NavigateProviders);
             NavigateProductionOrdersCommand = new RelayCommand(NavigateProductionOrders);
+            NavigateSpecialResourcesCommand = new RelayCommand(NavigateSpecialResources);
+            NavigateStockIntakeCommand = new RelayCommand(NavigateStockIntake);
             NavigateMonetaryCommand = new RelayCommand(NavigateMonetary);
             NavigateAuditCommand = new RelayCommand(NavigateAudit);
             NavigateBackupsCommand = new RelayCommand(NavigateBackups);
@@ -61,6 +63,8 @@ namespace StockManufactura.Desktop.ViewModels
         public bool IsNewResourceSelected => _activeMenuKey == "NewResource";
         public bool IsProvidersSelected => _activeMenuKey == "Providers";
         public bool IsProductionOrdersSelected => _activeMenuKey == "ProductionOrders";
+        public bool IsSpecialResourcesSelected => _activeMenuKey == "SpecialResources";
+        public bool IsStockIntakeSelected => _activeMenuKey == "StockIntake";
         public bool IsMonetarySelected => _activeMenuKey == "Monetary";
         public bool IsBackupsSelected => _activeMenuKey == "Backups";
         public bool IsUsersSelected => _activeMenuKey == "Users";
@@ -73,6 +77,8 @@ namespace StockManufactura.Desktop.ViewModels
         public ICommand NavigateNewResourceCommand { get; }
         public ICommand NavigateProvidersCommand { get; }
         public ICommand NavigateProductionOrdersCommand { get; }
+        public ICommand NavigateSpecialResourcesCommand { get; }
+        public ICommand NavigateStockIntakeCommand { get; }
         public ICommand NavigateMonetaryCommand { get; }
         public ICommand NavigateAuditCommand { get; }
         public ICommand NavigateBackupsCommand { get; }
@@ -246,6 +252,27 @@ namespace StockManufactura.Desktop.ViewModels
             }
         }
 
+        private void NavigateSpecialResources()
+        {
+            if (EnsureDashboardAvailable(out _))
+            {
+                _navigationService.NavigateTo(new SpecialResourcesViewModel(
+                    _serviceProvider.GetRequiredService<IResourcePricingService>()));
+                SetActiveMenu("SpecialResources");
+            }
+        }
+
+        private void NavigateStockIntake()
+        {
+            if (EnsureDashboardAvailable(out _))
+            {
+                _navigationService.NavigateTo(new StockIntakeViewModel(
+                    _serviceProvider.GetRequiredService<IUnitOfWork>(),
+                    _serviceProvider.GetRequiredService<IStockIntakeService>()));
+                SetActiveMenu("StockIntake");
+            }
+        }
+
         private void NavigateMonetary()
         {
             if (EnsureDashboardAvailable(out _))
@@ -303,6 +330,8 @@ namespace StockManufactura.Desktop.ViewModels
             OnPropertyChanged(nameof(IsNewResourceSelected));
             OnPropertyChanged(nameof(IsProvidersSelected));
             OnPropertyChanged(nameof(IsProductionOrdersSelected));
+            OnPropertyChanged(nameof(IsSpecialResourcesSelected));
+            OnPropertyChanged(nameof(IsStockIntakeSelected));
             OnPropertyChanged(nameof(IsMonetarySelected));
             OnPropertyChanged(nameof(IsBackupsSelected));
             OnPropertyChanged(nameof(IsUsersSelected));

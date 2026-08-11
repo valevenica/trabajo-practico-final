@@ -19,6 +19,7 @@ namespace StockManufactura.Application.Resources
         public string MotivoCambio { get; set; } = string.Empty;
         public string Observaciones { get; set; } = string.Empty;
         public bool Activo { get; set; } = true;
+        public bool EsServicio { get; set; }
         public string Usuario { get; set; } = string.Empty;
     }
 }

@@ -54,6 +54,19 @@ namespace StockManufactura.Desktop.Infrastructure
                 dbContext.Roles.Add(adminRole);
                 hasChanges = true;
             }
+            else if (adminRole.Permisos.Count == 0)
+            {
+                // Backfills roles created before Permisos was actually persisted to the database.
+                adminRole.AsignarPermisos(new[]
+                {
+                    "PRODUCTOS_VER", "PRODUCTOS_CREAR", "PRODUCTOS_EDITAR",
+                    "STOCK_VER", "STOCK_AJUSTAR",
+                    "COSTOS_VER",
+                    "USUARIOS_ADMIN"
+                });
+                dbContext.Roles.Update(adminRole);
+                hasChanges = true;
+            }
 
             var operatorRole = dbContext.Roles.FirstOrDefault(r => r.Nombre == OperatorRoleName);
             if (operatorRole is null)
@@ -65,6 +78,17 @@ namespace StockManufactura.Desktop.Infrastructure
                     "STOCK_VER"
                 });
                 dbContext.Roles.Add(operatorRole);
+                hasChanges = true;
+            }
+            else if (operatorRole.Permisos.Count == 0)
+            {
+                // Backfills roles created before Permisos was actually persisted to the database.
+                operatorRole.AsignarPermisos(new[]
+                {
+                    "PRODUCTOS_VER",
+                    "STOCK_VER"
+                });
+                dbContext.Roles.Update(operatorRole);
                 hasChanges = true;
             }
 

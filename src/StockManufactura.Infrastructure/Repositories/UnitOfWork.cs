@@ -31,6 +31,7 @@ namespace StockManufactura.Infrastructure.Repositories
             BackupRecords = new BackupRecordRepository(context);
             BackupSettings = new BackupSettingsRepository(context);
             RecursoProveedores = new RecursoProveedorRepository(context);
+            RecursoTramosPrecio = new RecursoTramoPrecioRepository(context);
         }
 
         public IRolRepository Roles { get; }
@@ -51,6 +52,7 @@ namespace StockManufactura.Infrastructure.Repositories
         public IBackupRecordRepository BackupRecords { get; }
         public IBackupSettingsRepository BackupSettings { get; }
         public IRecursoProveedorRepository RecursoProveedores { get; }
+        public IRecursoTramoPrecioRepository RecursoTramosPrecio { get; }
 
         public Task<int> SaveChangesAsync() => _context.SaveChangesAsync();
     }

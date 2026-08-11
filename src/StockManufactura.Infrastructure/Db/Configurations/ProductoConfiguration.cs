@@ -17,6 +17,7 @@ namespace StockManufactura.Infrastructure.Db.Configurations
             builder.Property(x => x.CostoFabricacionActual).HasColumnType("decimal(18,4)");
             builder.Property(x => x.MargenActual).HasColumnType("decimal(18,6)");
             builder.Property(x => x.PrecioSugeridoActual).HasColumnType("decimal(18,4)");
+            builder.Property(x => x.StockActual).HasColumnType("decimal(18,4)").HasDefaultValue(0m);
             builder.Property(x => x.Activo).IsRequired().HasDefaultValue(true);
             builder.Property(x => x.FechaUltimoCalculo).IsRequired();
             builder.Property(x => x.Observaciones).HasMaxLength(500);

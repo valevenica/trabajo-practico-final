@@ -6,6 +6,7 @@ using StockManufactura.Application.DTOs;
 using StockManufactura.Application.Interfaces;
 using StockManufactura.Desktop.Infrastructure;
 using StockManufactura.Desktop.Services;
+using StockManufactura.Domain.Entities;
 
 namespace StockManufactura.Desktop.ViewModels
 {
@@ -37,9 +38,6 @@ namespace StockManufactura.Desktop.ViewModels
         private string _email = string.Empty;
 
         [ObservableProperty]
-        private string _password = string.Empty;
-
-        [ObservableProperty]
         private bool _esActivo = true;
 
         [ObservableProperty]
@@ -49,7 +47,39 @@ namespace StockManufactura.Desktop.ViewModels
         private bool _esNuevo = true;
 
         [ObservableProperty]
-        private string _resetPassword = string.Empty;
+        private string _newPassword = string.Empty;
+
+        [ObservableProperty]
+        private bool _isChangePasswordVisible = true;
+
+        [ObservableProperty]
+        private bool _showNewPassword;
+
+        [ObservableProperty]
+        private string _myCurrentPassword = string.Empty;
+
+        [ObservableProperty]
+        private string _myNewPassword = string.Empty;
+
+        [ObservableProperty]
+        private bool _isMyChangePasswordVisible;
+
+        [ObservableProperty]
+        private bool _showMyNewPassword;
+
+        [ObservableProperty]
+        private RoleAdminOption? _selectedRoleForPermissions;
+
+        [ObservableProperty]
+        private string _newRoleName = string.Empty;
+
+        [ObservableProperty]
+        private string _newRoleDescription = string.Empty;
+
+        [ObservableProperty]
+        private bool _isNewRolePanelVisible;
+
+        private readonly Dictionary<Guid, Rol> _rolesById = new();
 
         public UserManagementViewModel(
             IUserManagementService userManagementService,
@@ -62,13 +92,23 @@ namespace StockManufactura.Desktop.ViewModels
 
             Users = new ObservableCollection<UsuarioDto>();
             Roles = new ObservableCollection<RolOption>();
+            RolesForAdmin = new ObservableCollection<RoleAdminOption>();
+            RolePermissions = new ObservableCollection<PermissionCheckItem>();
             LoadCommand = new AsyncRelayCommand(LoadAsync);
             SaveCommand = new AsyncRelayCommand(SaveAsync);
-            ToggleActiveCommand = new AsyncRelayCommand(ToggleActiveAsync);
-            ResetPasswordCommand = new AsyncRelayCommand(ResetPasswordAsync);
+            SaveNewPasswordCommand = new AsyncRelayCommand(SaveNewPasswordAsync);
+            ToggleChangePasswordCommand = new RelayCommand(ToggleChangePassword);
+            ToggleShowNewPasswordCommand = new RelayCommand(ToggleShowNewPassword);
             NewUserCommand = new RelayCommand(StartNewUser);
             SaveMyDataCommand = new AsyncRelayCommand(SaveMyDataAsync);
+            SaveMyPasswordCommand = new AsyncRelayCommand(SaveMyPasswordAsync);
+            ToggleMyChangePasswordCommand = new RelayCommand(ToggleMyChangePassword);
+            ToggleShowMyNewPasswordCommand = new RelayCommand(ToggleShowMyNewPassword);
             OpenUserAdminTabCommand = new RelayCommand(OpenUserAdminTab);
+            OpenRoleAdminTabCommand = new RelayCommand(OpenRoleAdminTab);
+            ToggleNewRolePanelCommand = new RelayCommand(ToggleNewRolePanel);
+            CreateRoleCommand = new AsyncRelayCommand(CreateRoleAsync);
+            SaveRolePermissionsCommand = new AsyncRelayCommand(SaveRolePermissionsAsync);
             BackCommand = new RelayCommand(GoBack);
 
             SelectedTabIndex = 0;
@@ -80,17 +120,32 @@ namespace StockManufactura.Desktop.ViewModels
 
         public ObservableCollection<UsuarioDto> Users { get; }
         public ObservableCollection<RolOption> Roles { get; }
+        public ObservableCollection<RoleAdminOption> RolesForAdmin { get; }
+        public ObservableCollection<PermissionCheckItem> RolePermissions { get; }
 
         public ICommand LoadCommand { get; }
         public ICommand SaveCommand { get; }
-        public ICommand ToggleActiveCommand { get; }
-        public ICommand ResetPasswordCommand { get; }
+        public ICommand SaveNewPasswordCommand { get; }
+        public ICommand ToggleChangePasswordCommand { get; }
+        public ICommand ToggleShowNewPasswordCommand { get; }
         public ICommand NewUserCommand { get; }
         public ICommand SaveMyDataCommand { get; }
+        public ICommand SaveMyPasswordCommand { get; }
+        public ICommand ToggleMyChangePasswordCommand { get; }
+        public ICommand ToggleShowMyNewPasswordCommand { get; }
         public ICommand OpenUserAdminTabCommand { get; }
+        public ICommand OpenRoleAdminTabCommand { get; }
+        public ICommand ToggleNewRolePanelCommand { get; }
+        public ICommand CreateRoleCommand { get; }
+        public ICommand SaveRolePermissionsCommand { get; }
         public ICommand BackCommand { get; }
 
         public bool CanManageUsers => AuthSession.Current?.TienePermiso("USUARIOS_ADMIN") == true;
+        public bool CanManageRoles => CanManageUsers;
+        public bool EsExistente => !EsNuevo;
+        public bool HideNewPassword => !ShowNewPassword;
+        public bool HideMyNewPassword => !ShowMyNewPassword;
+        public bool ShowBackButton => SelectedTabIndex != 1;
 
         partial void OnSelectedUserChanged(UsuarioDto? value)
         {
@@ -104,8 +159,43 @@ namespace StockManufactura.Desktop.ViewModels
             Email = value.Email;
             EsActivo = value.EsActivo;
             SelectedRole = Roles.FirstOrDefault(x => x.Id == value.RolId);
-            Password = string.Empty;
-            ResetPassword = string.Empty;
+            NewPassword = string.Empty;
+            IsChangePasswordVisible = false;
+            ShowNewPassword = false;
+        }
+
+        partial void OnEsNuevoChanged(bool value)
+        {
+            OnPropertyChanged(nameof(EsExistente));
+        }
+
+        partial void OnShowNewPasswordChanged(bool value)
+        {
+            OnPropertyChanged(nameof(HideNewPassword));
+        }
+
+        partial void OnShowMyNewPasswordChanged(bool value)
+        {
+            OnPropertyChanged(nameof(HideMyNewPassword));
+        }
+
+        partial void OnSelectedTabIndexChanged(int value)
+        {
+            OnPropertyChanged(nameof(ShowBackButton));
+        }
+
+        partial void OnSelectedRoleForPermissionsChanged(RoleAdminOption? value)
+        {
+            RolePermissions.Clear();
+            if (value is null || !_rolesById.TryGetValue(value.Id, out var rol))
+            {
+                return;
+            }
+
+            foreach (var (code, label) in PermissionCatalog.All)
+            {
+                RolePermissions.Add(new PermissionCheckItem(code, label, rol.TienePermiso(code)));
+            }
         }
 
         private async Task LoadAsync()
@@ -131,6 +221,18 @@ namespace StockManufactura.Desktop.ViewModels
 
                 if (SelectedRole is null && Roles.Count > 0)
                     SelectedRole = Roles[0];
+
+                _rolesById.Clear();
+                foreach (var role in roles)
+                    _rolesById[role.Id] = role;
+
+                var previouslySelectedRoleId = SelectedRoleForPermissions?.Id;
+                RolesForAdmin.Clear();
+                foreach (var role in roles)
+                    RolesForAdmin.Add(new RoleAdminOption(role.Id, role.Nombre, role.Descripcion));
+
+                SelectedRoleForPermissions = RolesForAdmin.FirstOrDefault(x => x.Id == previouslySelectedRoleId)
+                    ?? RolesForAdmin.FirstOrDefault();
 
                 Users.Clear();
                 foreach (var user in users)
@@ -172,7 +274,13 @@ namespace StockManufactura.Desktop.ViewModels
                 UsuarioDto saved;
                 if (EsNuevo)
                 {
-                    saved = await _userManagementService.CreateAsync(request, Password, actor);
+                    if (string.IsNullOrWhiteSpace(NewPassword) || NewPassword.Length < 8)
+                    {
+                        StatusMessage = "La contraseña debe tener al menos 8 caracteres.";
+                        return;
+                    }
+
+                    saved = await _userManagementService.CreateAsync(request, NewPassword, actor);
                     StatusMessage = "Usuario creado.";
                 }
                 else
@@ -196,28 +304,19 @@ namespace StockManufactura.Desktop.ViewModels
             }
         }
 
-        private async Task ToggleActiveAsync()
+        private void ToggleChangePassword()
         {
-            if (!CanManageUsers)
-            {
-                StatusMessage = "No tiene permisos para administrar usuarios.";
-                return;
-            }
-
-            if (SelectedUser is null)
-            {
-                StatusMessage = "Debe seleccionar un usuario.";
-                return;
-            }
-
-            var actor = AuthSession.Current?.Usuario.Email ?? "desktop-user";
-            await _userManagementService.SetActiveAsync(SelectedUser.Id, !SelectedUser.EsActivo, actor);
-            await LoadAsync();
-            SelectedUser = Users.FirstOrDefault(x => x.Id == SelectedUser.Id);
-            StatusMessage = "Estado de usuario actualizado.";
+            IsChangePasswordVisible = !IsChangePasswordVisible;
+            NewPassword = string.Empty;
+            ShowNewPassword = false;
         }
 
-        private async Task ResetPasswordAsync()
+        private void ToggleShowNewPassword()
+        {
+            ShowNewPassword = !ShowNewPassword;
+        }
+
+        private async Task SaveNewPasswordAsync()
         {
             if (!CanManageUsers)
             {
@@ -231,34 +330,85 @@ namespace StockManufactura.Desktop.ViewModels
                 return;
             }
 
-            if (string.IsNullOrWhiteSpace(ResetPassword) || ResetPassword.Length < 8)
+            if (string.IsNullOrWhiteSpace(NewPassword) || NewPassword.Length < 8)
             {
-                StatusMessage = "La contraseña temporal debe tener al menos 8 caracteres.";
+                StatusMessage = "La contraseña debe tener al menos 8 caracteres.";
                 return;
             }
 
             var actor = AuthSession.Current?.Usuario.Email ?? "desktop-user";
-            await _userManagementService.ResetPasswordAsync(SelectedUser.Id, ResetPassword, actor);
-            ResetPassword = string.Empty;
-            StatusMessage = "Contraseña reseteada. Se solicitará cambio en el próximo login.";
+            await _userManagementService.ResetPasswordAsync(SelectedUser.Id, NewPassword, actor);
+            NewPassword = string.Empty;
+            IsChangePasswordVisible = false;
+            ShowNewPassword = false;
+            StatusMessage = "Contraseña actualizada.";
         }
 
         private void StartNewUser()
         {
-            SelectedTabIndex = 1;
             EsNuevo = true;
             SelectedUser = null;
             Nombre = string.Empty;
             Email = string.Empty;
-            Password = string.Empty;
             EsActivo = true;
-            ResetPassword = string.Empty;
+            NewPassword = string.Empty;
+            IsChangePasswordVisible = true;
+            ShowNewPassword = false;
             if (Roles.Count > 0)
             {
                 SelectedRole = Roles[0];
             }
 
             StatusMessage = "Alta de usuario nueva.";
+        }
+
+        private void ToggleMyChangePassword()
+        {
+            IsMyChangePasswordVisible = !IsMyChangePasswordVisible;
+            MyCurrentPassword = string.Empty;
+            MyNewPassword = string.Empty;
+            ShowMyNewPassword = false;
+        }
+
+        private void ToggleShowMyNewPassword()
+        {
+            ShowMyNewPassword = !ShowMyNewPassword;
+        }
+
+        private async Task SaveMyPasswordAsync()
+        {
+            var currentUser = AuthSession.Current?.Usuario;
+            if (currentUser is null)
+            {
+                StatusMessage = "No hay sesión activa.";
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(MyCurrentPassword))
+            {
+                StatusMessage = "Debe ingresar su contraseña actual.";
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(MyNewPassword) || MyNewPassword.Length < 8)
+            {
+                StatusMessage = "La nueva contraseña debe tener al menos 8 caracteres.";
+                return;
+            }
+
+            try
+            {
+                await _userManagementService.ChangePasswordAsync(currentUser.Id, MyCurrentPassword, MyNewPassword, currentUser.Email);
+                MyCurrentPassword = string.Empty;
+                MyNewPassword = string.Empty;
+                IsMyChangePasswordVisible = false;
+                ShowMyNewPassword = false;
+                StatusMessage = "Contraseña actualizada.";
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = ex.Message;
+            }
         }
 
         private async Task SaveMyDataAsync()
@@ -311,11 +461,109 @@ namespace StockManufactura.Desktop.ViewModels
             StatusMessage = "Gestión de usuarios.";
         }
 
+        private void OpenRoleAdminTab()
+        {
+            if (!CanManageRoles)
+            {
+                StatusMessage = "No tiene permisos para administrar roles.";
+                return;
+            }
+
+            SelectedTabIndex = 2;
+            StatusMessage = "Gestión de roles y permisos.";
+        }
+
+        private void ToggleNewRolePanel()
+        {
+            IsNewRolePanelVisible = !IsNewRolePanelVisible;
+            if (IsNewRolePanelVisible)
+            {
+                NewRoleName = string.Empty;
+                NewRoleDescription = string.Empty;
+            }
+        }
+
+        private async Task CreateRoleAsync()
+        {
+            if (!CanManageRoles)
+            {
+                StatusMessage = "No tiene permisos para administrar roles.";
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(NewRoleName))
+            {
+                StatusMessage = "Debe ingresar un nombre de rol.";
+                return;
+            }
+
+            try
+            {
+                var actor = AuthSession.Current?.Usuario.Email ?? "desktop-user";
+                var created = await _userManagementService.CreateRoleAsync(NewRoleName.Trim(), NewRoleDescription.Trim(), actor);
+                NewRoleName = string.Empty;
+                NewRoleDescription = string.Empty;
+                IsNewRolePanelVisible = false;
+                await LoadAsync();
+                SelectedRoleForPermissions = RolesForAdmin.FirstOrDefault(x => x.Id == created.Id);
+                StatusMessage = "Rol creado.";
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = ex.Message;
+            }
+        }
+
+        private async Task SaveRolePermissionsAsync()
+        {
+            if (!CanManageRoles)
+            {
+                StatusMessage = "No tiene permisos para administrar roles.";
+                return;
+            }
+
+            if (SelectedRoleForPermissions is null)
+            {
+                StatusMessage = "Debe seleccionar un rol.";
+                return;
+            }
+
+            try
+            {
+                var actor = AuthSession.Current?.Usuario.Email ?? "desktop-user";
+                var permisos = RolePermissions.Where(p => p.IsChecked).Select(p => p.Code).ToList();
+                await _userManagementService.UpdateRolePermissionsAsync(SelectedRoleForPermissions.Id, permisos, actor);
+                await LoadAsync();
+                StatusMessage = "Permisos actualizados.";
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = ex.Message;
+            }
+        }
+
         private void GoBack()
         {
             _navigationService.NavigateTo(_dashboardViewModel);
         }
 
         public sealed record RolOption(Guid Id, string Nombre);
+        public sealed record RoleAdminOption(Guid Id, string Nombre, string Descripcion);
+
+        public sealed partial class PermissionCheckItem : ObservableObject
+        {
+            public string Code { get; }
+            public string Label { get; }
+
+            [ObservableProperty]
+            private bool _isChecked;
+
+            public PermissionCheckItem(string code, string label, bool isChecked)
+            {
+                Code = code;
+                Label = label;
+                _isChecked = isChecked;
+            }
+        }
     }
 }

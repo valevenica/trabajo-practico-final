@@ -68,6 +68,9 @@ namespace StockManufactura.Desktop.ViewModels
         private bool _activo = true;
 
         [ObservableProperty]
+        private bool _esServicio;
+
+        [ObservableProperty]
         private bool _isDirty;
 
         private bool _loading;
@@ -145,6 +148,7 @@ namespace StockManufactura.Desktop.ViewModels
         public ICommand RecalcularTodosUSDCommand { get; }
 
         public Visibility UsdDetailsVisibility => IsUsd ? Visibility.Visible : Visibility.Collapsed;
+        public bool StockFieldsEnabled => !EsServicio;
         public bool IsArs
         {
             get => !IsUsd;
@@ -196,6 +200,7 @@ namespace StockManufactura.Desktop.ViewModels
                 IsUsd = value.Moneda == Moneda.USD;
                 Observaciones = value.Observaciones;
                 Activo = value.Activo;
+                EsServicio = value.EsServicio;
                 _ = LoadHistoryAsync(value.Id);
                 _ = LoadProveedoresDelInsumoAsync(value.Id);
             }
@@ -216,6 +221,18 @@ namespace StockManufactura.Desktop.ViewModels
         partial void OnPrecioChanged(string value) { if (!_loading) IsDirty = true; }
         partial void OnActivoChanged(bool value) { if (!_loading) IsDirty = true; }
         partial void OnObservacionesChanged(string value) { if (!_loading) IsDirty = true; }
+
+        partial void OnEsServicioChanged(bool value)
+        {
+            OnPropertyChanged(nameof(StockFieldsEnabled));
+            if (value)
+            {
+                StockActual = 0;
+                StockMinimo = 0;
+            }
+
+            if (!_loading) IsDirty = true;
+        }
 
         private async Task LoadAsync()
         {
@@ -285,6 +302,7 @@ namespace StockManufactura.Desktop.ViewModels
                 ProveedorHabitualId = SelectedResource?.ProveedorHabitualId,
                 Observaciones = Observaciones,
                 Activo = Activo,
+                EsServicio = EsServicio,
                 Usuario = "desktop-user"
             };
 
@@ -488,6 +506,7 @@ namespace StockManufactura.Desktop.ViewModels
                 Descripcion = recurso.Descripcion,
                 Categoria = recurso.Categoria,
                 UnidadMedida = recurso.UnidadMedida,
+                EsServicio = recurso.EsServicio,
                 StockActual = recurso.StockActual,
                 StockMinimo = recurso.StockMinimo,
                 Precio = nuevoPrecio,

@@ -156,10 +156,61 @@ namespace StockManufactura.Application.Services
             }
 
             usuario.CambiarPasswordHash(BCrypt.Net.BCrypt.HashPassword(newPassword));
-            usuario.ForzarCambioPassword();
             _unitOfWork.Usuarios.Update(usuario);
             await _unitOfWork.SaveChangesAsync();
-            await RegisterAuditAsync(actor, "ResetPassword", usuario, $"Reseteo de contraseña para {usuario.Email}", cancellationToken);
+            await RegisterAuditAsync(actor, "CambiarPassword", usuario, $"Cambio de contraseña para {usuario.Email}", cancellationToken);
+        }
+
+        public async Task<Rol> CreateRoleAsync(string nombre, string descripcion, string actor, CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrWhiteSpace(nombre))
+            {
+                throw new InvalidOperationException("El nombre del rol es requerido.");
+            }
+
+            var existingRole = (await _unitOfWork.Roles.ListAsync())
+                .FirstOrDefault(r => string.Equals(r.Nombre, nombre.Trim(), StringComparison.OrdinalIgnoreCase));
+            if (existingRole is not null)
+            {
+                throw new InvalidOperationException("Ya existe un rol con ese nombre.");
+            }
+
+            var rol = new Rol(nombre.Trim(), descripcion?.Trim() ?? string.Empty);
+            await _unitOfWork.Roles.AddAsync(rol);
+            await _unitOfWork.SaveChangesAsync();
+
+            await RegisterRoleAuditAsync(actor, "Crear", rol, $"Alta de rol {rol.Nombre}", cancellationToken);
+            return rol;
+        }
+
+        public async Task<Rol> UpdateRolePermissionsAsync(Guid rolId, IReadOnlyCollection<string> permisos, string actor, CancellationToken cancellationToken = default)
+        {
+            var rol = await _unitOfWork.Roles.GetByIdAsync(rolId);
+            if (rol is null)
+            {
+                throw new InvalidOperationException("Rol no encontrado.");
+            }
+
+            rol.AsignarPermisos(permisos ?? Array.Empty<string>());
+            _unitOfWork.Roles.Update(rol);
+            await _unitOfWork.SaveChangesAsync();
+
+            await RegisterRoleAuditAsync(actor, "EditarPermisos", rol, $"Actualización de permisos del rol {rol.Nombre}", cancellationToken);
+            return rol;
+        }
+
+        private Task RegisterRoleAuditAsync(string actor, string action, Rol rol, string description, CancellationToken cancellationToken)
+        {
+            return _auditLogService.RegisterAsync(new AuditLog
+            {
+                Usuario = string.IsNullOrWhiteSpace(actor) ? "system" : actor,
+                Modulo = "Roles",
+                Accion = action,
+                Entidad = "Rol",
+                IdEntidad = rol.Id.ToString(),
+                Descripcion = description,
+                Equipo = Environment.MachineName
+            }, cancellationToken);
         }
 
         private static void ValidatePassword(string password)

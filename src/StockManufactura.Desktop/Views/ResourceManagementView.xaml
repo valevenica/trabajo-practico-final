@@ -75,11 +75,16 @@
                             </StackPanel>
                             <StackPanel Grid.Row="2" Grid.Column="0" Margin="0 0 6 6">
                                 <TextBlock Text="Stock actual" FontSize="11" Foreground="Gray" />
-                                <TextBox Text="{Binding StockActual, UpdateSourceTrigger=PropertyChanged}" Height="30" />
+                                <TextBox Text="{Binding StockActual, UpdateSourceTrigger=PropertyChanged}" Height="30"
+                                         IsEnabled="{Binding StockFieldsEnabled}" />
                             </StackPanel>
                             <StackPanel Grid.Row="2" Grid.Column="1" Margin="6 0 0 6">
                                 <TextBlock Text="Stock mínimo" FontSize="11" Foreground="Gray" />
-                                <TextBox Text="{Binding StockMinimo, UpdateSourceTrigger=PropertyChanged}" Height="30" />
+                                <TextBox Text="{Binding StockMinimo, UpdateSourceTrigger=PropertyChanged}" Height="30"
+                                         IsEnabled="{Binding StockFieldsEnabled}" />
+                                <CheckBox Content="Es un servicio (sin stock físico, ej. electricidad, alquiler)"
+                                          IsChecked="{Binding EsServicio}" Margin="0 6 0 0" FontSize="10"
+                                          ToolTip="Un servicio no maneja stock: su costo se calcula por cantidad consumida (ej. kWh) x precio, sin bloquear órdenes de producción por falta de existencias" />
                             </StackPanel>
                             <StackPanel Grid.Row="3" Grid.Column="0" Margin="0 0 6 6">
                                 <TextBlock Text="Descripción" FontSize="11" Foreground="Gray" />

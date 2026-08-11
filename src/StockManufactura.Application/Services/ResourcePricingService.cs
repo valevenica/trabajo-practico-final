@@ -56,8 +56,9 @@ namespace StockManufactura.Application.Services
             resource.Descripcion = request.Descripcion;
             resource.Categoria = request.Categoria;
             resource.UnidadMedida = request.UnidadMedida;
-            resource.StockActual = request.StockActual;
-            resource.StockMinimo = request.StockMinimo;
+            resource.EsServicio = request.EsServicio;
+            resource.StockActual = request.EsServicio ? 0 : request.StockActual;
+            resource.StockMinimo = request.EsServicio ? 0 : request.StockMinimo;
             resource.Precio = request.Precio;
             resource.Moneda = request.Moneda;
             resource.ProveedorHabitualId = request.ProveedorHabitualId;
@@ -177,6 +178,7 @@ namespace StockManufactura.Application.Services
                     Descripcion = recurso.Descripcion,
                     Categoria = recurso.Categoria,
                     UnidadMedida = recurso.UnidadMedida,
+                    EsServicio = recurso.EsServicio,
                     StockActual = recurso.StockActual,
                     StockMinimo = recurso.StockMinimo,
                     Precio = recurso.Precio,
@@ -192,5 +194,45 @@ namespace StockManufactura.Application.Services
 
             return usdResources.Count;
         }
+
+        public async Task<IReadOnlyList<RecursoTramoPrecio>> GetTramosAsync(Guid recursoId, CancellationToken cancellationToken = default)
+        {
+            return await _unitOfWork.RecursoTramosPrecio.ListByRecursoIdAsync(recursoId);
+        }
+
+        public async Task<IReadOnlyList<RecursoTramoPrecio>> GuardarTramosAsync(Guid recursoId, IReadOnlyList<TramoPrecioInput> tramos, CancellationToken cancellationToken = default)
+        {
+            var resource = await _unitOfWork.Recursos.GetByIdAsync(recursoId);
+            if (resource is null)
+            {
+                throw new InvalidOperationException("Recurso no encontrado.");
+            }
+
+            await _unitOfWork.RecursoTramosPrecio.DeleteByRecursoIdAsync(recursoId);
+
+            var orden = 1;
+            var guardados = new List<RecursoTramoPrecio>();
+            foreach (var tramo in tramos)
+            {
+                if (tramo.PrecioPorUnidad < 0)
+                {
+                    throw new InvalidOperationException("El precio por unidad no puede ser negativo.");
+                }
+
+                var entity = new RecursoTramoPrecio
+                {
+                    RecursoId = recursoId,
+                    Orden = orden++,
+                    CantidadHasta = tramo.CantidadHasta,
+                    PrecioPorUnidad = tramo.PrecioPorUnidad
+                };
+                await _unitOfWork.RecursoTramosPrecio.AddAsync(entity);
+                guardados.Add(entity);
+            }
+
+            await _unitOfWork.SaveChangesAsync();
+            return guardados;
+        }
+
     }
 }

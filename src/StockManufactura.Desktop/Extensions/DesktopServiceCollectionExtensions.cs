@@ -58,6 +58,7 @@ namespace StockManufactura.Desktop.Extensions
             services.AddTransient<IBackupRecordRepository, BackupRecordRepository>();
             services.AddTransient<IBackupSettingsRepository, BackupSettingsRepository>();
             services.AddTransient<IRecursoProveedorRepository, RecursoProveedorRepository>();
+            services.AddTransient<IRecursoTramoPrecioRepository, RecursoTramoPrecioRepository>();
             // UnitOfWork creates its own repos from its own DbContext — ensures SaveChangesAsync persists correctly
             services.AddTransient<IUnitOfWork, UnitOfWork>();
 
@@ -73,6 +74,7 @@ namespace StockManufactura.Desktop.Extensions
             services.AddTransient<IMonetaryConfigurationService, MonetaryConfigurationService>();
             services.AddTransient<ISystemStatusService, SystemStatusService>();
             services.AddTransient<IResourcePricingService, ResourcePricingService>();
+            services.AddTransient<IStockIntakeService, StockIntakeService>();
             services.AddTransient<IUserManagementService, UserManagementService>();
             services.AddTransient<DesktopStartupHealthCheck>();
             return services;

@@ -511,6 +511,11 @@ namespace StockManufactura.Infrastructure.Migrations
                     b.Property<decimal>("PrecioSugeridoActual")
                         .HasColumnType("decimal(18,4)");
 
+                    b.Property<decimal>("StockActual")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,4)")
+                        .HasDefaultValue(0m);
+
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("TEXT");
 
@@ -691,6 +696,11 @@ namespace StockManufactura.Infrastructure.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("TEXT");
 
+                    b.Property<bool>("EsServicio")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(false);
+
                     b.Property<DateTime>("FechaUltimaActualizacion")
                         .HasColumnType("TEXT");
 
@@ -782,6 +792,42 @@ namespace StockManufactura.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("RecursoProveedores", (string)null);
+                });
+
+            modelBuilder.Entity("StockManufactura.Domain.Entities.RecursoTramoPrecio", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal?>("CantidadHasta")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(false);
+
+                    b.Property<int>("Orden")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<decimal>("PrecioPorUnidad")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<Guid>("RecursoId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RecursoId");
+
+                    b.ToTable("RecursoTramosPrecio", (string)null);
                 });
 
             modelBuilder.Entity("StockManufactura.Domain.Entities.ResourceCostCalculation", b =>
@@ -906,6 +952,12 @@ namespace StockManufactura.Infrastructure.Migrations
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("TEXT");
+
+                    b.Property<string>("_permisos")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("Permisos");
 
                     b.HasKey("Id");
 
@@ -1118,6 +1170,17 @@ namespace StockManufactura.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Proveedor");
+
+                    b.Navigation("Recurso");
+                });
+
+            modelBuilder.Entity("StockManufactura.Domain.Entities.RecursoTramoPrecio", b =>
+                {
+                    b.HasOne("StockManufactura.Domain.Entities.Recurso", "Recurso")
+                        .WithMany()
+                        .HasForeignKey("RecursoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Recurso");
                 });

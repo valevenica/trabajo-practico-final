@@ -10,6 +10,7 @@ namespace StockManufactura.Domain.Entities
         public decimal CostoFabricacionActual { get; set; }
         public decimal MargenActual { get; set; }
         public decimal PrecioSugeridoActual { get; set; }
+        public decimal StockActual { get; set; }
         public bool Activo { get; set; } = true;
         public DateTime FechaUltimoCalculo { get; set; } = DateTime.UtcNow;
         public string Observaciones { get; set; } = string.Empty;

@@ -1,0 +1,79 @@
+<UserControl x:Class="StockManufactura.Desktop.Views.StockIntakeView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d"
+             d:DesignHeight="600" d:DesignWidth="900">
+    <Grid Margin="16" Background="{StaticResource BackgroundSoftLightBrush}">
+        <StackPanel MaxWidth="720" HorizontalAlignment="Left">
+
+            <Border Style="{StaticResource CardBorderStyle}" Margin="0 0 0 10">
+                <StackPanel>
+                    <Border Background="{StaticResource BackgroundDarkMetalBrush}" Padding="8" CornerRadius="4" Margin="0 0 0 10">
+                        <TextBlock Text="INGRESOS DE STOCK" Foreground="{StaticResource SecondaryAccentBrush}" FontWeight="SemiBold" />
+                    </Border>
+
+                    <TextBlock Text="Elegí un producto o insumo y la cantidad que ingresa. Podés agregar varios ítems antes de guardar; si el ítem es un producto, se descuentan automáticamente los insumos de su receta."
+                               TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="0 0 0 10" />
+
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="140" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0" Margin="0 0 8 0">
+                            <TextBlock Text="Producto o insumo" FontSize="11" Foreground="Gray" />
+                            <ComboBox ItemsSource="{Binding AvailableItems}" SelectedItem="{Binding SelectedItem}"
+                                      DisplayMemberPath="Nombre" Height="30" />
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="1" Margin="0 0 8 0">
+                            <TextBlock Text="Cantidad" FontSize="11" Foreground="Gray" />
+                            <TextBox Text="{Binding Cantidad, UpdateSourceTrigger=PropertyChanged}" Height="30" />
+                        </StackPanel>
+
+                        <Button Grid.Column="2" Content="+ Agregar" Command="{Binding AddLineCommand}"
+                                Height="30" Margin="0 16 0 0" Padding="12 0" Style="{StaticResource PrimaryButtonStyle}" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource CardBorderStyle}">
+                <StackPanel>
+                    <Border Background="{StaticResource BackgroundDarkMetalBrush}" Padding="8" CornerRadius="4" Margin="0 0 0 10">
+                        <TextBlock Text="Ítems a ingresar" Foreground="{StaticResource SecondaryAccentBrush}" FontWeight="SemiBold" />
+                    </Border>
+
+                    <DataGrid ItemsSource="{Binding Lines}" AutoGenerateColumns="False"
+                              IsReadOnly="True" CanUserAddRows="False" MinHeight="120" MaxHeight="260">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Ítem" Binding="{Binding Nombre}" Width="*" />
+                            <DataGridTextColumn Header="Tipo" Binding="{Binding TipoLabel}" Width="90" />
+                            <DataGridTextColumn Header="Cantidad" Binding="{Binding Cantidad, StringFormat={}{0:0.##}}" Width="100" />
+                            <DataGridTextColumn Header="Unidad" Binding="{Binding Unidad}" Width="80" />
+                            <DataGridTemplateColumn Header="" Width="40">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Button Content="✕" Width="26" Height="26"
+                                                Command="{Binding DataContext.RemoveLineCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                CommandParameter="{Binding}" Style="{StaticResource SecondaryButtonStyle}" />
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+
+                    <Button Content="Guardar ingreso" Command="{Binding SaveCommand}"
+                            Height="34" Margin="0 12 0 0" HorizontalAlignment="Left" Padding="16 0"
+                            Style="{StaticResource PrimaryButtonStyle}" />
+
+                    <TextBlock Text="{Binding StatusMessage}" Margin="0 10 0 0" Style="{StaticResource StatusMessageStyle}" />
+                </StackPanel>
+            </Border>
+
+        </StackPanel>
+    </Grid>
+</UserControl>

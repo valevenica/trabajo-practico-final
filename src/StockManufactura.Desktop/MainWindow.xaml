@@ -105,6 +105,8 @@
                         <StackPanel Margin="0,6,0,0">
                             <Button Content="Productos" Margin="0,0,0,6" Command="{Binding NavigateProductsCommand}" Tag="{Binding IsProductsSelected}" Style="{StaticResource SidebarMenuButtonStyle}" />
                             <Button Content="Insumos" Margin="0,0,0,6" Command="{Binding NavigateResourcesCommand}" Tag="{Binding IsResourcesSelected}" Style="{StaticResource SidebarMenuButtonStyle}" />
+                            <Button Content="Insumos especiales" Margin="0,0,0,6" Command="{Binding NavigateSpecialResourcesCommand}" Tag="{Binding IsSpecialResourcesSelected}" Style="{StaticResource SidebarMenuButtonStyle}" />
+                            <Button Content="Ingresos" Margin="0,0,0,6" Command="{Binding NavigateStockIntakeCommand}" Tag="{Binding IsStockIntakeSelected}" Style="{StaticResource SidebarMenuButtonStyle}" />
                         </StackPanel>
                     </Expander>
 
@@ -180,6 +182,12 @@
                 </DataTemplate>
                 <DataTemplate DataType="{x:Type viewModels:ProductionOrderManagementViewModel}">
                     <views:ProductionOrderManagementView />
+                </DataTemplate>
+                <DataTemplate DataType="{x:Type viewModels:SpecialResourcesViewModel}">
+                    <views:SpecialResourcesView />
+                </DataTemplate>
+                <DataTemplate DataType="{x:Type viewModels:StockIntakeViewModel}">
+                    <views:StockIntakeView />
                 </DataTemplate>
                 <DataTemplate DataType="{x:Type viewModels:UserManagementViewModel}">
                     <views:UserManagementView />

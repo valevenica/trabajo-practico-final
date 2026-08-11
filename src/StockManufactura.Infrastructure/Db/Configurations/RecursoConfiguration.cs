@@ -23,6 +23,7 @@ namespace StockManufactura.Infrastructure.Db.Configurations
             builder.Property(x => x.FechaUltimaActualizacion).IsRequired();
             builder.Property(x => x.Observaciones).HasMaxLength(500);
             builder.Property(x => x.Activo).IsRequired().HasDefaultValue(true);
+            builder.Property(x => x.EsServicio).IsRequired().HasDefaultValue(false);
 
             builder.Property(x => x.CreatedAt).IsRequired();
             builder.Property(x => x.UpdatedAt).IsRequired();

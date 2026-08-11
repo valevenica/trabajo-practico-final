@@ -10,19 +10,27 @@ namespace StockManufactura.Desktop.Views
             InitializeComponent();
         }
 
-        private void OnCreatePasswordChanged(object sender, System.Windows.RoutedEventArgs e)
+        private void OnNewPasswordChanged(object sender, System.Windows.RoutedEventArgs e)
         {
             if (DataContext is UserManagementViewModel viewModel && sender is PasswordBox passwordBox)
             {
-                viewModel.Password = passwordBox.Password;
+                viewModel.NewPassword = passwordBox.Password;
             }
         }
 
-        private void OnResetPasswordChanged(object sender, System.Windows.RoutedEventArgs e)
+        private void OnMyCurrentPasswordChanged(object sender, System.Windows.RoutedEventArgs e)
         {
             if (DataContext is UserManagementViewModel viewModel && sender is PasswordBox passwordBox)
             {
-                viewModel.ResetPassword = passwordBox.Password;
+                viewModel.MyCurrentPassword = passwordBox.Password;
+            }
+        }
+
+        private void OnMyNewPasswordChanged(object sender, System.Windows.RoutedEventArgs e)
+        {
+            if (DataContext is UserManagementViewModel viewModel && sender is PasswordBox passwordBox)
+            {
+                viewModel.MyNewPassword = passwordBox.Password;
             }
         }
     }

@@ -264,3 +264,40 @@ Para diagnosticar: agregar `Log.Error(ex, "contexto")` en el catch antes de `Sta
 - Commits pequeños y temáticos: `fix(insumos):`, `feat(monetary):`, `chore:`
 - Merge a main con `--no-ff` cuando la rama está completa
 - No commitear binarios del publish (son grandes y cambian con cada build)
+
+---
+
+## Regla: mantener actualizada la documentación del Proyecto Final (tesis)
+
+El documento `C:\Users\vveni\Desktop\Proyecto Final V5.docx` es la entrega académica (UTN FRR, cátedra Proyecto) y describe el mismo sistema que se desarrolla en este repositorio. **Cada vez que se hace un cambio funcional en el programa** (nueva pantalla, nuevo campo del dominio, cambio de arquitectura, nueva entidad, etc.), hay que revisar si ese cambio afecta algo de lo documentado — especialmente:
+
+- Requerimientos Funcionales / No Funcionales
+- Análisis Detallado de las funciones (tabla)
+- Arquitectura del producto de software
+- Diagrama de clases / Modelo de Datos (si se agrega o modifica una entidad)
+- Estándares de Desarrollo (si cambia un patrón usado en todo el proyecto)
+
+Si corresponde, actualizar el `.docx` y guardar una nueva versión. **No sobrescribir la versión anterior**: cada actualización incrementa el número de versión menor.
+
+**Convención de versionado:** `V5.n`, donde `n` es un contador que arranca en `0` (el estado actual, `Proyecto Final V5.docx`, es `V5.0`). La próxima actualización se guarda como `Proyecto Final V5.1.docx`, la siguiente `V5.2.docx`, etc. Un cambio de versión mayor (`V6`) solo aplica ante una revisión estructural grande (ej. una nueva entrega de la cátedra), no para actualizaciones incrementales de contenido.
+
+**Requisitos formales de la entrega:** están definidos en `docs/Proyecto - Apunte General 2017.pdf` (Cátedra Proyecto, cuando se subió como documento en el chat). Ahí están los puntos obligatorios del índice (Tema, Objetivos, Marco, Justificación, Ventaja Competitiva, Factibilidad —incluye Económica—, Entorno de Desarrollo, Planificación/Metodología, Presupuesto, Documentación de Análisis y Diseño con Arquitectura/Diagrama de clases/Modelo de Datos/Estándares de Desarrollo/Conclusión Personal). Usar ese apunte como checklist antes de dar por completa una actualización.
+
+### Registro de cambios pendientes de reflejar en el .docx
+
+Cada entrada acá es un cambio funcional ya hecho en el código que todavía no se volcó a `Proyecto Final V5.docx`. Al hacer la próxima pasada de actualización del documento, tomar estas entradas, aplicarlas, y guardar como `Proyecto Final V5.1.docx` (la siguiente ronda sería V5.2, etc.), tachando o quitando las entradas ya reflejadas.
+
+- **V5.1 — Insumos de tipo servicio (electricidad por kWh y similares).** Se agregó el campo `EsServicio` (bool) a la entidad `Recurso` (`Recurso.cs`, migración `AddEsServicioToRecurso`). Permite cargar un insumo sin stock físico (ej. "Electricidad - Córdoba", unidad `kWh`, precio = costo por kWh vigente en esa provincia) que participa en el BOM de un producto igual que cualquier otro insumo: `RecetaProductoItem.Cantidad` representa el consumo (ej. kWh que demanda fabricar una unidad) y el costo se calcula igual que siempre (`Cantidad × Recurso.Precio`, ya soportado por `ProductCostService`). La carga del precio por kWh es manual y periódica (no existe una API pública unificada por provincia en Argentina — cada distribuidora publica su propio cuadro tarifario), igual que el resto de los insumos. La diferencia con un insumo físico es que un recurso `EsServicio=true` queda exento del control de stock insuficiente al iniciar/finalizar órdenes de producción (`ProductionOrderManagementViewModel.ApplyStockMovementAsync`) y de la alerta de "stock crítico" del dashboard (`SystemStatusService`), porque no tiene existencias que se consuman físicamente. Afecta: Modelo de Datos (agregar `EsServicio` a la fila de `Recurso` en la tabla de entidades), Documentación de Análisis (nueva capacidad: costos de servicios/energía por provincia como insumo).
+
+### Cómo editar el .docx (Word COM vía PowerShell)
+
+No hay una herramienta directa para leer/escribir `.docx`; se edita programáticamente con Word COM (`New-Object -ComObject Word.Application`) desde PowerShell. Reglas aprendidas a los golpes en la sesión donde se armó V5 (evitan corromper o perder contenido del documento):
+
+- **Trabajar siempre sobre una copia** (`Copy-Item` a un nombre nuevo) antes de tocar el archivo real. Nunca abrir el original con `ReadOnly=$false` para editar directo.
+- **Nunca usar `Paragraph.Previous()` ni `Paragraph.Next()` inmediatamente después de una asignación masiva a `Range.Text`** (insertar varios párrafos de una vez). Esa navegación devuelve resultados incorrectos o `$null` justo después de una edición masiva — en cambio, quedarse con la colección `Range.Paragraphs` que devuelve la propia asignación e indexar directo ahí (`@($rng.Paragraphs)[0]`, etc.).
+- **Asignar `.Text` a un `Range` que ya incluye la marca de párrafo final (p. ej. `paragraph.Range`) sin una `` `r `` final en el string de reemplazo "absorbe" esa marca y fusiona el párrafo con el siguiente.** Si el texto de reemplazo no tiene saltos de línea propios, el resultado se une silenciosamente al párrafo de al lado. Solución: si el reemplazo es de una sola línea dentro de un párrafo ya existente (renombrar un título, por ejemplo), recortar el rango un carácter antes del final (`Range.End - 1`) para no tocar la marca. Si es contenido nuevo (varios párrafos), terminar siempre el string unido con una `` `r `` extra al final para forzar una marca nueva y no reutilizar la original.
+- **`Paragraph.Next()` no funciona de forma confiable en el último párrafo del documento**, incluso después de `InsertParagraphAfter()`. Para insertar al final del documento, re-obtener el último párrafo con `$doc.Paragraphs.Item($doc.Paragraphs.Count)` en vez de navegar con `.Next()`.
+- **Insertar imágenes** (diagramas) funciona bien con SVG directo (`doc.InlineShapes.AddPicture(rutaSvg, $false, $true, range)`) en Word 2016+/365 — no hace falta convertir a PNG.
+- Guardar (`doc.Save()`), cerrar (`doc.Close($false)`) y `word.Quit()` **siempre**, incluso en el `catch`, para no dejar procesos `WINWORD.EXE` huérfanos con el archivo bloqueado (si un script falla a mitad de camino, matar el proceso con `Get-Process -Name WINWORD | Stop-Process -Force` antes de reintentar).
+- Los archivos `.ps1` que contengan texto en español con tildes deben guardarse con BOM UTF-8 (`[System.IO.File]::WriteAllText($path, $content, (New-Object System.Text.UTF8Encoding($true)))`), si no PowerShell 5.1 los interpreta mal y tira errores de sintaxis en las líneas con acentos.
+- Verificar cada paso releyendo los títulos (`Título 1`/`Título 2`) del documento completo antes de seguir al siguiente paso — los bugs de fusión de párrafos no siempre tiran una excepción, a veces el script termina "OK" pero el contenido quedó mal.

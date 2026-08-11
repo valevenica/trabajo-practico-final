@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using StockManufactura.Application.Interfaces;
 using StockManufactura.Application.Products;
+using StockManufactura.Application.Services;
 using StockManufactura.Desktop.Infrastructure;
 using StockManufactura.Desktop.Services;
 using StockManufactura.Domain.Entities;
@@ -39,6 +40,9 @@ namespace StockManufactura.Desktop.ViewModels
 
         [ObservableProperty]
         private string _precioSugerido = "0";
+
+        [ObservableProperty]
+        private string _stockActual = "0";
 
         [ObservableProperty]
         private bool _activo = true;
@@ -144,6 +148,7 @@ namespace StockManufactura.Desktop.ViewModels
                 {
                     RecipeItems.Clear();
                     CostoFabricacion = "0.00";
+                    StockActual = "0";
                     OnPropertyChanged(nameof(CostoFabricacionCalculado));
                     return;
                 }
@@ -155,6 +160,7 @@ namespace StockManufactura.Desktop.ViewModels
                 CostoFabricacion = value.CostoFabricacionActual.ToString("0.00", CultureInfo.InvariantCulture);
                 Margen = value.MargenActual.ToString("0.00", CultureInfo.InvariantCulture);
                 PrecioSugerido = value.PrecioSugeridoActual.ToString("0.00", CultureInfo.InvariantCulture);
+                StockActual = value.StockActual.ToString("0.##", CultureInfo.InvariantCulture);
                 Activo = value.Activo;
                 Observaciones = value.Observaciones;
 
@@ -391,6 +397,7 @@ namespace StockManufactura.Desktop.ViewModels
                 CostoFabricacion = "0";
                 Margen = "0";
                 PrecioSugerido = "0";
+                StockActual = "0";
                 Activo = true;
                 Observaciones = string.Empty;
                 RecipeItems.Clear();
@@ -410,6 +417,16 @@ namespace StockManufactura.Desktop.ViewModels
             var items = await _unitOfWork.RecetaProductoItems.ListByProductIdAsync(productId);
             _currentRecipeItems = items.ToList();
 
+            var tramosByRecursoId = new Dictionary<Guid, IReadOnlyList<RecursoTramoPrecio>>();
+            var specialResourceIds = items
+                .Where(x => x.RecursoId.HasValue && x.Recurso is not null && x.Recurso.EsServicio)
+                .Select(x => x.RecursoId!.Value)
+                .Distinct();
+            foreach (var recursoId in specialResourceIds)
+            {
+                tramosByRecursoId[recursoId] = await _unitOfWork.RecursoTramosPrecio.ListByRecursoIdAsync(recursoId);
+            }
+
             RecipeItems.Clear();
 
             foreach (var item in items.OrderBy(x => x.RecursoId.HasValue ? x.Recurso!.Nombre : x.ComponenteProducto!.Nombre))
@@ -417,8 +434,21 @@ namespace StockManufactura.Desktop.ViewModels
                 var esProducto = item.RecursoId is null;
                 var nombre = esProducto ? $"[Producto] {item.ComponenteProducto!.Nombre}" : item.Recurso!.Nombre;
                 var unidad = esProducto ? "u." : item.Recurso!.UnidadMedida;
-                var unitCost = esProducto ? item.ComponenteProducto!.CostoFabricacionActual : item.Recurso!.Precio;
-                var subtotal = decimal.Round(item.Cantidad * unitCost, 4, MidpointRounding.AwayFromZero);
+
+                decimal unitCost;
+                decimal subtotal;
+                if (!esProducto && item.Recurso!.EsServicio && tramosByRecursoId.TryGetValue(item.Recurso.Id, out var tramos) && tramos.Count > 0)
+                {
+                    var resultado = TramoPrecioCalculator.Calcular(tramos, item.Cantidad);
+                    unitCost = resultado.PrecioPromedio;
+                    subtotal = decimal.Round(resultado.CostoTotal, 4, MidpointRounding.AwayFromZero);
+                }
+                else
+                {
+                    unitCost = esProducto ? item.ComponenteProducto!.CostoFabricacionActual : item.Recurso!.Precio;
+                    subtotal = decimal.Round(item.Cantidad * unitCost, 4, MidpointRounding.AwayFromZero);
+                }
+
                 RecipeItems.Add(new ProductRecipeRow(
                     item.Id,
                     nombre,
@@ -431,6 +461,24 @@ namespace StockManufactura.Desktop.ViewModels
 
             CostoFabricacion = CostoFabricacionCalculado;
             OnPropertyChanged(nameof(CostoFabricacionCalculado));
+        }
+
+        private async Task<decimal> CalcularCostoParcialAsync(ComponentOption component, decimal cantidad)
+        {
+            if (!component.EsProducto)
+            {
+                var recurso = await _unitOfWork.Recursos.GetByIdAsync(component.Id);
+                if (recurso is not null && recurso.EsServicio)
+                {
+                    var tramos = await _unitOfWork.RecursoTramosPrecio.ListByRecursoIdAsync(component.Id);
+                    if (tramos.Count > 0)
+                    {
+                        return decimal.Round(TramoPrecioCalculator.Calcular(tramos, cantidad).CostoTotal, 4, MidpointRounding.AwayFromZero);
+                    }
+                }
+            }
+
+            return decimal.Round(cantidad * component.PrecioUnitario, 4, MidpointRounding.AwayFromZero);
         }
 
         private async Task SaveRecipeItemAsync()
@@ -475,7 +523,7 @@ namespace StockManufactura.Desktop.ViewModels
                 return;
             }
 
-            var costoParcial = decimal.Round(cantidad * SelectedComponent.PrecioUnitario, 4, MidpointRounding.AwayFromZero);
+            var costoParcial = await CalcularCostoParcialAsync(SelectedComponent, cantidad);
 
             try
             {

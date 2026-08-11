@@ -12,5 +12,7 @@ namespace StockManufactura.Application.Interfaces
         Task<UsuarioDto> SetActiveAsync(Guid userId, bool active, string actor, CancellationToken cancellationToken = default);
         Task ChangePasswordAsync(Guid userId, string currentPassword, string newPassword, string actor, CancellationToken cancellationToken = default);
         Task ResetPasswordAsync(Guid userId, string newPassword, string actor, CancellationToken cancellationToken = default);
+        Task<Rol> CreateRoleAsync(string nombre, string descripcion, string actor, CancellationToken cancellationToken = default);
+        Task<Rol> UpdateRolePermissionsAsync(Guid rolId, IReadOnlyCollection<string> permisos, string actor, CancellationToken cancellationToken = default);
     }
 }

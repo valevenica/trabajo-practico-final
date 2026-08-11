@@ -18,5 +18,6 @@ namespace StockManufactura.Domain.Entities
         public DateTime FechaUltimaActualizacion { get; set; } = DateTime.UtcNow;
         public string Observaciones { get; set; } = string.Empty;
         public bool Activo { get; set; } = true;
+        public bool EsServicio { get; set; }
     }
 }

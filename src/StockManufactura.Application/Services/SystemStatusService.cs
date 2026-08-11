@@ -52,7 +52,7 @@ namespace StockManufactura.Application.Services
             var backupStatus = latestBackup is null ? "Sin respaldo reciente" : "Activo";
             var cloudProvider = driveSyncEnabled ? "Google Drive" : "No configurado";
             var statusTone = latestBackup is null ? "Warning" : "Success";
-            var criticalStockCount = resources.Count(resource => resource.StockActual <= resource.StockMinimo);
+            var criticalStockCount = resources.Count(resource => !resource.EsServicio && resource.StockActual <= resource.StockMinimo);
             var ordersInProcessCount = orders.Count(order => order.Estado == EstadoOrdenProduccion.EnProceso);
 
             var monthlyCostTotal = costHistory
