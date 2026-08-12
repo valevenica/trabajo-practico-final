@@ -12,33 +12,43 @@
         </Grid.ColumnDefinitions>
 
         <Border Grid.Column="0" Margin="0 0 16 0" Style="{StaticResource CardBorderStyle}">
-            <StackPanel>
-            <Grid Margin="0 0 0 12">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <TextBlock Grid.Column="0" Text="PROVEEDORES" Style="{StaticResource SectionTitleStyle}" VerticalAlignment="Center" />
-                <Button Grid.Column="1" Content="+" Command="{Binding NewProviderCommand}"
-                        Width="32" Height="32" Padding="0" FontSize="18" FontWeight="Bold"
-                        ToolTip="Nuevo proveedor" Style="{StaticResource PrimaryButtonStyle}" />
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" MinHeight="120" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <Grid Grid.Row="0" Margin="0 0 0 12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" Text="PROVEEDORES" Style="{StaticResource SectionTitleStyle}" VerticalAlignment="Center" />
+                    <Button Grid.Column="1" Content="+" Command="{Binding NewProviderCommand}"
+                            Width="32" Height="32" Padding="0" FontSize="18" FontWeight="Bold"
+                            ToolTip="Nuevo proveedor" Style="{StaticResource PrimaryButtonStyle}" />
+                </Grid>
+
+                <Border Grid.Row="1" Background="{StaticResource BackgroundDarkMetalBrush}" Padding="8" CornerRadius="4" Margin="0 0 0 8">
+                    <TextBlock Text="Listado" Foreground="{StaticResource SecondaryAccentBrush}" FontWeight="SemiBold" />
+                </Border>
+
+                <ListBox Grid.Row="2" ItemsSource="{Binding Providers}" SelectedItem="{Binding SelectedProvider}">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel>
+                                <TextBlock Text="{Binding Nombre}" FontWeight="SemiBold" />
+                                <TextBlock Text="{Binding Cuit, StringFormat=CUIT: {0}}" />
+                                <TextBlock Text="{Binding Activo, StringFormat=Activo: {0}}" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+
+                <Button Grid.Row="3" Content="Activar / Desactivar" Command="{Binding ToggleActiveCommand}" Margin="0 12 0 0" Style="{StaticResource SecondaryButtonStyle}" />
             </Grid>
-            <Border Background="{StaticResource BackgroundDarkMetalBrush}" Padding="8" CornerRadius="4" Margin="0 0 0 8">
-                <TextBlock Text="Listado" Foreground="{StaticResource SecondaryAccentBrush}" FontWeight="SemiBold" />
-            </Border>
-            <ListBox ItemsSource="{Binding Providers}" SelectedItem="{Binding SelectedProvider}" Height="380">
-                <ListBox.ItemTemplate>
-                    <DataTemplate>
-                        <StackPanel>
-                            <TextBlock Text="{Binding Nombre}" FontWeight="SemiBold" />
-                            <TextBlock Text="{Binding Cuit, StringFormat=CUIT: {0}}" />
-                            <TextBlock Text="{Binding Activo, StringFormat=Activo: {0}}" />
-                        </StackPanel>
-                    </DataTemplate>
-                </ListBox.ItemTemplate>
-            </ListBox>
-            <Button Content="Activar / Desactivar" Command="{Binding ToggleActiveCommand}" Margin="0 12 0 0" Style="{StaticResource SecondaryButtonStyle}" />
-        </StackPanel>
         </Border>
 
         <Border Grid.Column="1" Style="{StaticResource CardBorderStyle}">
