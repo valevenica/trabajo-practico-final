@@ -180,8 +180,33 @@ namespace StockManufactura.Desktop.ViewModels
         partial void OnCodigoChanged(string value) { if (!_loading) IsDirty = true; }
         partial void OnNombreChanged(string value) { if (!_loading) IsDirty = true; }
         partial void OnDescripcionChanged(string value) { if (!_loading) IsDirty = true; }
-        partial void OnMargenChanged(string value) { if (!_loading) IsDirty = true; }
+        partial void OnMargenChanged(string value)
+        {
+            if (_loading)
+            {
+                return;
+            }
+
+            IsDirty = true;
+            RecalcularPrecioSugerido();
+        }
+
         partial void OnPrecioSugeridoChanged(string value) { if (!_loading) IsDirty = true; }
+
+        private void RecalcularPrecioSugerido()
+        {
+            if (!decimal.TryParse(CostoFabricacion, NumberStyles.Number, CultureInfo.InvariantCulture, out var costo))
+            {
+                return;
+            }
+
+            if (!decimal.TryParse(Margen, NumberStyles.Number, CultureInfo.InvariantCulture, out var margen))
+            {
+                return;
+            }
+
+            PrecioSugerido = (costo + costo * margen).ToString("0.00", CultureInfo.InvariantCulture);
+        }
         partial void OnActivoChanged(bool value) { if (!_loading) IsDirty = true; }
         partial void OnObservacionesChanged(string value) { if (!_loading) IsDirty = true; }
 

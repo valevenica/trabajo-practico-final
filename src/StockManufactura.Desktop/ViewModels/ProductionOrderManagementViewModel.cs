@@ -94,8 +94,39 @@ namespace StockManufactura.Desktop.ViewModels
 
         public string EstadoActual => SelectedOrder?.Estado.ToString() ?? "Sin selección";
 
+        public string StockAvailabilityMessage
+        {
+            get
+            {
+                if (SelectedOrder is null)
+                {
+                    return string.Empty;
+                }
+
+                var isWaiting = SelectedOrder.Estado == EstadoOrdenProduccion.Borrador || SelectedOrder.Estado == EstadoOrdenProduccion.Planificada;
+                if (!isWaiting)
+                {
+                    return string.Empty;
+                }
+
+                var product = Products.FirstOrDefault(x => x.Id == SelectedOrder.ProductoId);
+                if (product is null)
+                {
+                    return string.Empty;
+                }
+
+                var reserved = GetReservedQuantityForProduct(product.Id);
+                var disponible = product.StockActual - reserved;
+                return disponible < 0
+                    ? $"Stock insuficiente: faltan {-disponible:0.##} unidades de {product.Nombre} (considerando otras órdenes en espera)."
+                    : $"Stock disponible: {product.StockActual:0.##} en stock, {reserved:0.##} reservadas en total para órdenes en espera.";
+            }
+        }
+
         partial void OnSelectedOrderChanged(OrdenProduccion? value)
         {
+            OnPropertyChanged(nameof(StockAvailabilityMessage));
+
             if (value is null)
             {
                 return;
@@ -169,7 +200,58 @@ namespace StockManufactura.Desktop.ViewModels
             await LoadAsync();
             SelectedOrder = Orders.FirstOrDefault(x => x.Id == order.Id);
             RefreshIndicators();
-            StatusMessage = $"Orden {codigo} creada. Para agregar otro producto a la misma orden, mantené el código y seleccioná otro producto.";
+            OnPropertyChanged(nameof(StockAvailabilityMessage));
+
+            await WarnIfStockInsufficientAsync(codigo, order);
+        }
+
+        private async Task WarnIfStockInsufficientAsync(string codigo, OrdenProduccion order)
+        {
+            var createdProduct = Products.FirstOrDefault(x => x.Id == order.ProductoId);
+            if (createdProduct is null)
+            {
+                StatusMessage = $"Orden {codigo} creada.";
+                return;
+            }
+
+            var reserved = GetReservedQuantityForProduct(createdProduct.Id);
+            var disponible = createdProduct.StockActual - reserved;
+            if (disponible >= 0)
+            {
+                StatusMessage = $"Orden {codigo} creada. Para agregar otro producto a la misma orden, mantené el código y seleccioná otro producto.";
+                return;
+            }
+
+            var faltante = -disponible;
+            var warning = $"La orden {codigo} quedó en espera: falta stock de {createdProduct.Nombre} para completar el pedido (faltan {faltante:0.##} unidades, considerando otras órdenes en espera de este producto).";
+
+            // Validación informativa: ¿alcanzan los insumos para fabricar las unidades faltantes? No se descuenta nada acá;
+            // el único lugar que efectivamente descuenta insumos es StockIntakeService al registrar un ingreso de producto.
+            var recipeItems = await _unitOfWork.RecetaProductoItems.ListByProductIdAsync(createdProduct.Id);
+            var insumoShortages = new List<string>();
+            foreach (var item in recipeItems.Where(x => x.RecursoId.HasValue))
+            {
+                var resource = await _unitOfWork.Recursos.GetByIdAsync(item.RecursoId!.Value);
+                if (resource is null || resource.EsServicio)
+                {
+                    continue;
+                }
+
+                var requiredForShortage = item.Cantidad * faltante;
+                if (resource.StockActual < requiredForShortage)
+                {
+                    var missing = requiredForShortage - resource.StockActual;
+                    insumoShortages.Add($"{resource.Nombre} (faltan {missing:0.##} {resource.UnidadMedida})");
+                }
+            }
+
+            if (insumoShortages.Count > 0)
+            {
+                warning += $" Además, no alcanzan los insumos para fabricar esas {faltante:0.##} unidades: {string.Join(", ", insumoShortages)}.";
+            }
+
+            StatusMessage = warning;
+            MessageBox.Show(warning, "Stock insuficiente", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
 
         private async Task SetDraftAsync()
@@ -340,59 +422,55 @@ namespace StockManufactura.Desktop.ViewModels
             OnPropertyChanged(nameof(EstimatedOrdersCost));
             OnPropertyChanged(nameof(MonthlySalesTotal));
             OnPropertyChanged(nameof(CriticalStockCount));
+            OnPropertyChanged(nameof(StockAvailabilityMessage));
         }
 
         private async Task ApplyStockMovementAsync(EstadoOrdenProduccion previousState, OrdenProduccion order)
         {
-            var recipeItems = await _unitOfWork.RecetaProductoItems.ListByProductIdAsync(order.ProductoId);
-            if (!recipeItems.Any())
-            {
-                return;
-            }
+            var wasWaiting = previousState == EstadoOrdenProduccion.Borrador || previousState == EstadoOrdenProduccion.Planificada;
+            var wasInProcess = previousState == EstadoOrdenProduccion.EnProceso;
 
-            var shouldConsume = previousState != EstadoOrdenProduccion.EnProceso
+            var shouldDispatch = wasWaiting
                 && (order.Estado == EstadoOrdenProduccion.EnProceso || order.Estado == EstadoOrdenProduccion.Finalizada);
 
-            var shouldRelease = previousState == EstadoOrdenProduccion.EnProceso
+            var shouldReturn = wasInProcess
                 && (order.Estado == EstadoOrdenProduccion.Borrador || order.Estado == EstadoOrdenProduccion.Cancelada);
 
-            if (!shouldConsume && !shouldRelease)
+            if (!shouldDispatch && !shouldReturn)
             {
                 return;
             }
 
-            foreach (var recipeItem in recipeItems.Where(x => x.RecursoId.HasValue))
+            var product = await _unitOfWork.Productos.GetByIdAsync(order.ProductoId);
+            if (product is null)
             {
-                var resource = await _unitOfWork.Recursos.GetByIdAsync(recipeItem.RecursoId!.Value);
-                if (resource is null)
-                {
-                    throw new InvalidOperationException($"No se encontró el insumo {recipeItem.RecursoId}.");
-                }
-
-                if (resource.EsServicio)
-                {
-                    continue;
-                }
-
-                var requiredQuantity = recipeItem.Cantidad * order.CantidadPlaneada;
-
-                if (shouldConsume)
-                {
-                    if (resource.StockActual < requiredQuantity)
-                    {
-                        throw new InvalidOperationException($"Stock insuficiente para {resource.Nombre}. Requerido: {requiredQuantity:0.##}, disponible: {resource.StockActual:0.##}.");
-                    }
-
-                    resource.StockActual -= requiredQuantity;
-                }
-                else
-                {
-                    resource.StockActual += requiredQuantity;
-                }
-
-                resource.FechaUltimaActualizacion = DateTime.UtcNow;
-                _unitOfWork.Recursos.Update(resource);
+                throw new InvalidOperationException("No se encontró el producto de la orden.");
             }
+
+            if (shouldDispatch)
+            {
+                if (product.StockActual < order.CantidadPlaneada)
+                {
+                    var faltante = order.CantidadPlaneada - product.StockActual;
+                    throw new InvalidOperationException($"Stock insuficiente de {product.Nombre} para completar el pedido. Faltan {faltante:0.##} unidades.");
+                }
+
+                product.StockActual -= order.CantidadPlaneada;
+            }
+            else
+            {
+                product.StockActual += order.CantidadPlaneada;
+            }
+
+            _unitOfWork.Productos.Update(product);
+        }
+
+        private decimal GetReservedQuantityForProduct(Guid productId)
+        {
+            return Orders
+                .Where(o => (o.Estado == EstadoOrdenProduccion.Borrador || o.Estado == EstadoOrdenProduccion.Planificada)
+                            && o.ProductoId == productId)
+                .Sum(o => o.CantidadPlaneada);
         }
 
         private static bool IsCurrentMonth(DateTime value)

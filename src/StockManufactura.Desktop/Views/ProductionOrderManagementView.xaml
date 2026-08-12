@@ -81,6 +81,7 @@
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" />
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
@@ -119,7 +120,11 @@
                         </StackPanel>
                     </Grid>
 
-                    <DataGrid Grid.Row="2"
+                    <TextBlock Grid.Row="2" Text="{Binding StockAvailabilityMessage}"
+                               Foreground="{StaticResource SecondaryAccentBrush}" FontWeight="SemiBold"
+                               TextWrapping="Wrap" Margin="0 0 0 8" />
+
+                    <DataGrid Grid.Row="3"
                               ItemsSource="{Binding Orders}"
                               SelectedItem="{Binding SelectedOrder}"
                               AutoGenerateColumns="False"
@@ -166,7 +171,7 @@
                         </DataGrid.Columns>
                     </DataGrid>
 
-                    <WrapPanel Grid.Row="3" Margin="0 0 0 8">
+                    <WrapPanel Grid.Row="4" Margin="0 0 0 8">
                         <Button Content="Crear" Command="{Binding CreateOrderCommand}" Width="95" Margin="0 0 8 8" Style="{StaticResource PrimaryButtonStyle}" />
                         <Button Content="Planificar" Command="{Binding PlanifyCommand}" Width="98" Margin="0 0 8 8" Style="{StaticResource SecondaryButtonStyle}" />
                         <Button Content="Iniciar" Command="{Binding StartCommand}" Width="90" Margin="0 0 8 8" Style="{StaticResource PrimaryButtonStyle}" />
@@ -176,7 +181,7 @@
                         <Button Content="Eliminar" Command="{Binding DeleteOrderCommand}" Width="95" Margin="0 0 8 8" Style="{StaticResource SecondaryButtonStyle}" />
                     </WrapPanel>
 
-                    <Grid Grid.Row="4">
+                    <Grid Grid.Row="5">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="*" />
