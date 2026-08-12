@@ -8,6 +8,7 @@ using StockManufactura.Application.Services;
 using StockManufactura.Desktop.Infrastructure;
 using StockManufactura.Desktop.Services;
 using StockManufactura.Infrastructure.Db;
+using StockManufactura.Infrastructure.Import;
 using StockManufactura.Infrastructure.Monetary.Providers;
 using StockManufactura.Infrastructure.Repositories;
 using StockManufactura.Desktop.ViewModels;
@@ -27,6 +28,7 @@ namespace StockManufactura.Desktop.Extensions
             services.AddTransient<AuditLogViewModel>();
             services.AddTransient<BackupManagementViewModel>();
             services.AddTransient<ProductCostHistoryViewModel>();
+            services.AddTransient<ResourcePriceImportViewModel>();
             services.AddSingleton<MainWindow>();
             return services;
         }
@@ -74,6 +76,7 @@ namespace StockManufactura.Desktop.Extensions
             services.AddTransient<ISystemStatusService, SystemStatusService>();
             services.AddTransient<IResourcePricingService, ResourcePricingService>();
             services.AddTransient<IStockIntakeService, StockIntakeService>();
+            services.AddTransient<IResourcePriceImportService, ClosedXmlResourcePriceImportService>();
             services.AddTransient<IUserManagementService, UserManagementService>();
             services.AddTransient<DesktopStartupHealthCheck>();
             return services;

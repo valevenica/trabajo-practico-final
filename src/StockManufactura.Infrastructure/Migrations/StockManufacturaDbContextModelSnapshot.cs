@@ -715,6 +715,11 @@ namespace StockManufactura.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("CodigoProveedor")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
 
@@ -743,7 +748,7 @@ namespace StockManufactura.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ProveedorId");
+                    b.HasIndex("ProveedorId", "CodigoProveedor");
 
                     b.HasIndex("RecursoId", "ProveedorId")
                         .IsUnique();

@@ -107,6 +107,7 @@
                             <Button Content="Insumos" Margin="0,0,0,6" Command="{Binding NavigateResourcesCommand}" Tag="{Binding IsResourcesSelected}" Style="{StaticResource SidebarMenuButtonStyle}" />
                             <Button Content="Insumos especiales" Margin="0,0,0,6" Command="{Binding NavigateSpecialResourcesCommand}" Tag="{Binding IsSpecialResourcesSelected}" Style="{StaticResource SidebarMenuButtonStyle}" />
                             <Button Content="Ingresos" Margin="0,0,0,6" Command="{Binding NavigateStockIntakeCommand}" Tag="{Binding IsStockIntakeSelected}" Style="{StaticResource SidebarMenuButtonStyle}" />
+                            <Button Content="Carga masiva de precios" Margin="0,0,0,6" Command="{Binding NavigatePriceImportCommand}" Tag="{Binding IsPriceImportSelected}" Style="{StaticResource SidebarMenuButtonStyle}" />
                         </StackPanel>
                     </Expander>
 
@@ -188,6 +189,9 @@
                 </DataTemplate>
                 <DataTemplate DataType="{x:Type viewModels:StockIntakeViewModel}">
                     <views:StockIntakeView />
+                </DataTemplate>
+                <DataTemplate DataType="{x:Type viewModels:ResourcePriceImportViewModel}">
+                    <views:ResourcePriceImportView />
                 </DataTemplate>
                 <DataTemplate DataType="{x:Type viewModels:UserManagementViewModel}">
                     <views:UserManagementView />

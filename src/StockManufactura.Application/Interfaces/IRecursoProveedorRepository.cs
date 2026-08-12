@@ -9,5 +9,6 @@ namespace StockManufactura.Application.Interfaces
     {
         Task<IReadOnlyList<RecursoProveedor>> ListByRecursoIdAsync(Guid recursoId);
         Task<RecursoProveedor?> GetPrioritarioAsync(Guid recursoId);
+        Task<RecursoProveedor?> GetByProveedorAndCodigoAsync(Guid proveedorId, string codigo);
     }
 }

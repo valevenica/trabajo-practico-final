@@ -11,6 +11,7 @@ namespace StockManufactura.Infrastructure.Db.Configurations
             builder.ToTable("RecursoProveedores");
             builder.HasKey(x => x.Id);
             builder.Property(x => x.Precio).HasColumnType("decimal(18,4)");
+            builder.Property(x => x.CodigoProveedor).HasMaxLength(50);
             builder.Property(x => x.Observaciones).HasMaxLength(500);
 
             builder.HasOne(x => x.Recurso)
@@ -24,6 +25,7 @@ namespace StockManufactura.Infrastructure.Db.Configurations
                 .OnDelete(DeleteBehavior.Restrict);
 
             builder.HasIndex(x => new { x.RecursoId, x.ProveedorId }).IsUnique();
+            builder.HasIndex(x => new { x.ProveedorId, x.CodigoProveedor });
         }
     }
 }

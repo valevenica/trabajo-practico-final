@@ -84,6 +84,9 @@ namespace StockManufactura.Desktop.ViewModels
         private string _precioNuevoProveedor = "0";
 
         [ObservableProperty]
+        private string _codigoNuevoProveedor = string.Empty;
+
+        [ObservableProperty]
         private RecursoProveedorRow? _selectedProveedorDelInsumo;
 
         [ObservableProperty]
@@ -369,7 +372,7 @@ namespace StockManufactura.Desktop.ViewModels
                 foreach (var item in items)
                     ProveedoresDelInsumo.Add(new RecursoProveedorRow(
                         item.Id, item.ProveedorId,
-                        item.Proveedor.Nombre, item.Precio, item.EsPrioritario));
+                        item.Proveedor.Nombre, item.Precio, item.EsPrioritario, item.CodigoProveedor));
             }
             catch (Exception ex)
             {
@@ -405,7 +408,8 @@ namespace StockManufactura.Desktop.ViewModels
                     RecursoId = SelectedResource.Id,
                     ProveedorId = SelectedNuevoProveedor.Id,
                     Precio = precio,
-                    EsPrioritario = esPrimero
+                    EsPrioritario = esPrimero,
+                    CodigoProveedor = CodigoNuevoProveedor.Trim()
                 };
                 await _unitOfWork.RecursoProveedores.AddAsync(nuevo);
                 await _unitOfWork.SaveChangesAsync();
@@ -416,6 +420,7 @@ namespace StockManufactura.Desktop.ViewModels
                 await LoadProveedoresDelInsumoAsync(SelectedResource.Id);
                 SelectedNuevoProveedor = null;
                 PrecioNuevoProveedor = "0";
+                CodigoNuevoProveedor = string.Empty;
                 StatusMessage = "Proveedor agregado.";
             }
             catch (Exception ex)
@@ -597,5 +602,6 @@ namespace StockManufactura.Desktop.ViewModels
         Guid ProveedorId,
         string ProveedorNombre,
         decimal Precio,
-        bool EsPrioritario);
+        bool EsPrioritario,
+        string CodigoProveedor);
 }

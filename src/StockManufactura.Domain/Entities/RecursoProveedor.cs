@@ -10,6 +10,7 @@ namespace StockManufactura.Domain.Entities
         public Proveedor Proveedor { get; set; } = null!;
         public decimal Precio { get; set; }
         public bool EsPrioritario { get; set; }
+        public string CodigoProveedor { get; set; } = string.Empty;
         public string Observaciones { get; set; } = string.Empty;
     }
 }

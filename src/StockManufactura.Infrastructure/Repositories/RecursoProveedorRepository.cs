@@ -39,5 +39,13 @@ namespace StockManufactura.Infrastructure.Repositories
                 .Include(x => x.Proveedor)
                 .FirstOrDefaultAsync(x => x.RecursoId == recursoId && x.EsPrioritario);
         }
+
+        public Task<RecursoProveedor?> GetByProveedorAndCodigoAsync(Guid proveedorId, string codigo)
+        {
+            return _context.RecursoProveedores
+                .Include(x => x.Recurso)
+                .Include(x => x.Proveedor)
+                .FirstOrDefaultAsync(x => x.ProveedorId == proveedorId && x.CodigoProveedor == codigo);
+        }
     }
 }

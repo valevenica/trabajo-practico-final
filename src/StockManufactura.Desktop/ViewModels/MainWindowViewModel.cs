@@ -37,6 +37,7 @@ namespace StockManufactura.Desktop.ViewModels
             NavigateProductionOrdersCommand = new RelayCommand(NavigateProductionOrders);
             NavigateSpecialResourcesCommand = new RelayCommand(NavigateSpecialResources);
             NavigateStockIntakeCommand = new RelayCommand(NavigateStockIntake);
+            NavigatePriceImportCommand = new RelayCommand(NavigatePriceImport);
             NavigateMonetaryCommand = new RelayCommand(NavigateMonetary);
             NavigateAuditCommand = new RelayCommand(NavigateAudit);
             NavigateBackupsCommand = new RelayCommand(NavigateBackups);
@@ -65,6 +66,7 @@ namespace StockManufactura.Desktop.ViewModels
         public bool IsProductionOrdersSelected => _activeMenuKey == "ProductionOrders";
         public bool IsSpecialResourcesSelected => _activeMenuKey == "SpecialResources";
         public bool IsStockIntakeSelected => _activeMenuKey == "StockIntake";
+        public bool IsPriceImportSelected => _activeMenuKey == "PriceImport";
         public bool IsMonetarySelected => _activeMenuKey == "Monetary";
         public bool IsBackupsSelected => _activeMenuKey == "Backups";
         public bool IsUsersSelected => _activeMenuKey == "Users";
@@ -79,6 +81,7 @@ namespace StockManufactura.Desktop.ViewModels
         public ICommand NavigateProductionOrdersCommand { get; }
         public ICommand NavigateSpecialResourcesCommand { get; }
         public ICommand NavigateStockIntakeCommand { get; }
+        public ICommand NavigatePriceImportCommand { get; }
         public ICommand NavigateMonetaryCommand { get; }
         public ICommand NavigateAuditCommand { get; }
         public ICommand NavigateBackupsCommand { get; }
@@ -274,6 +277,17 @@ namespace StockManufactura.Desktop.ViewModels
             }
         }
 
+        private void NavigatePriceImport()
+        {
+            if (EnsureDashboardAvailable(out _))
+            {
+                _navigationService.NavigateTo(new ResourcePriceImportViewModel(
+                    _serviceProvider.GetRequiredService<IUnitOfWork>(),
+                    _serviceProvider.GetRequiredService<IResourcePriceImportService>()));
+                SetActiveMenu("PriceImport");
+            }
+        }
+
         private void NavigateMonetary()
         {
             if (EnsureDashboardAvailable(out _))
@@ -333,6 +347,7 @@ namespace StockManufactura.Desktop.ViewModels
             OnPropertyChanged(nameof(IsProductionOrdersSelected));
             OnPropertyChanged(nameof(IsSpecialResourcesSelected));
             OnPropertyChanged(nameof(IsStockIntakeSelected));
+            OnPropertyChanged(nameof(IsPriceImportSelected));
             OnPropertyChanged(nameof(IsMonetarySelected));
             OnPropertyChanged(nameof(IsBackupsSelected));
             OnPropertyChanged(nameof(IsUsersSelected));
