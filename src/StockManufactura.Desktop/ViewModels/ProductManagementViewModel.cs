@@ -192,6 +192,7 @@ namespace StockManufactura.Desktop.ViewModels
         }
 
         partial void OnPrecioSugeridoChanged(string value) { if (!_loading) IsDirty = true; }
+        partial void OnStockActualChanged(string value) { if (!_loading) IsDirty = true; }
 
         private void RecalcularPrecioSugerido()
         {
@@ -328,6 +329,12 @@ namespace StockManufactura.Desktop.ViewModels
                 return;
             }
 
+            if (!decimal.TryParse(StockActual, NumberStyles.Number, CultureInfo.InvariantCulture, out var stockActual) || stockActual < 0)
+            {
+                StatusMessage = "Stock actual inválido.";
+                return;
+            }
+
             var codigoNormalizado = Codigo.Trim().ToUpperInvariant();
 
             try
@@ -351,6 +358,7 @@ namespace StockManufactura.Desktop.ViewModels
                         CostoFabricacionActual = costoCalculado,
                         MargenActual = margen,
                         PrecioSugeridoActual = precioSugerido,
+                        StockActual = stockActual,
                         Activo = Activo,
                         FechaUltimoCalculo = DateTime.UtcNow,
                         Observaciones = Observaciones.Trim()
@@ -391,6 +399,7 @@ namespace StockManufactura.Desktop.ViewModels
                     product.CostoFabricacionActual = costoCalculado;
                     product.MargenActual = margen;
                     product.PrecioSugeridoActual = precioSugerido;
+                    product.StockActual = stockActual;
                     product.Activo = Activo;
                     product.Observaciones = Observaciones.Trim();
                     product.FechaUltimoCalculo = DateTime.UtcNow;

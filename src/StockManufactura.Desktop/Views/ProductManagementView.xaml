@@ -86,8 +86,8 @@
                 </StackPanel>
                 <StackPanel>
                     <TextBlock Text="Stock actual" />
-                    <TextBox Text="{Binding StockActual, StringFormat={}{0:0.##}}" Height="32" Margin="0 4 0 0" IsReadOnly="True"
-                              ToolTip="Se actualiza desde Stock → Ingresos" />
+                    <TextBox Text="{Binding StockActual, StringFormat={}{0:0.##}, UpdateSourceTrigger=PropertyChanged}" Height="32" Margin="0 4 0 0"
+                              ToolTip="También se actualiza automáticamente desde Stock → Ingresos" />
                 </StackPanel>
             </UniformGrid>
 
