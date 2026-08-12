@@ -13,7 +13,16 @@
 
         <Border Grid.Column="0" Margin="0 0 16 0" Style="{StaticResource CardBorderStyle}">
             <StackPanel>
-            <TextBlock Text="PROVEEDORES" Style="{StaticResource SectionTitleStyle}" Margin="0 0 0 12" />
+            <Grid Margin="0 0 0 12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="PROVEEDORES" Style="{StaticResource SectionTitleStyle}" VerticalAlignment="Center" />
+                <Button Grid.Column="1" Content="+" Command="{Binding NewProviderCommand}"
+                        Width="32" Height="32" Padding="0" FontSize="18" FontWeight="Bold"
+                        ToolTip="Nuevo proveedor" Style="{StaticResource PrimaryButtonStyle}" />
+            </Grid>
             <Border Background="{StaticResource BackgroundDarkMetalBrush}" Padding="8" CornerRadius="4" Margin="0 0 0 8">
                 <TextBlock Text="Listado" Foreground="{StaticResource SecondaryAccentBrush}" FontWeight="SemiBold" />
             </Border>
@@ -28,8 +37,7 @@
                     </DataTemplate>
                 </ListBox.ItemTemplate>
             </ListBox>
-            <Button Content="Nuevo proveedor" Command="{Binding NewProviderCommand}" Margin="0 12 0 0" Style="{StaticResource PrimaryButtonStyle}" />
-            <Button Content="Activar / Desactivar" Command="{Binding ToggleActiveCommand}" Margin="0 8 0 0" Style="{StaticResource SecondaryButtonStyle}" />
+            <Button Content="Activar / Desactivar" Command="{Binding ToggleActiveCommand}" Margin="0 12 0 0" Style="{StaticResource SecondaryButtonStyle}" />
             <Button Content="Volver" Command="{Binding BackCommand}" Margin="0 8 0 0" Style="{StaticResource SecondaryButtonStyle}" />
         </StackPanel>
         </Border>
