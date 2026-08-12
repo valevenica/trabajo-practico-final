@@ -38,7 +38,6 @@
                 </ListBox.ItemTemplate>
             </ListBox>
             <Button Content="Activar / Desactivar" Command="{Binding ToggleActiveCommand}" Margin="0 12 0 0" Style="{StaticResource SecondaryButtonStyle}" />
-            <Button Content="Volver" Command="{Binding BackCommand}" Margin="0 8 0 0" Style="{StaticResource SecondaryButtonStyle}" />
         </StackPanel>
         </Border>
 
