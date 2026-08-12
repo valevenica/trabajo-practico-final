@@ -14,6 +14,6 @@ namespace StockManufactura.Application.Interfaces
         Task<IReadOnlyList<ResourcePriceHistory>> GetPriceHistoryAsync(Guid recursoId, CancellationToken cancellationToken = default);
         Task<int> RecalcularTodosUSDAsync(string usuario, CancellationToken cancellationToken = default);
         Task<IReadOnlyList<RecursoTramoPrecio>> GetTramosAsync(Guid recursoId, CancellationToken cancellationToken = default);
-        Task<IReadOnlyList<RecursoTramoPrecio>> GuardarTramosAsync(Guid recursoId, IReadOnlyList<TramoPrecioInput> tramos, CancellationToken cancellationToken = default);
+        Task<IReadOnlyList<RecursoTramoPrecio>> GuardarTramosAsync(Guid recursoId, IReadOnlyList<TramoPrecioInput> tramos, string usuario, CancellationToken cancellationToken = default);
     }
 }

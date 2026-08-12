@@ -157,7 +157,7 @@ namespace StockManufactura.Application.Services
             return await _unitOfWork.RecursoTramosPrecio.ListByRecursoIdAsync(recursoId);
         }
 
-        public async Task<IReadOnlyList<RecursoTramoPrecio>> GuardarTramosAsync(Guid recursoId, IReadOnlyList<TramoPrecioInput> tramos, CancellationToken cancellationToken = default)
+        public async Task<IReadOnlyList<RecursoTramoPrecio>> GuardarTramosAsync(Guid recursoId, IReadOnlyList<TramoPrecioInput> tramos, string usuario, CancellationToken cancellationToken = default)
         {
             var resource = await _unitOfWork.Recursos.GetByIdAsync(recursoId);
             if (resource is null)
@@ -188,6 +188,17 @@ namespace StockManufactura.Application.Services
             }
 
             await _unitOfWork.SaveChangesAsync();
+
+            // Los tramos son el precio efectivo de un insumo de servicio; sin este recalculo,
+            // el costo de fabricacion y los snapshots de los productos que lo usan quedan
+            // desactualizados hasta el proximo recalculo disparado por otra causa.
+            await _productCostService.RecalculateAffectedProductsAsync(new Products.ProductRecalculationRequest
+            {
+                Usuario = usuario,
+                Motivo = "Actualización de tramos de precio del insumo",
+                RecursoDisparadorId = recursoId
+            }, cancellationToken);
+
             return guardados;
         }
 

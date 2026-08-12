@@ -229,8 +229,9 @@ namespace StockManufactura.Desktop.ViewModels
 
             try
             {
-                await _resourcePricingService.GuardarTramosAsync(SelectedResource.Id, tramosInput);
-                StatusMessage = "Tramos guardados. El costo se calculará según estos rangos cada vez que se recalcule el producto.";
+                var actor = AuthSession.Current?.Usuario.Email ?? "desktop-user";
+                await _resourcePricingService.GuardarTramosAsync(SelectedResource.Id, tramosInput, actor);
+                StatusMessage = "Tramos guardados. El costo de los productos que usan este insumo ya se recalculó.";
             }
             catch (Exception ex)
             {
