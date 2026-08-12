@@ -25,7 +25,6 @@ namespace StockManufactura.Desktop.ViewModels
         [ObservableProperty] private Producto? _selectedProduct;
         [ObservableProperty] private OrdenProduccion? _selectedOrder;
         [ObservableProperty] private string _cantidadPlaneada = "0";
-        [ObservableProperty] private string _cantidadProducida = "0";
         [ObservableProperty] private string _observaciones = string.Empty;
         [ObservableProperty] private string _statusMessage = string.Empty;
         [ObservableProperty] private string _codigoInput = string.Empty;
@@ -49,7 +48,6 @@ namespace StockManufactura.Desktop.ViewModels
             SetDraftCommand = new AsyncRelayCommand(SetDraftAsync);
             PlanifyCommand = new AsyncRelayCommand(PlanifyAsync);
             StartCommand = new AsyncRelayCommand(StartAsync);
-            RegisterProductionCommand = new AsyncRelayCommand(RegisterProductionAsync);
             CompleteCommand = new AsyncRelayCommand(CompleteAsync);
             CancelCommand = new AsyncRelayCommand(CancelAsync);
             DeleteOrderCommand = new AsyncRelayCommand(DeleteOrderAsync);
@@ -66,7 +64,6 @@ namespace StockManufactura.Desktop.ViewModels
         public ICommand SetDraftCommand { get; }
         public ICommand PlanifyCommand { get; }
         public ICommand StartCommand { get; }
-        public ICommand RegisterProductionCommand { get; }
         public ICommand CompleteCommand { get; }
         public ICommand CancelCommand { get; }
         public ICommand DeleteOrderCommand { get; }
@@ -89,7 +86,7 @@ namespace StockManufactura.Desktop.ViewModels
             .Sum(order =>
             {
                 var product = Products.FirstOrDefault(x => x.Id == order.ProductoId);
-                return (product?.PrecioSugeridoActual ?? 0m) * order.CantidadProducida;
+                return (product?.PrecioSugeridoActual ?? 0m) * order.CantidadPlaneada;
             });
 
         public string EstadoActual => SelectedOrder?.Estado.ToString() ?? "Sin selección";
@@ -134,7 +131,6 @@ namespace StockManufactura.Desktop.ViewModels
 
             SelectedProduct = Products.FirstOrDefault(x => x.Id == value.ProductoId);
             CantidadPlaneada = value.CantidadPlaneada.ToString("0.00", CultureInfo.InvariantCulture);
-            CantidadProducida = value.CantidadProducida.ToString("0.00", CultureInfo.InvariantCulture);
             Observaciones = value.Observaciones;
             OnPropertyChanged(nameof(EstadoActual));
         }
@@ -282,22 +278,6 @@ namespace StockManufactura.Desktop.ViewModels
             }
 
             await TryTransitionAsync(() => order.MarcarEnProgreso(), "EnProceso", order, "Orden en proceso.");
-        }
-
-        private async Task RegisterProductionAsync()
-        {
-            if (!TryEnsureSelectedOrder(out var order))
-            {
-                return;
-            }
-
-            if (!decimal.TryParse(CantidadProducida, NumberStyles.Number, CultureInfo.InvariantCulture, out var produced) || produced < 0)
-            {
-                StatusMessage = "Cantidad producida inválida.";
-                return;
-            }
-
-            await TryTransitionAsync(() => order.RegistrarProduccion(produced), "RegistrarProduccion", order, "Producción registrada.");
         }
 
         private async Task CompleteAsync()

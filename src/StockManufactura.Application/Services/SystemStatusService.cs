@@ -63,7 +63,7 @@ namespace StockManufactura.Application.Services
             var monthlySalesTotal = orders
                 .Where(order => order.Estado == EstadoOrdenProduccion.Finalizada)
                 .Where(order => year is null || IsInPeriod(order.FechaFin ?? order.CreatedAt, year.Value, month!.Value))
-                .Sum(order => (productsById.TryGetValue(order.ProductoId, out var product) ? product.PrecioSugeridoActual : 0m) * order.CantidadProducida);
+                .Sum(order => (productsById.TryGetValue(order.ProductoId, out var product) ? product.PrecioSugeridoActual : 0m) * order.CantidadPlaneada);
 
             return new SystemStatusSnapshot
             {

@@ -95,7 +95,6 @@
                             <ColumnDefinition Width="2*" />
                             <ColumnDefinition Width="2*" />
                             <ColumnDefinition Width="1.2*" />
-                            <ColumnDefinition Width="1.2*" />
                         </Grid.ColumnDefinitions>
                         <StackPanel Grid.Column="0" Margin="0 0 8 0">
                             <TextBlock Text="Código orden" />
@@ -110,13 +109,9 @@
                             <TextBlock Text="Observaciones" />
                             <TextBox Text="{Binding Observaciones, UpdateSourceTrigger=PropertyChanged}" Height="34" />
                         </StackPanel>
-                        <StackPanel Grid.Column="3" Margin="0 0 8 0">
-                            <TextBlock Text="Cant. planeada" />
+                        <StackPanel Grid.Column="3">
+                            <TextBlock Text="Cantidad" />
                             <TextBox Text="{Binding CantidadPlaneada, UpdateSourceTrigger=PropertyChanged}" Height="34" />
-                        </StackPanel>
-                        <StackPanel Grid.Column="4">
-                            <TextBlock Text="Cant. producida" />
-                            <TextBox Text="{Binding CantidadProducida, UpdateSourceTrigger=PropertyChanged}" Height="34" />
                         </StackPanel>
                     </Grid>
 
@@ -167,7 +162,6 @@
                             <DataGridTextColumn Header="CANTIDAD" Binding="{Binding CantidadPlaneada, StringFormat=N2}" Width="1*" />
                             <DataGridTextColumn Header="ESTADO" Binding="{Binding Estado}" Width="1.2*" />
                             <DataGridTextColumn Header="FECHA ENTREGA" Binding="{Binding FechaFin, StringFormat=yyyy-MM-dd}" Width="1.2*" />
-                            <DataGridTextColumn Header="COSTO" Binding="{Binding CantidadProducida, StringFormat=N2}" Width="1*" />
                         </DataGrid.Columns>
                     </DataGrid>
 
@@ -175,7 +169,6 @@
                         <Button Content="Crear" Command="{Binding CreateOrderCommand}" Width="95" Margin="0 0 8 8" Style="{StaticResource PrimaryButtonStyle}" />
                         <Button Content="Planificar" Command="{Binding PlanifyCommand}" Width="98" Margin="0 0 8 8" Style="{StaticResource SecondaryButtonStyle}" />
                         <Button Content="Iniciar" Command="{Binding StartCommand}" Width="90" Margin="0 0 8 8" Style="{StaticResource PrimaryButtonStyle}" />
-                        <Button Content="Registrar" Command="{Binding RegisterProductionCommand}" Width="98" Margin="0 0 8 8" Style="{StaticResource PrimaryButtonStyle}" />
                         <Button Content="Borrador" Command="{Binding SetDraftCommand}" Width="95" Margin="0 0 8 8" Style="{StaticResource SecondaryButtonStyle}" />
                         <Button Content="Cancelar" Command="{Binding CancelCommand}" Width="95" Margin="0 0 8 8" Style="{StaticResource SecondaryButtonStyle}" />
                         <Button Content="Eliminar" Command="{Binding DeleteOrderCommand}" Width="95" Margin="0 0 8 8" Style="{StaticResource SecondaryButtonStyle}" />
