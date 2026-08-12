@@ -287,17 +287,12 @@ Si corresponde, actualizar el `.docx` y guardar una nueva versión. **No sobresc
 
 Cada entrada acá es un cambio funcional ya hecho en el código que todavía no se volcó a `Proyecto Final V5.docx`. Al hacer la próxima pasada de actualización del documento, tomar estas entradas, aplicarlas, y guardar como `Proyecto Final V5.1.docx` (la siguiente ronda sería V5.2, etc.), tachando o quitando las entradas ya reflejadas.
 
-*(sin entradas pendientes por ahora — ver "Historial de versiones del .docx" abajo)*
-
-- ~~V5.1 — Insumos de tipo servicio (electricidad por kWh y similares).~~ Ya estaba reflejado en `Proyecto Final V5.docx` (fila `EsServicio` en la tabla de `Recurso`, Modelo de Datos) — detectado al revisar el documento el 2026-08-12, no requirió cambios.
-- ~~Código de proveedor por insumo y carga masiva de precios desde Excel.~~ Aplicado el 2026-08-12 en `Proyecto Final V5.1.docx`: fila `CodigoProveedor` en `RecursoProveedor` (Modelo de Datos), nuevo ítem en Requerimientos Funcionales (código de proveedor + pantalla "Carga masiva de precios"), y mención de la dependencia `ClosedXML` en el párrafo de `StockManufactura.Infrastructure` (Arquitectura del producto de software).
+- ~~Restablecer base de datos (reseteo total a estado inicial).~~ Aplicado el 2026-08-12 en `Proyecto Final V5.1.docx`: nuevo ítem en Requerimientos Funcionales, y bullet en Estándares de Desarrollo sobre el patrón de confirmación para acciones destructivas.
 
 ### Historial de versiones del .docx
 
 - `Proyecto Final V5.docx` — versión base (V5.0).
-- `Proyecto Final V5.1.docx` (2026-08-12) — agrega código de proveedor por insumo (`RecursoProveedor.CodigoProveedor`) y la pantalla de carga masiva de precios desde Excel. Es la versión más actualizada; `V5.docx` no fue modificado.
-
-> Nota: al revisar la tabla de Modelo de Datos para esta pasada se notó que todavía menciona entidades ya eliminadas del código (`ResourceCostCalculation`, `Stock`, `CostoIndirecto` — removidas en el commit `3e14f99`). Queda pendiente para una próxima pasada limpiar esa mención (línea "Las entidades auxiliares del sistema..." bajo "Diagrama de clases").
+- `Proyecto Final V5.1.docx` (2026-08-12) — agrega código de proveedor por insumo (`RecursoProveedor.CodigoProveedor`), la pantalla de carga masiva de precios desde Excel, el restablecimiento total de base de datos desde Backups, y limpia la mención a entidades ya eliminadas del código (`ResourceCostCalculation`, `Stock`, `CostoIndirecto`) en la sección "Diagrama de clases". Es la versión más actualizada; `V5.docx` no fue modificado.
 
 ### Cómo editar el .docx (Word COM vía PowerShell)
 

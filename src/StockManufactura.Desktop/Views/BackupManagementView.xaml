@@ -5,8 +5,12 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              mc:Ignorable="d"
              d:DesignHeight="700" d:DesignWidth="1200">
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter" />
+    </UserControl.Resources>
     <Grid Margin="20">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
@@ -43,7 +47,28 @@
             <Button Grid.Column="1" Content="Restaurar" Command="{Binding RestoreBackupCommand}" Height="34" />
         </Grid>
 
-        <DataGrid Grid.Row="3" ItemsSource="{Binding Records}" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False">
+        <Border Grid.Row="3" Margin="0 0 0 12" Padding="12" CornerRadius="4"
+                Background="#FDECEA" BorderBrush="#D32F2F" BorderThickness="1"
+                Visibility="{Binding CanResetDatabase, Converter={StaticResource BoolToVisibilityConverter}}">
+            <StackPanel>
+                <TextBlock Text="Zona de peligro" FontWeight="Bold" Foreground="#B71C1C" Margin="0 0 0 4" />
+                <TextBlock TextWrapping="Wrap" Foreground="#B71C1C" Margin="0 0 0 8"
+                           Text="Restablecer la base de datos borra TODOS los productos, insumos, proveedores, órdenes, historial y auditoría de forma irreversible (se genera un backup automático antes de borrar). Solo quedan los roles y el usuario administrador base." />
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="3*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBox Grid.Column="0" Margin="0 0 8 0"
+                             Text="{Binding ResetConfirmationText, UpdateSourceTrigger=PropertyChanged}"
+                             ToolTip="Escribí BORRAR TODO para habilitar el restablecimiento" />
+                    <Button Grid.Column="1" Content="Restablecer base de datos" Command="{Binding ResetDatabaseCommand}"
+                            Height="34" Background="#D32F2F" Foreground="White" BorderBrush="#B71C1C" />
+                </Grid>
+            </StackPanel>
+        </Border>
+
+        <DataGrid Grid.Row="4" ItemsSource="{Binding Records}" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False">
             <DataGrid.Columns>
                 <DataGridTextColumn Header="Fecha" Binding="{Binding FechaHora}" Width="150" />
                 <DataGridTextColumn Header="Tipo" Binding="{Binding Tipo}" Width="100" />
