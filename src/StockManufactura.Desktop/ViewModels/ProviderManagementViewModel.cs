@@ -31,6 +31,7 @@ namespace StockManufactura.Desktop.ViewModels
         [ObservableProperty] private bool _activo = true;
         [ObservableProperty] private bool _esNuevo = true;
         [ObservableProperty] private string _statusMessage = string.Empty;
+        private bool _isSaving;
 
         public ProviderManagementViewModel(
             IUnitOfWork unitOfWork,
@@ -112,6 +113,11 @@ namespace StockManufactura.Desktop.ViewModels
                 return;
             }
 
+            if (_isSaving)
+            {
+                return;
+            }
+
             if (string.IsNullOrWhiteSpace(Nombre) || string.IsNullOrWhiteSpace(RazonSocial) || string.IsNullOrWhiteSpace(Cuit))
             {
                 StatusMessage = "Nombre, razón social y CUIT son requeridos.";
@@ -119,10 +125,12 @@ namespace StockManufactura.Desktop.ViewModels
             }
 
             var cuitNormalized = Cuit.Trim();
+            Proveedor? provider = null;
+            var isNewProvider = EsNuevo;
 
+            _isSaving = true;
             try
             {
-                Proveedor provider;
                 if (EsNuevo)
                 {
                     var duplicate = await _unitOfWork.Proveedores.GetByCuitAsync(cuitNormalized);
@@ -191,11 +199,23 @@ namespace StockManufactura.Desktop.ViewModels
                 }
 
                 await LoadAsync();
-                SelectedProvider = Providers.FirstOrDefault(x => x.Id == provider.Id);
+                SelectedProvider = Providers.FirstOrDefault(x => x.Id == provider!.Id);
             }
             catch (Exception ex)
             {
-                StatusMessage = ex.Message;
+                if (isNewProvider && provider is not null)
+                {
+                    // Failed inserts stay tracked as "Added" for the lifetime of this screen's
+                    // shared DbContext; untrack it so the next Guardar doesn't retry it alongside
+                    // the new entity and fail on an unrelated collision.
+                    _unitOfWork.Proveedores.Delete(provider);
+                }
+
+                StatusMessage = ex.InnerException?.Message ?? ex.Message;
+            }
+            finally
+            {
+                _isSaving = false;
             }
         }
 
