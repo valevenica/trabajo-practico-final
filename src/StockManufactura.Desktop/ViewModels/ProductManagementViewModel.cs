@@ -46,6 +46,9 @@ namespace StockManufactura.Desktop.ViewModels
         private string _stockActual = "0";
 
         [ObservableProperty]
+        private string _stockMinimo = "0";
+
+        [ObservableProperty]
         private bool _activo = true;
 
         [ObservableProperty]
@@ -152,6 +155,7 @@ namespace StockManufactura.Desktop.ViewModels
                     RecipeItems.Clear();
                     CostoFabricacion = "0.00";
                     StockActual = "0";
+                    StockMinimo = "0";
                     OnPropertyChanged(nameof(CostoFabricacionCalculado));
                     return;
                 }
@@ -164,6 +168,7 @@ namespace StockManufactura.Desktop.ViewModels
                 Margen = value.MargenActual.ToString("0.00", CultureInfo.InvariantCulture);
                 PrecioSugerido = value.PrecioSugeridoActual.ToString("0.00", CultureInfo.InvariantCulture);
                 StockActual = value.StockActual.ToString("0.##", CultureInfo.InvariantCulture);
+                StockMinimo = value.StockMinimo.ToString("0.##", CultureInfo.InvariantCulture);
                 Activo = value.Activo;
                 Observaciones = value.Observaciones;
 
@@ -193,6 +198,7 @@ namespace StockManufactura.Desktop.ViewModels
 
         partial void OnPrecioSugeridoChanged(string value) { if (!_loading) IsDirty = true; }
         partial void OnStockActualChanged(string value) { if (!_loading) IsDirty = true; }
+        partial void OnStockMinimoChanged(string value) { if (!_loading) IsDirty = true; }
 
         private void RecalcularPrecioSugerido()
         {
@@ -335,6 +341,12 @@ namespace StockManufactura.Desktop.ViewModels
                 return;
             }
 
+            if (!decimal.TryParse(StockMinimo, NumberStyles.Number, CultureInfo.InvariantCulture, out var stockMinimo) || stockMinimo < 0)
+            {
+                StatusMessage = "Stock mínimo inválido.";
+                return;
+            }
+
             var codigoNormalizado = Codigo.Trim().ToUpperInvariant();
 
             try
@@ -359,6 +371,7 @@ namespace StockManufactura.Desktop.ViewModels
                         MargenActual = margen,
                         PrecioSugeridoActual = precioSugerido,
                         StockActual = stockActual,
+                        StockMinimo = stockMinimo,
                         Activo = Activo,
                         FechaUltimoCalculo = DateTime.UtcNow,
                         Observaciones = Observaciones.Trim()
@@ -400,6 +413,7 @@ namespace StockManufactura.Desktop.ViewModels
                     product.MargenActual = margen;
                     product.PrecioSugeridoActual = precioSugerido;
                     product.StockActual = stockActual;
+                    product.StockMinimo = stockMinimo;
                     product.Activo = Activo;
                     product.Observaciones = Observaciones.Trim();
                     product.FechaUltimoCalculo = DateTime.UtcNow;
@@ -424,6 +438,7 @@ namespace StockManufactura.Desktop.ViewModels
                     Margen = product.MargenActual.ToString("0.00", CultureInfo.InvariantCulture);
                     PrecioSugerido = product.PrecioSugeridoActual.ToString("0.00", CultureInfo.InvariantCulture);
                     StockActual = product.StockActual.ToString("0.##", CultureInfo.InvariantCulture);
+                    StockMinimo = product.StockMinimo.ToString("0.##", CultureInfo.InvariantCulture);
                 }
                 finally
                 {
@@ -452,6 +467,7 @@ namespace StockManufactura.Desktop.ViewModels
                 Margen = "0";
                 PrecioSugerido = "0";
                 StockActual = "0";
+                StockMinimo = "0";
                 Activo = true;
                 Observaciones = string.Empty;
                 RecipeItems.Clear();

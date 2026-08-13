@@ -31,6 +31,7 @@
                         <DataGridTextColumn Header="Stock actual" Binding="{Binding StockActual, StringFormat=N2}" Width="1.2*" />
                         <DataGridTextColumn Header="Reservado (órdenes en espera)" Binding="{Binding Reservado, StringFormat=N2}" Width="1.6*" />
                         <DataGridTextColumn Header="Faltante" Binding="{Binding Faltante, StringFormat=N2}" Width="1.2*" />
+                        <DataGridTextColumn Header="Motivo" Binding="{Binding Motivo}" Width="2*" />
                     </DataGrid.Columns>
                 </DataGrid>
             </StackPanel>

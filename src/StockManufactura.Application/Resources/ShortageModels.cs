@@ -10,6 +10,7 @@ namespace StockManufactura.Application.Resources
         public decimal StockActual { get; set; }
         public decimal Reservado { get; set; }
         public decimal Faltante { get; set; }
+        public string Motivo { get; set; } = string.Empty;
     }
 
     public sealed class ResourceShortageRow

@@ -473,6 +473,11 @@ namespace StockManufactura.Infrastructure.Migrations
                         .HasColumnType("decimal(18,4)")
                         .HasDefaultValue(0m);
 
+                    b.Property<decimal>("StockMinimo")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,4)")
+                        .HasDefaultValue(0m);
+
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("TEXT");
 

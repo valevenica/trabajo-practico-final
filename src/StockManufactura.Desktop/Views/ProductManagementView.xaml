@@ -71,7 +71,7 @@
             <TextBlock Text="Descripción" />
             <TextBox Text="{Binding Descripcion, UpdateSourceTrigger=PropertyChanged}" Height="56" Margin="0 4 0 8" AcceptsReturn="True" TextWrapping="Wrap" />
 
-            <UniformGrid Rows="1" Columns="4" Margin="0 0 0 8">
+            <UniformGrid Rows="1" Columns="5" Margin="0 0 0 8">
                 <StackPanel Margin="0 0 8 0">
                     <TextBlock Text="Costo fabricación (calculado)" />
                     <TextBox Text="{Binding CostoFabricacionCalculado}" Height="32" Margin="0 4 0 0" IsReadOnly="True" />
@@ -84,10 +84,15 @@
                     <TextBlock Text="Precio final" />
                     <TextBox Text="{Binding PrecioSugerido, UpdateSourceTrigger=PropertyChanged}" Height="32" Margin="0 4 0 0" />
                 </StackPanel>
-                <StackPanel>
+                <StackPanel Margin="0 0 8 0">
                     <TextBlock Text="Stock actual" />
                     <TextBox Text="{Binding StockActual, UpdateSourceTrigger=PropertyChanged}" Height="32" Margin="0 4 0 0"
                               ToolTip="También se actualiza automáticamente desde Stock → Ingresos" />
+                </StackPanel>
+                <StackPanel>
+                    <TextBlock Text="Stock mínimo" />
+                    <TextBox Text="{Binding StockMinimo, UpdateSourceTrigger=PropertyChanged}" Height="32" Margin="0 4 0 0"
+                              ToolTip="Umbral para aparecer en Faltantes; si el stock queda en 0 aparece igual, aunque no se configure un mínimo" />
                 </StackPanel>
             </UniformGrid>
 

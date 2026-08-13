@@ -30,17 +30,40 @@ namespace StockManufactura.Application.Services
                 .ToDictionary(g => g.Key, g => g.Sum(o => o.CantidadPlaneada));
 
             var productShortages = new List<ProductShortageRow>();
+            var orderShortfallByProduct = new Dictionary<Guid, decimal>();
             foreach (var product in products)
             {
-                if (!reservedByProduct.TryGetValue(product.Id, out var reserved))
+                reservedByProduct.TryGetValue(product.Id, out var reserved);
+
+                // Si no hay stock y tampoco hay un minimo configurado, se usa 1 como objetivo minimo
+                // implicito para que el producto igual aparezca como faltante (stock en 0 siempre es faltante).
+                var minimoObjetivo = product.StockMinimo > 0
+                    ? product.StockMinimo
+                    : (product.StockActual <= 0 ? 1m : 0m);
+
+                var ordersShortfall = reserved - product.StockActual;
+                var minimoShortfall = minimoObjetivo - product.StockActual;
+
+                var faltante = Math.Max(ordersShortfall, minimoShortfall);
+                if (faltante <= 0)
                 {
                     continue;
                 }
 
-                var faltante = reserved - product.StockActual;
-                if (faltante <= 0)
+                var motivos = new List<string>();
+                if (ordersShortfall > 0)
                 {
-                    continue;
+                    motivos.Add("Insuficiente para completar órdenes en espera");
+                    orderShortfallByProduct[product.Id] = ordersShortfall;
+                }
+
+                if (product.StockActual <= 0)
+                {
+                    motivos.Add("Sin stock");
+                }
+                else if (minimoShortfall > 0)
+                {
+                    motivos.Add("Por debajo del stock mínimo");
                 }
 
                 productShortages.Add(new ProductShortageRow
@@ -49,17 +72,18 @@ namespace StockManufactura.Application.Services
                     ProductoNombre = product.Nombre,
                     StockActual = product.StockActual,
                     Reservado = reserved,
-                    Faltante = faltante
+                    Faltante = faltante,
+                    Motivo = string.Join(" / ", motivos)
                 });
             }
 
             var neededByResource = new Dictionary<Guid, decimal>();
-            foreach (var shortage in productShortages)
+            foreach (var (productoId, ordersShortfall) in orderShortfallByProduct)
             {
-                var recipeItems = await _unitOfWork.RecetaProductoItems.ListByProductIdAsync(shortage.ProductoId);
+                var recipeItems = await _unitOfWork.RecetaProductoItems.ListByProductIdAsync(productoId);
                 foreach (var item in recipeItems.Where(x => x.RecursoId.HasValue))
                 {
-                    var qty = item.Cantidad * shortage.Faltante;
+                    var qty = item.Cantidad * ordersShortfall;
                     neededByResource[item.RecursoId!.Value] = neededByResource.GetValueOrDefault(item.RecursoId!.Value) + qty;
                 }
             }
