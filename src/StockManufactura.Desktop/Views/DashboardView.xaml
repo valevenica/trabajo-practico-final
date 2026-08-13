@@ -50,9 +50,19 @@
                 <Border Style="{StaticResource DashboardMetricCardStyle}" Margin="0,0,12,0">
                     <StackPanel>
                         <TextBlock Text="STOCK CRÍTICO" Style="{StaticResource DashboardMetricTitleStyle}" />
-                        <Border Style="{StaticResource DashboardMetricPillStyle}" Margin="0,18,0,0">
-                            <TextBlock Text="{Binding Status.CriticalStockCount, FallbackValue=0, TargetNullValue=0, StringFormat=STOCK MÍNIMO ({0} items)}" Foreground="{StaticResource PrimaryAccentBrush}" FontSize="17" FontWeight="SemiBold" HorizontalAlignment="Center" />
-                        </Border>
+                        <Button Command="{Binding NavigateToShortagesCommand}" Cursor="Hand"
+                                Background="Transparent" BorderThickness="0" Padding="0" Margin="0,18,0,0"
+                                HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                                ToolTip="Ver detalle de productos e insumos faltantes">
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <ContentPresenter />
+                                </ControlTemplate>
+                            </Button.Template>
+                            <Border Style="{StaticResource DashboardMetricPillStyle}">
+                                <TextBlock Text="{Binding Status.CriticalStockCount, FallbackValue=0, TargetNullValue=0, StringFormat=STOCK MÍNIMO ({0} items)}" Foreground="{StaticResource PrimaryAccentBrush}" FontSize="17" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                            </Border>
+                        </Button>
                     </StackPanel>
                 </Border>
                 <Border Style="{StaticResource DashboardMetricCardStyle}" Margin="6,0,6,0">

@@ -66,6 +66,7 @@ namespace StockManufactura.Desktop.ViewModels
         private readonly IProductCostService _productCostService;
         private readonly ISystemStatusService _systemStatusService;
         private readonly IUserManagementService _userManagementService;
+        private readonly IShortageService _shortageService;
         private SystemStatusSnapshot? _status;
         private string _statusMessage = string.Empty;
         private readonly ICollectionView _ordersView;
@@ -80,7 +81,8 @@ namespace StockManufactura.Desktop.ViewModels
             IUnitOfWork unitOfWork,
             IProductCostService productCostService,
             ISystemStatusService systemStatusService,
-            IUserManagementService userManagementService)
+            IUserManagementService userManagementService,
+            IShortageService shortageService)
         {
             Usuario = usuario;
             _navigationService = navigationService;
@@ -92,6 +94,8 @@ namespace StockManufactura.Desktop.ViewModels
             _productCostService = productCostService;
             _systemStatusService = systemStatusService ?? throw new ArgumentNullException(nameof(systemStatusService));
             _userManagementService = userManagementService ?? throw new ArgumentNullException(nameof(userManagementService));
+            _shortageService = shortageService ?? throw new ArgumentNullException(nameof(shortageService));
+            NavigateToShortagesCommand = new RelayCommand(NavigateToShortages);
             NavigateToResourcesCommand = new RelayCommand(NavigateToResources);
             NavigateToMonetaryConfigurationCommand = new RelayCommand(NavigateToMonetaryConfiguration);
             NavigateToAuditLogCommand = new RelayCommand(NavigateToAuditLog);
@@ -136,6 +140,7 @@ namespace StockManufactura.Desktop.ViewModels
 
         public Usuario Usuario { get; }
 
+        public ICommand NavigateToShortagesCommand { get; }
         public ICommand NavigateToResourcesCommand { get; }
         public ICommand NavigateToMonetaryConfigurationCommand { get; }
         public ICommand NavigateToAuditLogCommand { get; }
@@ -252,6 +257,11 @@ namespace StockManufactura.Desktop.ViewModels
                 yield return new PeriodOption(cursor.Year, cursor.Month, label);
                 cursor = cursor.AddMonths(-1);
             }
+        }
+
+        private void NavigateToShortages()
+        {
+            _navigationService.NavigateTo(new ShortagesViewModel(_shortageService, _navigationService, this));
         }
 
         private void NavigateToResources()

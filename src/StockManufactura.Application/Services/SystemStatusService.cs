@@ -14,17 +14,20 @@ namespace StockManufactura.Application.Services
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMonetaryConfigurationService _monetaryConfigurationService;
         private readonly IBackupService _backupService;
+        private readonly IShortageService _shortageService;
         private readonly IGoogleDriveBackupSyncService? _cloudSyncService;
 
         public SystemStatusService(
             IUnitOfWork unitOfWork,
             IMonetaryConfigurationService monetaryConfigurationService,
             IBackupService backupService,
+            IShortageService shortageService,
             IGoogleDriveBackupSyncService? cloudSyncService = null)
         {
             _unitOfWork = unitOfWork;
             _monetaryConfigurationService = monetaryConfigurationService;
             _backupService = backupService;
+            _shortageService = shortageService;
             _cloudSyncService = cloudSyncService;
         }
 
@@ -52,7 +55,8 @@ namespace StockManufactura.Application.Services
             var backupStatus = latestBackup is null ? "Sin respaldo reciente" : "Activo";
             var cloudProvider = driveSyncEnabled ? "Google Drive" : "No configurado";
             var statusTone = latestBackup is null ? "Warning" : "Success";
-            var criticalStockCount = resources.Count(resource => !resource.EsServicio && resource.StockActual <= resource.StockMinimo);
+            var shortageReport = await _shortageService.GetShortagesAsync(cancellationToken);
+            var criticalStockCount = shortageReport.TotalCount;
             var ordersInProcessCount = orders.Count(order => order.Estado == EstadoOrdenProduccion.EnProceso);
 
             var monthlyCostTotal = costHistory

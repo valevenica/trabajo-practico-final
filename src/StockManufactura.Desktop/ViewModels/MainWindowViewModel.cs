@@ -29,6 +29,7 @@ namespace StockManufactura.Desktop.ViewModels
             LogoImageSource = DesktopAssetLoader.TryLoadLogoImage();
 
             NavigateDashboardCommand = new RelayCommand(NavigateDashboard);
+            NavigateShortagesCommand = new RelayCommand(NavigateShortages);
             NavigateProductsCommand = new RelayCommand(NavigateProducts);
             NavigateNewProductCommand = new RelayCommand(NavigateNewProduct);
             NavigateResourcesCommand = new RelayCommand(NavigateResources);
@@ -58,6 +59,7 @@ namespace StockManufactura.Desktop.ViewModels
         public bool CanManageProductionOrders => true;
 
         public bool IsDashboardSelected => _activeMenuKey == "Dashboard";
+        public bool IsShortagesSelected => _activeMenuKey == "Shortages";
         public bool IsProductsSelected => _activeMenuKey == "Products";
         public bool IsNewProductSelected => _activeMenuKey == "NewProduct";
         public bool IsResourcesSelected => _activeMenuKey == "Resources";
@@ -73,6 +75,7 @@ namespace StockManufactura.Desktop.ViewModels
         public bool IsAuditSelected => _activeMenuKey == "Audit";
 
         public ICommand NavigateDashboardCommand { get; }
+        public ICommand NavigateShortagesCommand { get; }
         public ICommand NavigateProductsCommand { get; }
         public ICommand NavigateNewProductCommand { get; }
         public ICommand NavigateResourcesCommand { get; }
@@ -144,7 +147,8 @@ namespace StockManufactura.Desktop.ViewModels
                 _serviceProvider.GetRequiredService<IUnitOfWork>(),
                 _serviceProvider.GetRequiredService<IProductCostService>(),
                 _serviceProvider.GetRequiredService<ISystemStatusService>(),
-                _serviceProvider.GetRequiredService<IUserManagementService>());
+                _serviceProvider.GetRequiredService<IUserManagementService>(),
+                _serviceProvider.GetRequiredService<IShortageService>());
 
             dashboard = _dashboardViewModel;
             return true;
@@ -170,6 +174,18 @@ namespace StockManufactura.Desktop.ViewModels
             _navigationService.NavigateTo(dashboard);
             SetActiveMenu("Dashboard");
             ExecuteIfPossible(dashboard.RefreshStatusCommand);
+        }
+
+        private void NavigateShortages()
+        {
+            if (EnsureDashboardAvailable(out var dashboard))
+            {
+                _navigationService.NavigateTo(new ShortagesViewModel(
+                    _serviceProvider.GetRequiredService<IShortageService>(),
+                    _navigationService,
+                    dashboard));
+                SetActiveMenu("Shortages");
+            }
         }
 
         private void NavigateProducts()
@@ -339,6 +355,7 @@ namespace StockManufactura.Desktop.ViewModels
 
             _activeMenuKey = key;
             OnPropertyChanged(nameof(IsDashboardSelected));
+            OnPropertyChanged(nameof(IsShortagesSelected));
             OnPropertyChanged(nameof(IsProductsSelected));
             OnPropertyChanged(nameof(IsNewProductSelected));
             OnPropertyChanged(nameof(IsResourcesSelected));

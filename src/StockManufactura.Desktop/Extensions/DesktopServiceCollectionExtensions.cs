@@ -74,6 +74,7 @@ namespace StockManufactura.Desktop.Extensions
             services.AddTransient<ICostReportService, CostReportService>();
             services.AddTransient<IMonetaryConfigurationService, MonetaryConfigurationService>();
             services.AddTransient<ISystemStatusService, SystemStatusService>();
+            services.AddTransient<IShortageService, ShortageService>();
             services.AddTransient<IResourcePricingService, ResourcePricingService>();
             services.AddTransient<IStockIntakeService, StockIntakeService>();
             services.AddTransient<IResourcePriceImportService, ClosedXmlResourcePriceImportService>();

@@ -1,0 +1,59 @@
+<UserControl x:Class="StockManufactura.Desktop.Views.ShortagesView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d"
+             d:DesignHeight="700" d:DesignWidth="1100">
+    <Grid Margin="20" Background="{StaticResource BackgroundSoftLightBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0" Margin="0 0 0 14">
+            <TextBlock Text="FALTANTES" FontSize="18" FontWeight="Bold" />
+            <Button Content="Volver" Command="{Binding BackCommand}" Width="100" Height="30"
+                    HorizontalAlignment="Right" Style="{StaticResource SecondaryButtonStyle}" />
+        </Grid>
+
+        <Border Grid.Row="1" Style="{StaticResource CardBorderStyle}" Margin="0 0 0 12">
+            <StackPanel>
+                <Border Background="{StaticResource BackgroundDarkMetalBrush}" Padding="8" CornerRadius="4" Margin="0 0 0 8">
+                    <TextBlock Text="Productos faltantes" Foreground="{StaticResource SecondaryAccentBrush}" FontWeight="SemiBold" />
+                </Border>
+                <DataGrid ItemsSource="{Binding Productos}" AutoGenerateColumns="False" IsReadOnly="True"
+                          CanUserAddRows="False" GridLinesVisibility="Horizontal" MinHeight="120" MaxHeight="260">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Producto" Binding="{Binding ProductoNombre}" Width="*" />
+                        <DataGridTextColumn Header="Stock actual" Binding="{Binding StockActual, StringFormat=N2}" Width="1.2*" />
+                        <DataGridTextColumn Header="Reservado (órdenes en espera)" Binding="{Binding Reservado, StringFormat=N2}" Width="1.6*" />
+                        <DataGridTextColumn Header="Faltante" Binding="{Binding Faltante, StringFormat=N2}" Width="1.2*" />
+                    </DataGrid.Columns>
+                </DataGrid>
+            </StackPanel>
+        </Border>
+
+        <Border Grid.Row="2" Style="{StaticResource CardBorderStyle}">
+            <StackPanel>
+                <Border Background="{StaticResource BackgroundDarkMetalBrush}" Padding="8" CornerRadius="4" Margin="0 0 0 8">
+                    <TextBlock Text="Insumos faltantes" Foreground="{StaticResource SecondaryAccentBrush}" FontWeight="SemiBold" />
+                </Border>
+                <DataGrid ItemsSource="{Binding Insumos}" AutoGenerateColumns="False" IsReadOnly="True"
+                          CanUserAddRows="False" GridLinesVisibility="Horizontal" MinHeight="120" MaxHeight="260">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Insumo" Binding="{Binding RecursoNombre}" Width="*" />
+                        <DataGridTextColumn Header="Unidad" Binding="{Binding UnidadMedida}" Width="0.8*" />
+                        <DataGridTextColumn Header="Stock actual" Binding="{Binding StockActual, StringFormat=N2}" Width="1.2*" />
+                        <DataGridTextColumn Header="Faltante" Binding="{Binding Faltante, StringFormat=N2}" Width="1*" />
+                        <DataGridTextColumn Header="Motivo" Binding="{Binding Motivo}" Width="2*" />
+                    </DataGrid.Columns>
+                </DataGrid>
+            </StackPanel>
+        </Border>
+
+        <TextBlock Grid.Row="3" Text="{Binding StatusMessage}" Margin="0 12 0 0" Style="{StaticResource StatusMessageStyle}" />
+    </Grid>
+</UserControl>

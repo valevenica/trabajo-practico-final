@@ -22,6 +22,7 @@ namespace StockManufactura.Desktop.ViewModels
         private readonly IProductCostService _productCostService;
         private readonly ISystemStatusService _systemStatusService;
         private readonly IUserManagementService _userManagementService;
+        private readonly IShortageService _shortageService;
 
         private string _usuario = string.Empty;
         private string _password = string.Empty;
@@ -42,7 +43,8 @@ namespace StockManufactura.Desktop.ViewModels
             IBackupService backupService,
             IProductCostService productCostService,
             ISystemStatusService systemStatusService,
-            IUserManagementService userManagementService)
+            IUserManagementService userManagementService,
+            IShortageService shortageService)
         {
             _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
             _navigationService = navigationService ?? throw new ArgumentNullException(nameof(navigationService));
@@ -54,6 +56,7 @@ namespace StockManufactura.Desktop.ViewModels
             _productCostService = productCostService ?? throw new ArgumentNullException(nameof(productCostService));
             _systemStatusService = systemStatusService ?? throw new ArgumentNullException(nameof(systemStatusService));
             _userManagementService = userManagementService ?? throw new ArgumentNullException(nameof(userManagementService));
+            _shortageService = shortageService ?? throw new ArgumentNullException(nameof(shortageService));
             LoginCommand = new AsyncRelayCommand(ExecuteLoginAsync);
             ChangePasswordCommand = new AsyncRelayCommand(ExecuteChangePasswordAsync);
             ToggleShowPasswordCommand = new RelayCommand(() => 
@@ -198,7 +201,8 @@ namespace StockManufactura.Desktop.ViewModels
                 _unitOfWork,
                 _productCostService,
                 _systemStatusService,
-                _userManagementService));
+                _userManagementService,
+                _shortageService));
         }
 
         private Task RegisterAuditAsync(string action, string description)
