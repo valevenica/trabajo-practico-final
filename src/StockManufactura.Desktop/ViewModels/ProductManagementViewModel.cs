@@ -413,6 +413,23 @@ namespace StockManufactura.Desktop.ViewModels
 
                 await LoadAsync();
                 SelectedProduct = Products.FirstOrDefault(x => x.Id == product.Id);
+
+                // Refrescar los campos del formulario directamente desde la entidad recien guardada,
+                // sin depender de que reasignar SelectedProduct dispare OnSelectedProductChanged
+                // (por ejemplo, si la seleccion de la lista no vuelve a levantar el evento).
+                _loading = true;
+                try
+                {
+                    CostoFabricacion = product.CostoFabricacionActual.ToString("0.00", CultureInfo.InvariantCulture);
+                    Margen = product.MargenActual.ToString("0.00", CultureInfo.InvariantCulture);
+                    PrecioSugerido = product.PrecioSugeridoActual.ToString("0.00", CultureInfo.InvariantCulture);
+                    StockActual = product.StockActual.ToString("0.##", CultureInfo.InvariantCulture);
+                }
+                finally
+                {
+                    _loading = false;
+                }
+
                 IsDirty = false;
             }
             catch (Exception ex)
