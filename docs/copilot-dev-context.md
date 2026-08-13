@@ -26,6 +26,14 @@ Set-Location "c:\Users\vveni\trabajo-practico-final"
 ```
 > Nota: usar `& "C:\Program Files\dotnet\dotnet.exe"` — el alias `dotnet` no siempre está disponible en PowerShell.
 
+**Instalador MSI (`installer/`):** proyecto WiX Toolset v5 (SDK-style, `installer/Product.wxs` + `installer/StockManufactura.Installer.wixproj`), harvesta todo `publish/` (correr el comando de publicación de arriba primero) y arma `Integra Manufacturing Setup.msi`. Reconstruir con:
+```powershell
+& "C:\Program Files\dotnet\dotnet.exe" build "c:\Users\vveni\trabajo-practico-final\installer\StockManufactura.Installer.wixproj" -c Release
+```
+El `.msi` sale en `installer\bin\x64\Release\Integra Manufacturing Setup.msi` — copiarlo a mano al Desktop si se quiere reemplazar el instalador que usa el usuario. `installer/bin/` y `installer/obj/` están en `.gitignore` (ya cubiertos por las reglas genéricas `bin/`/`obj/`), el `.msi` en sí nunca se commitea.
+
+**Al subir la versión:** el `Version` del `<Package>` en `Product.wxs` hay que incrementarlo en cada release (`UpgradeCode` se mantiene siempre igual: `{278E8B07-F048-4E56-82F7-1544B17F2F65}` — si cambia, Windows Installer deja de reconocer las instalaciones previas como "la misma app" y no podría actualizar sin desinstalar a mano). WiX arma automáticamente las reglas de actualización (`<MajorUpgrade>`), así que correr el `.msi` nuevo sobre una instalación vieja la reemplaza sola, sin pasos manuales.
+
 ---
 
 ## Regla crítica: DbContext en Desktop (Transient DI)
