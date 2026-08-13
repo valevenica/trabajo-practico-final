@@ -1,0 +1,65 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
+
+  <Package Name="Integra Manufacturing"
+           Manufacturer="Integra Manufacturing"
+           Version="1.1.0.0"
+           UpgradeCode="278E8B07-F048-4E56-82F7-1544B17F2F65"
+           Language="1033"
+           Scope="perMachine">
+
+    <SummaryInformation Description="Instalador de Integra Manufacturing - Sistema de Gestion Integral de Inventario, Produccion y Costos" Manufacturer="Integra Manufacturing" />
+
+    <MajorUpgrade DowngradeErrorMessage="Ya hay instalada una version mas nueva de Integra Manufacturing." />
+
+    <MediaTemplate EmbedCab="yes" />
+
+    <Icon Id="AppIcon.ico" SourceFile="..\src\StockManufactura.Desktop\Assets\app.ico" />
+    <Property Id="ARPPRODUCTICON" Value="AppIcon.ico" />
+    <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />
+
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="Integra Manufacturing" />
+    </StandardDirectory>
+
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="ApplicationProgramsFolder" Name="Integra Manufacturing" />
+    </StandardDirectory>
+
+    <StandardDirectory Id="DesktopFolder" />
+
+    <ComponentGroup Id="AppFiles" Directory="INSTALLFOLDER">
+      <Files Include="$(var.PublishDir)**" />
+    </ComponentGroup>
+
+    <Component Id="StartMenuShortcuts" Directory="ApplicationProgramsFolder" Guid="*">
+      <Shortcut Id="StartMenuShortcut"
+                Name="Integra Manufacturing"
+                Description="Sistema de Gestion Integral de Inventario, Produccion y Costos"
+                Target="[INSTALLFOLDER]StockManufactura.Desktop.exe"
+                WorkingDirectory="INSTALLFOLDER"
+                Icon="AppIcon.ico" />
+      <RemoveFolder Id="RemoveApplicationProgramsFolder" On="uninstall" />
+      <RegistryValue Root="HKCU" Key="Software\Integra Manufacturing" Name="StartMenuShortcut" Type="integer" Value="1" KeyPath="yes" />
+    </Component>
+
+    <Component Id="DesktopShortcut" Directory="DesktopFolder" Guid="*">
+      <Shortcut Id="DesktopShortcutLnk"
+                Name="Integra Manufacturing"
+                Description="Sistema de Gestion Integral de Inventario, Produccion y Costos"
+                Target="[INSTALLFOLDER]StockManufactura.Desktop.exe"
+                WorkingDirectory="INSTALLFOLDER"
+                Icon="AppIcon.ico" />
+      <RegistryValue Root="HKCU" Key="Software\Integra Manufacturing" Name="DesktopShortcut" Type="integer" Value="1" KeyPath="yes" />
+    </Component>
+
+    <Feature Id="MainFeature" Title="Integra Manufacturing" Level="1">
+      <ComponentGroupRef Id="AppFiles" />
+      <ComponentRef Id="StartMenuShortcuts" />
+      <ComponentRef Id="DesktopShortcut" />
+    </Feature>
+
+    <ui:WixUI Id="WixUI_InstallDir" />
+
+  </Package>
+</Wix>
