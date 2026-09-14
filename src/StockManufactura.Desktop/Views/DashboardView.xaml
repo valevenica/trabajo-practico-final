@@ -44,6 +44,7 @@
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
             <UniformGrid Columns="3" Margin="0,0,0,20">
@@ -81,7 +82,46 @@
                 </Border>
             </UniformGrid>
 
-            <Border Grid.Row="1" Style="{StaticResource DashboardPanelStyle}">
+            <!-- Trazabilidad, auditoría y estado de la sincronización con la nube -->
+            <Border Grid.Row="1" Style="{StaticResource DashboardPanelStyle}" Margin="0,0,0,20">
+                <StackPanel>
+                    <Grid Margin="0,0,0,14">
+                        <TextBlock Text="Trazabilidad y auditoría" FontSize="18" FontWeight="Bold" Foreground="#050505" />
+                        <Button Content="Ver bitácora" Command="{Binding NavigateToAuditLogCommand}"
+                                HorizontalAlignment="Right" VerticalAlignment="Top" Height="30" MinWidth="110"
+                                Style="{StaticResource SecondaryButtonStyle}" />
+                    </Grid>
+
+                    <UniformGrid Columns="4">
+                        <StackPanel Margin="0,0,14,0">
+                            <TextBlock Text="EVENTOS AUDITADOS EN EL PERÍODO" Style="{StaticResource DashboardMetricTitleStyle}" />
+                            <TextBlock Text="{Binding AuditEventCountText}" FontSize="24" FontWeight="Bold" Foreground="#050505" Margin="0,6,0,0" />
+                            <TextBlock Text="{Binding AuditUserCountText}" FontSize="11" Foreground="{StaticResource TextMutedBrush}" />
+                        </StackPanel>
+
+                        <StackPanel Margin="0,0,14,0">
+                            <TextBlock Text="COBERTURA DE TRAZABILIDAD DE COSTOS" Style="{StaticResource DashboardMetricTitleStyle}" />
+                            <TextBlock Text="{Binding TraceabilityCoverageText}" FontSize="24" FontWeight="Bold" Foreground="#050505" Margin="0,6,0,0" />
+                            <TextBlock Text="Productos activos con historial de costos" FontSize="11" Foreground="{StaticResource TextMutedBrush}" TextWrapping="Wrap" />
+                        </StackPanel>
+
+                        <StackPanel Margin="0,0,14,0">
+                            <TextBlock Text="CAMBIOS REGISTRADOS EN EL PERÍODO" Style="{StaticResource DashboardMetricTitleStyle}" />
+                            <TextBlock Text="{Binding TraceabilityChangesText}" FontSize="24" FontWeight="Bold" Foreground="#050505" Margin="0,6,0,0" />
+                            <TextBlock Text="Precios de insumos y recálculos de costo" FontSize="11" Foreground="{StaticResource TextMutedBrush}" TextWrapping="Wrap" />
+                        </StackPanel>
+
+                        <StackPanel>
+                            <TextBlock Text="SINCRONIZACIÓN CON LA NUBE" Style="{StaticResource DashboardMetricTitleStyle}" />
+                            <TextBlock Text="{Binding CloudSyncStatusText}" FontSize="16" FontWeight="Bold" Foreground="#050505" Margin="0,8,0,0" TextWrapping="Wrap" />
+                            <TextBlock Text="{Binding LastDriveSyncText, StringFormat=Última: {0}}" FontSize="11" Foreground="{StaticResource TextMutedBrush}" />
+                            <TextBlock Text="{Binding LastAuditText}" FontSize="11" Foreground="{StaticResource TextMutedBrush}" Margin="0,4,0,0" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </UniformGrid>
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Row="2" Style="{StaticResource DashboardPanelStyle}">
                 <StackPanel>
                     <Grid Margin="0,0,0,16">
                         <TextBlock Text="Módulo: Órdenes de Producción" FontSize="18" FontWeight="Bold" Foreground="#050505" />

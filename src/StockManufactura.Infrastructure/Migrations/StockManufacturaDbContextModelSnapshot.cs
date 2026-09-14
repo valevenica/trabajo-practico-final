@@ -139,6 +139,13 @@ namespace StockManufactura.Infrastructure.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("CarpetaNube")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT")
+                        .HasDefaultValue("");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
 
@@ -160,6 +167,21 @@ namespace StockManufactura.Infrastructure.Migrations
 
                     b.Property<int>("MantenerUltimasCopias")
                         .HasColumnType("INTEGER");
+
+                    b.Property<string>("ProveedorNube")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT")
+                        .HasDefaultValue("Google Drive");
+
+                    b.Property<bool>("SincronizacionBidireccional")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(true);
+
+                    b.Property<DateTime?>("UltimaSincronizacionNube")
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime?>("UltimoBackupAutomatico")
                         .HasColumnType("TEXT");

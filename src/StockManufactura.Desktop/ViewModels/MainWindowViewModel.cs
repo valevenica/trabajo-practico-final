@@ -29,6 +29,7 @@ namespace StockManufactura.Desktop.ViewModels
             LogoImageSource = DesktopAssetLoader.TryLoadLogoImage();
 
             NavigateDashboardCommand = new RelayCommand(NavigateDashboard);
+            NavigateBusinessIntelligenceCommand = new RelayCommand(NavigateBusinessIntelligence);
             NavigateShortagesCommand = new RelayCommand(NavigateShortages);
             NavigateProductsCommand = new RelayCommand(NavigateProducts);
             NavigateNewProductCommand = new RelayCommand(NavigateNewProduct);
@@ -59,6 +60,7 @@ namespace StockManufactura.Desktop.ViewModels
         public bool CanManageProductionOrders => true;
 
         public bool IsDashboardSelected => _activeMenuKey == "Dashboard";
+        public bool IsBusinessIntelligenceSelected => _activeMenuKey == "BusinessIntelligence";
         public bool IsShortagesSelected => _activeMenuKey == "Shortages";
         public bool IsProductsSelected => _activeMenuKey == "Products";
         public bool IsNewProductSelected => _activeMenuKey == "NewProduct";
@@ -75,6 +77,7 @@ namespace StockManufactura.Desktop.ViewModels
         public bool IsAuditSelected => _activeMenuKey == "Audit";
 
         public ICommand NavigateDashboardCommand { get; }
+        public ICommand NavigateBusinessIntelligenceCommand { get; }
         public ICommand NavigateShortagesCommand { get; }
         public ICommand NavigateProductsCommand { get; }
         public ICommand NavigateNewProductCommand { get; }
@@ -174,6 +177,16 @@ namespace StockManufactura.Desktop.ViewModels
             _navigationService.NavigateTo(dashboard);
             SetActiveMenu("Dashboard");
             ExecuteIfPossible(dashboard.RefreshStatusCommand);
+        }
+
+        private void NavigateBusinessIntelligence()
+        {
+            if (EnsureDashboardAvailable(out _))
+            {
+                _navigationService.NavigateTo(new BusinessIntelligenceViewModel(
+                    _serviceProvider.GetRequiredService<IBusinessIntelligenceService>()));
+                SetActiveMenu("BusinessIntelligence");
+            }
         }
 
         private void NavigateShortages()
@@ -355,6 +368,7 @@ namespace StockManufactura.Desktop.ViewModels
 
             _activeMenuKey = key;
             OnPropertyChanged(nameof(IsDashboardSelected));
+            OnPropertyChanged(nameof(IsBusinessIntelligenceSelected));
             OnPropertyChanged(nameof(IsShortagesSelected));
             OnPropertyChanged(nameof(IsProductsSelected));
             OnPropertyChanged(nameof(IsNewProductSelected));

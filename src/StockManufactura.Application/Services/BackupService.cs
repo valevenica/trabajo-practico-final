@@ -1,9 +1,11 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using StockManufactura.Application.Backups;
 using StockManufactura.Application.Interfaces;
 using StockManufactura.Domain.Entities;
 using StockManufactura.Shared;
@@ -14,18 +16,21 @@ namespace StockManufactura.Application.Services
     {
         private readonly IBackupRecordRepository _backupRecordRepository;
         private readonly IBackupSettingsRepository _backupSettingsRepository;
-        private readonly IGoogleDriveBackupSyncService _googleDriveService;
+        private readonly ICloudBackupSyncService _cloudSyncService;
+        private readonly IAuditLogService _auditLogService;
         private readonly IUnitOfWork _unitOfWork;
 
         public BackupService(
             IBackupRecordRepository backupRecordRepository,
             IBackupSettingsRepository backupSettingsRepository,
-            IGoogleDriveBackupSyncService googleDriveService,
+            ICloudBackupSyncService cloudSyncService,
+            IAuditLogService auditLogService,
             IUnitOfWork unitOfWork)
         {
             _backupRecordRepository = backupRecordRepository;
             _backupSettingsRepository = backupSettingsRepository;
-            _googleDriveService = googleDriveService;
+            _cloudSyncService = cloudSyncService;
+            _auditLogService = auditLogService;
             _unitOfWork = unitOfWork;
         }
 
@@ -112,12 +117,53 @@ namespace StockManufactura.Application.Services
 
             await _backupRecordRepository.AddAsync(record);
             await _unitOfWork.SaveChangesAsync();
+            await RegisterAuditAsync("Backups", "Restaurar", usuario, $"Restauracion desde {Path.GetFileName(zipPath)}", cancellationToken);
             return record;
         }
 
         public Task<IReadOnlyList<BackupRecord>> GetRecentBackupsAsync(int top = 50, CancellationToken cancellationToken = default)
         {
             return _backupRecordRepository.ListRecentAsync(top);
+        }
+
+        public async Task<CloudSyncResult> SynchronizeCloudAsync(string usuario, CancellationToken cancellationToken = default)
+        {
+            var settings = await GetSettingsAsync(cancellationToken);
+            var result = await _cloudSyncService.SynchronizeAsync(settings, cancellationToken);
+
+            if (!result.Ejecutada)
+            {
+                return result;
+            }
+
+            // Cada copia traida desde la nube se incorpora al historial local para que quede
+            // visible en la pantalla de backups y auditada como origen "Nube".
+            foreach (var descargado in result.Descargados)
+            {
+                var rutaLocal = Path.Combine(settings.CarpetaLocal, descargado);
+                await _backupRecordRepository.AddAsync(new BackupRecord
+                {
+                    FechaHora = DateTime.UtcNow,
+                    Tipo = "NubeDescarga",
+                    RutaArchivo = rutaLocal,
+                    TamanoBytes = File.Exists(rutaLocal) ? new FileInfo(rutaLocal).Length : 0,
+                    Exitoso = true,
+                    Mensaje = $"Descargado desde {result.Proveedor} por {usuario}"
+                });
+            }
+
+            settings.UltimaSincronizacionNube = result.FechaUtc;
+            _backupSettingsRepository.Update(settings);
+            await _unitOfWork.SaveChangesAsync();
+
+            await RegisterAuditAsync(
+                "Backups",
+                "SincronizarNube",
+                usuario,
+                $"{result.Mensaje} Proveedor: {result.Proveedor}.",
+                cancellationToken);
+
+            return result;
         }
 
         private async Task<BackupRecord> CreateBackupInternalAsync(string tipo, string usuario, CancellationToken cancellationToken)
@@ -146,23 +192,52 @@ namespace StockManufactura.Application.Services
             await _backupRecordRepository.AddAsync(record);
             await _unitOfWork.SaveChangesAsync();
 
-            await TrySyncGoogleDriveAsync(record, settings, cancellationToken);
-            ApplyRetentionAsync(settings);
+            await TrySyncCloudAsync(record, settings, cancellationToken);
+            ApplyRetention(settings);
+            await RegisterAuditAsync("Backups", $"Backup{tipo}", usuario, $"Copia generada en {Path.GetFileName(zipPath)}", cancellationToken);
 
             return record;
         }
 
-        private async Task TrySyncGoogleDriveAsync(BackupRecord record, BackupSettings settings, CancellationToken cancellationToken)
+        private async Task TrySyncCloudAsync(BackupRecord record, BackupSettings settings, CancellationToken cancellationToken)
         {
             if (!settings.GoogleDriveHabilitado)
             {
                 return;
             }
 
-            await _googleDriveService.TryUploadAsync(record, settings, cancellationToken);
+            var uploaded = await _cloudSyncService.TryUploadAsync(record, settings, cancellationToken);
+            if (!uploaded)
+            {
+                return;
+            }
+
+            settings.UltimaSincronizacionNube = DateTime.UtcNow;
+            _backupSettingsRepository.Update(settings);
+            await _unitOfWork.SaveChangesAsync();
         }
 
-        private void ApplyRetentionAsync(BackupSettings settings)
+        private async Task RegisterAuditAsync(string modulo, string accion, string usuario, string descripcion, CancellationToken cancellationToken)
+        {
+            try
+            {
+                await _auditLogService.RegisterAsync(new AuditLog
+                {
+                    FechaHora = DateTime.UtcNow,
+                    Usuario = usuario,
+                    Modulo = modulo,
+                    Accion = accion,
+                    Entidad = nameof(BackupRecord),
+                    Descripcion = descripcion
+                }, cancellationToken);
+            }
+            catch (Exception)
+            {
+                // La auditoria no debe impedir que la copia de seguridad se considere exitosa.
+            }
+        }
+
+        private static void ApplyRetention(BackupSettings settings)
         {
             var files = Directory.GetFiles(settings.CarpetaLocal, "backup-*.zip")
                 .Select(x => new FileInfo(x))

@@ -14,6 +14,7 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
@@ -47,7 +48,50 @@
             <Button Grid.Column="1" Content="Restaurar" Command="{Binding RestoreBackupCommand}" Height="34" />
         </Grid>
 
+        <!-- Sincronización bidireccional con el servicio en la nube -->
         <Border Grid.Row="3" Margin="0 0 0 12" Padding="12" CornerRadius="4"
+                Background="#F4F7FB" BorderBrush="#B0C4DE" BorderThickness="1">
+            <StackPanel>
+                <TextBlock Text="Sincronización con la nube" FontWeight="Bold" Margin="0 0 0 4" />
+                <TextBlock TextWrapping="Wrap" Foreground="#3A3540" Margin="0 0 0 10"
+                           Text="Las copias se intercambian con la carpeta que el cliente de escritorio del proveedor (Google Drive, OneDrive) replica contra el servicio remoto. Con la sincronización bidireccional activa, además de subir las copias de este equipo se descargan las que otros equipos hayan subido. Si la carpeta no está disponible, el sistema sigue funcionando con las copias locales." />
+
+                <Grid Margin="0 0 0 8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="160" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" Text="Carpeta de la nube" VerticalAlignment="Center" Margin="0 0 8 0" />
+                    <TextBox Grid.Column="1" Margin="0 0 12 0"
+                             Text="{Binding CloudFolder, UpdateSourceTrigger=PropertyChanged}"
+                             ToolTip="Ejemplo: C:\Users\usuario\Google Drive\Backups Integra" />
+                    <TextBlock Grid.Column="2" Text="Proveedor" VerticalAlignment="Center" Margin="0 0 8 0" />
+                    <TextBox Grid.Column="3" Text="{Binding CloudProvider, UpdateSourceTrigger=PropertyChanged}" />
+                </Grid>
+
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <CheckBox Grid.Column="0" VerticalAlignment="Center" Margin="0 0 16 0"
+                              Content="Sincronizar con la nube" IsChecked="{Binding CloudEnabled}" />
+                    <CheckBox Grid.Column="1" VerticalAlignment="Center" Margin="0 0 16 0"
+                              Content="Bidireccional (también descargar)" IsChecked="{Binding CloudBidirectional}"
+                              IsEnabled="{Binding CloudEnabled}" />
+                    <TextBlock Grid.Column="2" VerticalAlignment="Center" TextWrapping="Wrap"
+                               Foreground="#3A3540" Text="{Binding CloudSyncSummary}" />
+                    <Button Grid.Column="3" Content="Sincronizar ahora" Height="34" MinWidth="140"
+                            Command="{Binding SynchronizeCloudCommand}" IsEnabled="{Binding CloudEnabled}" />
+                </Grid>
+            </StackPanel>
+        </Border>
+
+        <Border Grid.Row="4" Margin="0 0 0 12" Padding="12" CornerRadius="4"
                 Background="#FDECEA" BorderBrush="#D32F2F" BorderThickness="1"
                 Visibility="{Binding CanResetDatabase, Converter={StaticResource BoolToVisibilityConverter}}">
             <StackPanel>
@@ -68,7 +112,7 @@
             </StackPanel>
         </Border>
 
-        <DataGrid Grid.Row="4" ItemsSource="{Binding Records}" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False">
+        <DataGrid Grid.Row="5" ItemsSource="{Binding Records}" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False">
             <DataGrid.Columns>
                 <DataGridTextColumn Header="Fecha" Binding="{Binding FechaHora}" Width="150" />
                 <DataGridTextColumn Header="Tipo" Binding="{Binding Tipo}" Width="100" />

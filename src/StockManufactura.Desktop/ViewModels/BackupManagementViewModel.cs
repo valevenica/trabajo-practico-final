@@ -41,6 +41,21 @@ namespace StockManufactura.Desktop.ViewModels
         [ObservableProperty]
         private string _resetConfirmationText = string.Empty;
 
+        [ObservableProperty]
+        private string _cloudFolder = string.Empty;
+
+        [ObservableProperty]
+        private string _cloudProvider = "Google Drive";
+
+        [ObservableProperty]
+        private bool _cloudEnabled;
+
+        [ObservableProperty]
+        private bool _cloudBidirectional = true;
+
+        [ObservableProperty]
+        private string _cloudSyncSummary = "Sin sincronizaciones registradas.";
+
         public BackupManagementViewModel(IBackupService backupService)
         {
             _backupService = backupService;
@@ -51,6 +66,7 @@ namespace StockManufactura.Desktop.ViewModels
             RestoreBackupCommand = new AsyncRelayCommand(RestoreBackupAsync);
             RefreshCommand = new AsyncRelayCommand(LoadAsync);
             ResetDatabaseCommand = new AsyncRelayCommand(ResetDatabaseAsync);
+            SynchronizeCloudCommand = new AsyncRelayCommand(SynchronizeCloudAsync);
             _ = LoadAsync();
         }
 
@@ -61,6 +77,7 @@ namespace StockManufactura.Desktop.ViewModels
         public ICommand RestoreBackupCommand { get; }
         public ICommand RefreshCommand { get; }
         public ICommand ResetDatabaseCommand { get; }
+        public ICommand SynchronizeCloudCommand { get; }
 
         public bool CanResetDatabase => AuthSession.Current?.TienePermiso("USUARIOS_ADMIN") == true;
 
@@ -71,6 +88,13 @@ namespace StockManufactura.Desktop.ViewModels
             Automatic = settings.Automatico;
             KeepCopies = settings.MantenerUltimasCopias;
             IntervalMinutes = settings.IntervaloMinutos;
+            CloudFolder = settings.CarpetaNube;
+            CloudProvider = settings.ProveedorNube;
+            CloudEnabled = settings.GoogleDriveHabilitado;
+            CloudBidirectional = settings.SincronizacionBidireccional;
+            CloudSyncSummary = settings.UltimaSincronizacionNube is DateTime ultima
+                ? $"Última sincronización: {ultima.ToLocalTime():dd/MM/yyyy HH:mm}."
+                : "Sin sincronizaciones registradas.";
 
             var records = await _backupService.GetRecentBackupsAsync();
             Records.Clear();
@@ -87,8 +111,50 @@ namespace StockManufactura.Desktop.ViewModels
             settings.Automatico = Automatic;
             settings.MantenerUltimasCopias = KeepCopies;
             settings.IntervaloMinutos = IntervalMinutes;
+            settings.CarpetaNube = CloudFolder;
+            settings.ProveedorNube = CloudProvider;
+            settings.GoogleDriveHabilitado = CloudEnabled;
+            settings.SincronizacionBidireccional = CloudBidirectional;
             await _backupService.SaveSettingsAsync(settings);
             StatusMessage = "Configuracion guardada";
+        }
+
+        private async Task SynchronizeCloudAsync()
+        {
+            var actor = AuthSession.Current?.Usuario.Email ?? "desktop-user";
+
+            try
+            {
+                StatusMessage = "Sincronizando con la nube...";
+                var result = await _backupService.SynchronizeCloudAsync(actor);
+
+                if (!result.Ejecutada)
+                {
+                    StatusMessage = result.Mensaje;
+                    return;
+                }
+
+                StatusMessage = result.Mensaje;
+                CloudSyncSummary = $"Última sincronización: {result.FechaUtc.ToLocalTime():dd/MM/yyyy HH:mm}. " +
+                                   $"{result.TotalSubidos} subida(s), {result.TotalDescargados} descarga(s), {result.TotalConflictos} conflicto(s).";
+
+                if (result.TotalConflictos > 0)
+                {
+                    MessageBox.Show(
+                        "Se detectaron copias con el mismo nombre y distinto contenido. No se descartó ninguna: la copia de la nube se conservó bajo un nombre alternativo.\n\n"
+                        + string.Join("\n", result.Conflictos),
+                        "Conflictos de sincronización",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
+                }
+
+                await LoadAsync();
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "SynchronizeCloudAsync failed");
+                StatusMessage = $"Error al sincronizar con la nube: {ex.Message}";
+            }
         }
 
         private async Task ManualBackupAsync()

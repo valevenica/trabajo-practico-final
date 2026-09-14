@@ -7,6 +7,7 @@ using StockManufactura.Application.Mappings;
 using StockManufactura.Application.Services;
 using StockManufactura.Desktop.Infrastructure;
 using StockManufactura.Desktop.Services;
+using StockManufactura.Infrastructure.Cloud;
 using StockManufactura.Infrastructure.Db;
 using StockManufactura.Infrastructure.Import;
 using StockManufactura.Infrastructure.Monetary.Providers;
@@ -65,13 +66,14 @@ namespace StockManufactura.Desktop.Extensions
 
             services.AddSingleton<IExchangeRateProvider, DolarHoyProvider>();
             services.AddSingleton<IExchangeRateProvider, BluelyticsExchangeRateProvider>();
-            services.AddTransient<IGoogleDriveBackupSyncService, NoOpGoogleDriveBackupSyncService>();
+            services.AddTransient<ICloudBackupSyncService, FolderCloudBackupSyncService>();
 
             services.AddTransient<IAuditLogService, AuditLogService>();
             services.AddTransient<IBackupService, BackupService>();
             services.AddTransient<IAuthenticationService, AuthenticationService>();
             services.AddTransient<IProductCostService, ProductCostService>();
             services.AddTransient<ICostReportService, CostReportService>();
+            services.AddTransient<IBusinessIntelligenceService, BusinessIntelligenceService>();
             services.AddTransient<IMonetaryConfigurationService, MonetaryConfigurationService>();
             services.AddTransient<ISystemStatusService, SystemStatusService>();
             services.AddTransient<IShortageService, ShortageService>();

@@ -198,8 +198,32 @@ namespace StockManufactura.Desktop.ViewModels
         public SystemStatusSnapshot? Status
         {
             get => _status;
-            private set => SetProperty(ref _status, value);
+            private set
+            {
+                if (!SetProperty(ref _status, value))
+                {
+                    return;
+                }
+
+                // Las tarjetas del panel se apoyan en propiedades derivadas del snapshot:
+                // sin estas notificaciones quedarían mostrando el valor de la carga anterior.
+                foreach (var derived in StatusDerivedProperties)
+                {
+                    OnPropertyChanged(derived);
+                }
+            }
         }
+
+        private static readonly string[] StatusDerivedProperties =
+        {
+            nameof(LastBackupText), nameof(LastDriveSyncText), nameof(LastDollarUpdateText),
+            nameof(InternetText), nameof(DatabaseSizeText), nameof(ProductCountText),
+            nameof(ResourceCountText), nameof(CustomerCountText), nameof(VersionText),
+            nameof(DollarSourceText), nameof(BackupStatusText), nameof(CloudStatusText),
+            nameof(StatusToneText), nameof(BackupHealthy), nameof(SyncHealthy),
+            nameof(AuditEventCountText), nameof(AuditUserCountText), nameof(TraceabilityCoverageText),
+            nameof(TraceabilityChangesText), nameof(CloudSyncStatusText), nameof(LastAuditText)
+        };
 
         public string StatusMessage
         {
@@ -222,6 +246,22 @@ namespace StockManufactura.Desktop.ViewModels
         public string StatusToneText => Status?.StatusTone ?? "Neutral";
         public bool BackupHealthy => Status?.BackupEnabled == true;
         public bool SyncHealthy => Status?.DriveSyncEnabled == true;
+
+        // Indicadores de trazabilidad y auditoría del período seleccionado.
+        public string AuditEventCountText => Status?.AuditEventCount.ToString() ?? "0";
+        public string AuditUserCountText => Status is null
+            ? "Sin actividad"
+            : $"{Status.AuditUserCount} usuario(s) distintos";
+        public string TraceabilityCoverageText => Status is null
+            ? "0 %"
+            : $"{Status.TraceabilityCoveragePercent:0.#} %";
+        public string TraceabilityChangesText => Status is null
+            ? "0"
+            : (Status.PriceChangeCount + Status.CostRecalculationCount).ToString();
+        public string CloudSyncStatusText => Status?.CloudSyncStatus ?? "No configurado";
+        public string LastAuditText => Status?.LastAuditAt is DateTime auditAt
+            ? $"Último evento: {auditAt.ToLocalTime():dd/MM/yyyy HH:mm} · {Status!.LastAuditDescription}"
+            : "Sin eventos registrados";
 
         partial void OnSelectedOrderStatusFilterChanged(string value)
         {

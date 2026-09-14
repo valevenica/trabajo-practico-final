@@ -18,6 +18,10 @@ namespace StockManufactura.Infrastructure.Db.Configurations
             builder.Property(x => x.IntervaloMinutos).IsRequired();
             builder.Property(x => x.GoogleDriveHabilitado).IsRequired();
             builder.Property(x => x.GoogleDriveFolderId).HasMaxLength(250);
+            builder.Property(x => x.CarpetaNube).HasMaxLength(500).HasDefaultValue(string.Empty);
+            builder.Property(x => x.ProveedorNube).HasMaxLength(100).HasDefaultValue("Google Drive");
+            builder.Property(x => x.SincronizacionBidireccional).IsRequired().HasDefaultValue(true);
+            builder.Property(x => x.UltimaSincronizacionNube);
 
             builder.Property(x => x.CreatedAt).IsRequired();
             builder.Property(x => x.UpdatedAt).IsRequired();
