@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Collections.Generic;
@@ -21,8 +21,11 @@ namespace StockManufactura.Desktop.ViewModels
         private readonly IAuditLogService _auditLogService;
         private readonly NavigationService _navigationService;
         private readonly DashboardViewModel _dashboardViewModel;
+        private readonly IShortageService _shortageService;
+        private int _criticalStockCount;
 
         [ObservableProperty] private Producto? _selectedProduct;
+        [ObservableProperty] private ClientOption? _selectedClientOption = ClientOption.SinCliente;
         [ObservableProperty] private OrdenProduccion? _selectedOrder;
         [ObservableProperty] private string _cantidadPlaneada = "0";
         [ObservableProperty] private string _observaciones = string.Empty;
@@ -33,8 +36,10 @@ namespace StockManufactura.Desktop.ViewModels
             IUnitOfWork unitOfWork,
             IAuditLogService auditLogService,
             NavigationService navigationService,
-            DashboardViewModel dashboardViewModel)
+            DashboardViewModel dashboardViewModel,
+            IShortageService shortageService)
         {
+            _shortageService = shortageService ?? throw new ArgumentNullException(nameof(shortageService));
             _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
             _auditLogService = auditLogService ?? throw new ArgumentNullException(nameof(auditLogService));
             _navigationService = navigationService ?? throw new ArgumentNullException(nameof(navigationService));
@@ -42,6 +47,8 @@ namespace StockManufactura.Desktop.ViewModels
 
             Products = new ObservableCollection<Producto>();
             Orders = new ObservableCollection<OrdenProduccion>();
+            Clients = new ObservableCollection<Cliente>();
+            ClientOptions = new ObservableCollection<ClientOption> { ClientOption.SinCliente };
 
             LoadCommand = new AsyncRelayCommand(LoadAsync);
             CreateOrderCommand = new AsyncRelayCommand(CreateOrderAsync);
@@ -51,6 +58,7 @@ namespace StockManufactura.Desktop.ViewModels
             CompleteCommand = new AsyncRelayCommand(CompleteAsync);
             CancelCommand = new AsyncRelayCommand(CancelAsync);
             DeleteOrderCommand = new AsyncRelayCommand(DeleteOrderAsync);
+            AssignClientCommand = new AsyncRelayCommand(AssignClientAsync);
             BackCommand = new RelayCommand(GoBack);
 
             _ = LoadAsync();
@@ -58,6 +66,12 @@ namespace StockManufactura.Desktop.ViewModels
 
         public ObservableCollection<Producto> Products { get; }
         public ObservableCollection<OrdenProduccion> Orders { get; }
+
+        /// <summary>Todos los clientes, incluidos los inactivos, para mostrar el nombre en el listado de pedidos.</summary>
+        public ObservableCollection<Cliente> Clients { get; }
+
+        /// <summary>Consumidor final más los clientes activos, para elegir el cliente de un pedido.</summary>
+        public ObservableCollection<ClientOption> ClientOptions { get; }
 
         public ICommand LoadCommand { get; }
         public ICommand CreateOrderCommand { get; }
@@ -67,15 +81,19 @@ namespace StockManufactura.Desktop.ViewModels
         public ICommand CompleteCommand { get; }
         public ICommand CancelCommand { get; }
         public ICommand DeleteOrderCommand { get; }
+        public ICommand AssignClientCommand { get; }
         public ICommand BackCommand { get; }
 
         public bool CanManageOrders => AuthSession.Current?.TienePermiso("PRODUCTOS_EDITAR") == true;
         public string CurrentUserName => AuthSession.Current?.Usuario?.Nombre ?? "Administrador";
-        public string FactoryConnectionStatus => "CONECTADO";
-        public int CriticalStockCount => 7;
+        /// <summary>Productos e insumos en faltante, con el mismo criterio que el panel principal y la pantalla de faltantes.</summary>
+        public int CriticalStockCount => _criticalStockCount;
         public int OrdersInProcessCount => Orders.Count(x => x.Estado == EstadoOrdenProduccion.EnProceso);
         public int OrdersCompletedCount => Orders.Count(x => x.Estado == EstadoOrdenProduccion.Finalizada);
-        public decimal EstimatedOrdersCost => Orders.Sum(order =>
+        /// <summary>Costo estimado de las órdenes creadas en el mes en curso, sin las canceladas.</summary>
+        public decimal EstimatedOrdersCost => Orders
+            .Where(order => order.Estado != EstadoOrdenProduccion.Cancelada && IsCurrentMonth(order.CreatedAt))
+            .Sum(order =>
         {
             var product = Products.FirstOrDefault(x => x.Id == order.ProductoId);
             return (product?.CostoFabricacionActual ?? 0m) * order.CantidadPlaneada;
@@ -130,6 +148,7 @@ namespace StockManufactura.Desktop.ViewModels
             }
 
             SelectedProduct = Products.FirstOrDefault(x => x.Id == value.ProductoId);
+            SelectedClientOption = GetClientOption(value.ClienteId);
             CantidadPlaneada = value.CantidadPlaneada.ToString("0.00", CultureInfo.InvariantCulture);
             Observaciones = value.Observaciones;
             OnPropertyChanged(nameof(EstadoActual));
@@ -139,12 +158,24 @@ namespace StockManufactura.Desktop.ViewModels
         {
             try
             {
-                var (products, orders) = await Task.Run(async () =>
+                var (products, orders, clients) = await Task.Run(async () =>
                 {
                     var p = await _unitOfWork.Productos.ListAsync();
                     var o = await _unitOfWork.OrdenesProduccion.ListByCreatedDescAsync();
-                    return (p, o);
+                    var c = await _unitOfWork.Clientes.ListAsync();
+                    return (p, o, c);
                 });
+                _criticalStockCount = (await _shortageService.GetShortagesAsync()).TotalCount;
+
+                var selectedClientId = SelectedClientOption?.Id;
+                Clients.Clear();
+                foreach (var client in clients.OrderBy(x => x.Nombre))
+                    Clients.Add(client);
+                ClientOptions.Clear();
+                ClientOptions.Add(ClientOption.SinCliente);
+                foreach (var client in Clients.Where(x => x.Activo))
+                    ClientOptions.Add(new ClientOption(client.Id, client.Nombre));
+                SelectedClientOption = GetClientOption(selectedClientId);
 
                 Products.Clear();
                 foreach (var product in products.Where(x => x.Activo).OrderBy(x => x.Nombre))
@@ -187,7 +218,7 @@ namespace StockManufactura.Desktop.ViewModels
             }
 
             var codigo = string.IsNullOrWhiteSpace(CodigoInput) ? GenerateCode() : CodigoInput.Trim().ToUpperInvariant();
-            var order = new OrdenProduccion(codigo, SelectedProduct.Id, planned, Observaciones.Trim());
+            var order = new OrdenProduccion(codigo, SelectedProduct.Id, planned, Observaciones.Trim(), SelectedClientOption?.Id);
             await _unitOfWork.OrdenesProduccion.AddAsync(order);
             await _unitOfWork.SaveChangesAsync();
             await RegisterAuditAsync("Crear", order, "Alta de orden de producción.");
@@ -299,6 +330,59 @@ namespace StockManufactura.Desktop.ViewModels
 
             var reason = string.IsNullOrWhiteSpace(Observaciones) ? "Cancelada desde módulo de producción." : Observaciones;
             await TryTransitionAsync(() => order.Cancelar(reason), "Cancelada", order, "Orden cancelada.");
+        }
+
+        private async Task AssignClientAsync()
+        {
+            if (!CanManageOrders)
+            {
+                StatusMessage = "No tiene permisos para gestionar órdenes.";
+                return;
+            }
+
+            if (SelectedOrder is null)
+            {
+                StatusMessage = "Seleccione el pedido al que quiere asignar el cliente.";
+                return;
+            }
+
+            var order = SelectedOrder;
+            var clientId = SelectedClientOption?.Id;
+            try
+            {
+                order.AsignarCliente(clientId);
+                _unitOfWork.OrdenesProduccion.Update(order);
+                await _unitOfWork.SaveChangesAsync();
+                var nombre = SelectedClientOption?.Nombre ?? ClientOption.ConsumidorFinal;
+                await RegisterAuditAsync("AsignarCliente", order, $"Cliente del pedido: «{nombre}».");
+                await LoadAsync();
+                SelectedOrder = Orders.FirstOrDefault(x => x.Id == order.Id);
+                StatusMessage = $"Pedido {order.Codigo} asignado al cliente «{nombre}».";
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = ex.Message;
+            }
+        }
+
+        private ClientOption GetClientOption(Guid? clientId)
+        {
+            if (clientId is null)
+            {
+                return ClientOption.SinCliente;
+            }
+
+            var option = ClientOptions.FirstOrDefault(x => x.Id == clientId);
+            if (option is not null)
+            {
+                return option;
+            }
+
+            // Cliente desactivado despues de crear el pedido: se muestra igual, marcado, para no ocultar el dato.
+            var inactive = Clients.FirstOrDefault(x => x.Id == clientId);
+            option = new ClientOption(clientId, inactive is null ? "(cliente no disponible)" : inactive.Nombre + " (inactivo)");
+            ClientOptions.Add(option);
+            return option;
         }
 
         private async Task DeleteOrderAsync()

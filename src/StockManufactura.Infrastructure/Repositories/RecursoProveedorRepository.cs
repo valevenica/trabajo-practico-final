@@ -20,8 +20,9 @@ namespace StockManufactura.Infrastructure.Repositories
 
         public async Task<IReadOnlyList<RecursoProveedor>> ListByRecursoIdAsync(Guid recursoId)
         {
+            // Con seguimiento: la pantalla de insumos modifica y quita estos vínculos en el mismo contexto en que los
+            // agregó. Sin seguimiento devolvía copias que chocaban con la instancia ya registrada al actualizar o borrar.
             var items = await _context.RecursoProveedores
-                .AsNoTracking()
                 .Include(x => x.Proveedor)
                 .Where(x => x.RecursoId == recursoId)
                 .ToListAsync();

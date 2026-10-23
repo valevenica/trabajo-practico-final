@@ -23,14 +23,18 @@ namespace StockManufactura.Desktop.ViewModels
         private readonly ISystemStatusService _systemStatusService;
         private readonly IUserManagementService _userManagementService;
         private readonly IShortageService _shortageService;
+        private readonly IPasswordRecoveryService _passwordRecoveryService;
 
         private string _usuario = string.Empty;
         private string _password = string.Empty;
         private string _newPassword = string.Empty;
         private string _confirmNewPassword = string.Empty;
         private string _statusMessage = string.Empty;
-        private bool _requiresPasswordChange;
         private bool _showPassword;
+        private bool _isRecoveryMode;
+        private bool _isRecoveryCodeSent;
+        private string _recoveryEmail = string.Empty;
+        private string _recoveryCode = string.Empty;
         private Usuario? _pendingAuthenticatedUser;
 
         public LoginViewModel(
@@ -44,7 +48,8 @@ namespace StockManufactura.Desktop.ViewModels
             IProductCostService productCostService,
             ISystemStatusService systemStatusService,
             IUserManagementService userManagementService,
-            IShortageService shortageService)
+            IShortageService shortageService,
+            IPasswordRecoveryService passwordRecoveryService)
         {
             _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
             _navigationService = navigationService ?? throw new ArgumentNullException(nameof(navigationService));
@@ -57,13 +62,17 @@ namespace StockManufactura.Desktop.ViewModels
             _systemStatusService = systemStatusService ?? throw new ArgumentNullException(nameof(systemStatusService));
             _userManagementService = userManagementService ?? throw new ArgumentNullException(nameof(userManagementService));
             _shortageService = shortageService ?? throw new ArgumentNullException(nameof(shortageService));
+            _passwordRecoveryService = passwordRecoveryService ?? throw new ArgumentNullException(nameof(passwordRecoveryService));
             LoginCommand = new AsyncRelayCommand(ExecuteLoginAsync);
-            ChangePasswordCommand = new AsyncRelayCommand(ExecuteChangePasswordAsync);
-            ToggleShowPasswordCommand = new RelayCommand(() => 
+            ToggleShowPasswordCommand = new RelayCommand(() =>
             {
                 ShowPassword = !ShowPassword;
                 OnPropertyChanged(nameof(HidePassword));
             });
+            ShowRecoveryCommand = new RelayCommand(ShowRecovery);
+            BackToLoginCommand = new RelayCommand(BackToLogin);
+            SendRecoveryCodeCommand = new AsyncRelayCommand(SendRecoveryCodeAsync);
+            ResetWithCodeCommand = new AsyncRelayCommand(ResetWithCodeAsync);
         }
 
         public string Usuario
@@ -96,12 +105,6 @@ namespace StockManufactura.Desktop.ViewModels
             set => SetProperty(ref _confirmNewPassword, value);
         }
 
-        public bool RequiresPasswordChange
-        {
-            get => _requiresPasswordChange;
-            set => SetProperty(ref _requiresPasswordChange, value);
-        }
-
         public bool ShowPassword
         {
             get => _showPassword;
@@ -110,9 +113,49 @@ namespace StockManufactura.Desktop.ViewModels
 
         public bool HidePassword => !ShowPassword;
 
+        public bool IsRecoveryMode
+        {
+            get => _isRecoveryMode;
+            set
+            {
+                if (SetProperty(ref _isRecoveryMode, value))
+                {
+                    OnPropertyChanged(nameof(IsLoginMode));
+                }
+            }
+        }
+
+        public bool IsLoginMode => !IsRecoveryMode;
+
+        public bool IsRecoveryCodeSent
+        {
+            get => _isRecoveryCodeSent;
+            set => SetProperty(ref _isRecoveryCodeSent, value);
+        }
+
+        public string RecoveryEmail
+        {
+            get => _recoveryEmail;
+            set => SetProperty(ref _recoveryEmail, value);
+        }
+
+        public string RecoveryCode
+        {
+            get => _recoveryCode;
+            set => SetProperty(ref _recoveryCode, value);
+        }
+
         public ICommand LoginCommand { get; }
-        public ICommand ChangePasswordCommand { get; }
         public ICommand ToggleShowPasswordCommand { get; }
+        public ICommand ShowRecoveryCommand { get; }
+        public ICommand BackToLoginCommand { get; }
+        public ICommand SendRecoveryCodeCommand { get; }
+        public ICommand ResetWithCodeCommand { get; }
+
+        /// <summary>
+        /// La vista limpia sus PasswordBox cuando el ViewModel lo pide (no se pueden enlazar por seguridad).
+        /// </summary>
+        public event EventHandler? RecoveryPasswordsCleared;
 
         private async Task ExecuteLoginAsync()
         {
@@ -125,7 +168,9 @@ namespace StockManufactura.Desktop.ViewModels
             var authResult = await _authenticationService.AuthenticateDetailedAsync(Usuario, Password);
             if (!authResult.IsSuccess || authResult.Usuario is null)
             {
-                StatusMessage = authResult.Message;
+                StatusMessage = authResult.IsLockedOut
+                    ? $"{authResult.Message} Puede recuperar el acceso con «¿Olvidó su contraseña?» o pedirle al administrador una contraseña temporal."
+                    : authResult.Message;
                 await RegisterAuditAsync("LoginFallido", authResult.Message);
                 return;
             }
@@ -133,20 +178,57 @@ namespace StockManufactura.Desktop.ViewModels
             _pendingAuthenticatedUser = authResult.Usuario;
             if (authResult.RequiresPasswordChange)
             {
-                RequiresPasswordChange = true;
-                StatusMessage = "Debe cambiar su contraseña para continuar.";
                 await RegisterAuditAsync("LoginPendienteCambioPassword", "Ingreso válido con cambio de contraseña pendiente.");
-                return;
             }
 
             await CompleteLoginAsync(authResult.Usuario);
         }
 
-        private async Task ExecuteChangePasswordAsync()
+        private void ShowRecovery()
         {
-            if (_pendingAuthenticatedUser is null)
+            IsRecoveryMode = true;
+            IsRecoveryCodeSent = false;
+            RecoveryEmail = string.Empty;
+            RecoveryCode = string.Empty;
+            ClearRecoveryPasswords();
+            StatusMessage = "Ingrese el correo de su perfil para recibir un código.";
+        }
+
+        private void BackToLogin()
+        {
+            IsRecoveryMode = false;
+            IsRecoveryCodeSent = false;
+            RecoveryCode = string.Empty;
+            ClearRecoveryPasswords();
+            StatusMessage = string.Empty;
+        }
+
+        private async Task SendRecoveryCodeAsync()
+        {
+            if (string.IsNullOrWhiteSpace(RecoveryEmail) || !RecoveryEmail.Contains('@'))
             {
-                StatusMessage = "No hay usuario autenticado para cambiar contraseña.";
+                StatusMessage = "Ingrese el correo de su perfil.";
+                return;
+            }
+
+            try
+            {
+                StatusMessage = "Enviando código...";
+                await _passwordRecoveryService.RequestCodeAsync(RecoveryEmail.Trim());
+                IsRecoveryCodeSent = true;
+                StatusMessage = "Si el correo corresponde a un usuario activo, recibirá un código de 6 dígitos válido por 15 minutos. Revise también la carpeta de correo no deseado.";
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = ex.Message;
+            }
+        }
+
+        private async Task ResetWithCodeAsync()
+        {
+            if (string.IsNullOrWhiteSpace(RecoveryCode))
+            {
+                StatusMessage = "Ingrese el código recibido.";
                 return;
             }
 
@@ -164,25 +246,21 @@ namespace StockManufactura.Desktop.ViewModels
 
             try
             {
-                await _userManagementService.ChangePasswordAsync(_pendingAuthenticatedUser.Id, Password, NewPassword, _pendingAuthenticatedUser.Email);
-                _pendingAuthenticatedUser = await _authenticationService.AuthenticateAsync(Usuario, NewPassword);
-                if (_pendingAuthenticatedUser is null)
-                {
-                    StatusMessage = "No se pudo revalidar la sesión después del cambio de contraseña.";
-                    return;
-                }
-
-                Password = NewPassword;
-                NewPassword = string.Empty;
-                ConfirmNewPassword = string.Empty;
-                RequiresPasswordChange = false;
-                await RegisterAuditAsync("CambioPasswordObligatorio", "El usuario cambió su contraseña obligatoria.");
-                await CompleteLoginAsync(_pendingAuthenticatedUser);
+                Usuario = await _passwordRecoveryService.ResetWithCodeAsync(RecoveryEmail.Trim(), RecoveryCode, NewPassword);
+                BackToLogin();
+                StatusMessage = "Contraseña restablecida. Ya puede ingresar con la nueva contraseña.";
             }
             catch (Exception ex)
             {
                 StatusMessage = ex.Message;
             }
+        }
+
+        private void ClearRecoveryPasswords()
+        {
+            NewPassword = string.Empty;
+            ConfirmNewPassword = string.Empty;
+            RecoveryPasswordsCleared?.Invoke(this, EventArgs.Empty);
         }
 
         private async Task CompleteLoginAsync(Usuario usuario)
@@ -191,7 +269,8 @@ namespace StockManufactura.Desktop.ViewModels
             AuthSession.Current = new AuthSession(usuarioAutenticado);
             StatusMessage = "Ingreso exitoso.";
             await RegisterAuditAsync("LoginExitoso", "Ingreso exitoso al sistema.");
-            _navigationService.NavigateTo(new DashboardViewModel(
+
+            var dashboard = new DashboardViewModel(
                 usuarioAutenticado,
                 _navigationService,
                 _resourcePricingService,
@@ -202,7 +281,12 @@ namespace StockManufactura.Desktop.ViewModels
                 _productCostService,
                 _systemStatusService,
                 _userManagementService,
-                _shortageService));
+                _shortageService,
+                _passwordRecoveryService);
+
+            // Siempre se ingresa a la pantalla principal. Si el cambio de contraseña está pendiente, el panel
+            // lo avisa con acceso directo a "Mi cuenta" y los demás módulos quedan bloqueados hasta completarlo.
+            _navigationService.NavigateTo(dashboard);
         }
 
         private Task RegisterAuditAsync(string action, string description)

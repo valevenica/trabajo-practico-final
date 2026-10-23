@@ -15,13 +15,10 @@ namespace StockManufactura.Desktop.Infrastructure
 
         public bool TienePermiso(string permiso)
         {
+            // Solo el rol decide los permisos: el nombre o el correo del usuario no otorgan privilegios,
+            // porque cualquier administrador puede crear un usuario llamado "Admin".
             var roleName = Usuario.Rol?.Nombre?.Trim();
-            var userName = Usuario.Nombre?.Trim();
-            var email = Usuario.Email?.Trim();
-
-            if (string.Equals(roleName, "Administrador", System.StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(userName, "Admin", System.StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(email, "admin@test.com", System.StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(roleName, DatabaseSeeder.AdminRoleName, System.StringComparison.OrdinalIgnoreCase))
             {
                 return true;
             }

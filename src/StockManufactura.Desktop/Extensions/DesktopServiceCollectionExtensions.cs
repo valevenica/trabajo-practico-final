@@ -1,7 +1,8 @@
-using System;
+﻿using System;
 using System.IO;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using StockManufactura.Application.Email;
 using StockManufactura.Application.Interfaces;
 using StockManufactura.Application.Mappings;
 using StockManufactura.Application.Services;
@@ -9,7 +10,9 @@ using StockManufactura.Desktop.Infrastructure;
 using StockManufactura.Desktop.Services;
 using StockManufactura.Infrastructure.Cloud;
 using StockManufactura.Infrastructure.Db;
+using StockManufactura.Infrastructure.Email;
 using StockManufactura.Infrastructure.Import;
+using StockManufactura.Infrastructure.Backups;
 using StockManufactura.Infrastructure.Monetary.Providers;
 using StockManufactura.Infrastructure.Repositories;
 using StockManufactura.Desktop.ViewModels;
@@ -47,6 +50,7 @@ namespace StockManufactura.Desktop.Extensions
             services.AddTransient<IRolRepository, RolRepository>();
             services.AddTransient<IUsuarioRepository, UsuarioRepository>();
             services.AddTransient<IProveedorRepository, ProveedorRepository>();
+            services.AddTransient<IClienteRepository, ClienteRepository>();
             services.AddTransient<IRecursoRepository, RecursoRepository>();
             services.AddTransient<IExchangeRateRepository, ExchangeRateRepository>();
             services.AddTransient<IResourcePriceHistoryRepository, ResourcePriceHistoryRepository>();
@@ -70,6 +74,7 @@ namespace StockManufactura.Desktop.Extensions
 
             services.AddTransient<IAuditLogService, AuditLogService>();
             services.AddTransient<IBackupService, BackupService>();
+            services.AddSingleton<IDatabaseSnapshotService, SqliteDatabaseSnapshotService>();
             services.AddTransient<IAuthenticationService, AuthenticationService>();
             services.AddTransient<IProductCostService, ProductCostService>();
             services.AddTransient<ICostReportService, CostReportService>();
@@ -81,6 +86,10 @@ namespace StockManufactura.Desktop.Extensions
             services.AddTransient<IStockIntakeService, StockIntakeService>();
             services.AddTransient<IResourcePriceImportService, ClosedXmlResourcePriceImportService>();
             services.AddTransient<IUserManagementService, UserManagementService>();
+            services.AddSingleton<PasswordRecoveryCodeStore>();
+            services.AddSingleton<IEmailSettingsStore, JsonEmailSettingsStore>();
+            services.AddTransient<IEmailSender, SmtpEmailSender>();
+            services.AddTransient<IPasswordRecoveryService, PasswordRecoveryService>();
             services.AddTransient<DesktopStartupHealthCheck>();
             return services;
         }

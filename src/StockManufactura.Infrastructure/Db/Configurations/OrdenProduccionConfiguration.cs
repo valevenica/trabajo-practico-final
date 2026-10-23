@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using StockManufactura.Domain.Entities;
 
@@ -29,6 +29,15 @@ namespace StockManufactura.Infrastructure.Db.Configurations
             builder.HasOne<Producto>()
                 .WithMany()
                 .HasForeignKey(x => x.ProductoId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Cliente opcional: sin cliente, el pedido es una venta a consumidor final. Un cliente con pedidos no se
+            // elimina, se desactiva.
+            builder.HasIndex(x => x.ClienteId);
+            builder.HasOne<Cliente>()
+                .WithMany()
+                .HasForeignKey(x => x.ClienteId)
+                .IsRequired(false)
                 .OnDelete(DeleteBehavior.Restrict);
         }
     }

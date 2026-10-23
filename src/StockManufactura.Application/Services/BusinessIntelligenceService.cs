@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -14,6 +14,16 @@ namespace StockManufactura.Application.Services
     {
         private const int TopItems = 8;
         private const int MesesEvolucion = 6;
+
+        private static string EtiquetaEstado(EstadoOrdenProduccion estado) => estado switch
+        {
+            EstadoOrdenProduccion.Borrador => "Borrador",
+            EstadoOrdenProduccion.Planificada => "Planificada",
+            EstadoOrdenProduccion.EnProceso => "En proceso",
+            EstadoOrdenProduccion.Finalizada => "Finalizada",
+            EstadoOrdenProduccion.Cancelada => "Cancelada",
+            _ => estado.ToString()
+        };
 
         private static readonly CultureInfo Cultura = CultureInfo.GetCultureInfo("es-AR");
 
@@ -57,7 +67,7 @@ namespace StockManufactura.Application.Services
                 InsumosActivos = insumosActivos.Length,
                 CostoPromedioProducto = productosActivos.Length == 0 ? 0m : productosActivos.Average(p => p.CostoFabricacionActual),
                 MargenPromedio = productosActivos.Length == 0 ? 0m : productosActivos.Average(p => p.MargenActual),
-                ValorInventarioInsumos = insumosActivos.Sum(r => r.StockActual * PrecioEnPesos(r, monetario.CurrentRate)),
+                ValorInventarioInsumos = insumosActivos.Sum(r => r.StockActual * r.PrecioEnPesos(monetario.CurrentRate)),
                 ValorInventarioProductos = productosActivos.Sum(p => p.StockActual * p.CostoFabricacionActual),
                 OrdenesFinalizadas = ordenesPeriodo.Count(o => o.Estado == EstadoOrdenProduccion.Finalizada),
                 OrdenesEnProceso = ordenes.Count(o => o.Estado == EstadoOrdenProduccion.EnProceso),
@@ -81,10 +91,12 @@ namespace StockManufactura.Application.Services
 
                 MayoresAumentos = Normalizar(CalcularAumentos(costHistoryPeriodo, productosPorId)),
 
+                // Distinct: el enum tiene alias (Pendiente = Borrador, Completada = Finalizada) que, sin él, duplican barras.
                 OrdenesPorEstado = Normalizar(Enum.GetValues<EstadoOrdenProduccion>()
+                    .Distinct()
                     .Select(estado => new ChartPoint
                     {
-                        Etiqueta = estado.ToString(),
+                        Etiqueta = EtiquetaEstado(estado),
                         Valor = ordenes.Count(o => o.Estado == estado),
                         ValorFormateado = ordenes.Count(o => o.Estado == estado).ToString(Cultura)
                     })
@@ -109,7 +121,7 @@ namespace StockManufactura.Application.Services
                     .Select(r => new
                     {
                         Recurso = r,
-                        Valor = r.StockActual * PrecioEnPesos(r, monetario.CurrentRate)
+                        Valor = r.StockActual * r.PrecioEnPesos(monetario.CurrentRate)
                     })
                     .Where(x => x.Valor > 0)
                     .OrderByDescending(x => x.Valor)
@@ -129,11 +141,6 @@ namespace StockManufactura.Application.Services
                     costHistory,
                     monetario.LastUpdate)
             };
-        }
-
-        private static decimal PrecioEnPesos(Recurso recurso, decimal cotizacion)
-        {
-            return recurso.Moneda == Moneda.USD ? recurso.Precio * cotizacion : recurso.Precio;
         }
 
         private static decimal CalcularVariacionPromedio(IReadOnlyCollection<ProductCostHistory> historial)

@@ -194,6 +194,82 @@ namespace StockManufactura.Infrastructure.Migrations
                     b.ToTable("BackupSettings", (string)null);
                 });
 
+            modelBuilder.Entity("StockManufactura.Domain.Entities.Cliente", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("Activo")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(true);
+
+                    b.Property<string>("Ciudad")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Direccion")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Documento")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("FechaAlta")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(false);
+
+                    b.Property<string>("Nombre")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Observaciones")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Provincia")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Telefono")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Documento")
+                        .IsUnique()
+                        .HasFilter("\"Documento\" <> ''");
+
+                    b.HasIndex("Nombre");
+
+                    b.ToTable("Clientes", (string)null);
+                });
+
             modelBuilder.Entity("StockManufactura.Domain.Entities.ExchangeRate", b =>
                 {
                     b.Property<Guid>("Id")
@@ -250,6 +326,9 @@ namespace StockManufactura.Infrastructure.Migrations
                     b.Property<decimal>("CantidadProducida")
                         .HasColumnType("decimal(18,4)");
 
+                    b.Property<Guid?>("ClienteId")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Codigo")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -284,6 +363,8 @@ namespace StockManufactura.Infrastructure.Migrations
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ClienteId");
 
                     b.HasIndex("Codigo")
                         .IsUnique();
@@ -952,7 +1033,8 @@ namespace StockManufactura.Infrastructure.Migrations
                     b.Property<string>("Nombre")
                         .IsRequired()
                         .HasMaxLength(150)
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .UseCollation("NOCASE");
 
                     b.Property<string>("PasswordHash")
                         .IsRequired()
@@ -978,6 +1060,9 @@ namespace StockManufactura.Infrastructure.Migrations
                     b.HasIndex("Email")
                         .IsUnique();
 
+                    b.HasIndex("Nombre")
+                        .IsUnique();
+
                     b.HasIndex("RolId");
 
                     b.ToTable("Usuarios", (string)null);
@@ -985,6 +1070,11 @@ namespace StockManufactura.Infrastructure.Migrations
 
             modelBuilder.Entity("StockManufactura.Domain.Entities.OrdenProduccion", b =>
                 {
+                    b.HasOne("StockManufactura.Domain.Entities.Cliente", null)
+                        .WithMany()
+                        .HasForeignKey("ClienteId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("StockManufactura.Domain.Entities.Producto", null)
                         .WithMany()
                         .HasForeignKey("ProductoId")

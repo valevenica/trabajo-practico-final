@@ -18,14 +18,15 @@ namespace StockManufactura.Application.Services
             _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
         }
 
-        public async Task<AuthenticationResult> AuthenticateDetailedAsync(string userOrEmail, string password, CancellationToken cancellationToken = default)
+        public async Task<AuthenticationResult> AuthenticateDetailedAsync(string nombreUsuario, string password, CancellationToken cancellationToken = default)
         {
-            if (string.IsNullOrWhiteSpace(userOrEmail) || string.IsNullOrWhiteSpace(password))
+            if (string.IsNullOrWhiteSpace(nombreUsuario) || string.IsNullOrWhiteSpace(password))
             {
                 return AuthenticationResult.Failed("Usuario y contraseña son requeridos.");
             }
 
-            var usuario = await _unitOfWork.Usuarios.GetByEmailOrNombreAsync(userOrEmail, includeRole: true);
+            // Se ingresa con el nombre de usuario, que es único; el correo solo se usa para la recuperación.
+            var usuario = await _unitOfWork.Usuarios.GetByNombreAsync(nombreUsuario, includeRole: true);
             if (usuario is null || !usuario.EsActivo)
             {
                 return AuthenticationResult.Failed("Credenciales inválidas.");
@@ -63,9 +64,9 @@ namespace StockManufactura.Application.Services
             };
         }
 
-        public async Task<Usuario?> AuthenticateAsync(string userOrEmail, string password, CancellationToken cancellationToken = default)
+        public async Task<Usuario?> AuthenticateAsync(string nombreUsuario, string password, CancellationToken cancellationToken = default)
         {
-            var result = await AuthenticateDetailedAsync(userOrEmail, password, cancellationToken);
+            var result = await AuthenticateDetailedAsync(nombreUsuario, password, cancellationToken);
             return result.IsSuccess ? result.Usuario : null;
         }
 

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Threading.Tasks;
@@ -159,7 +159,7 @@ namespace StockManufactura.Desktop.ViewModels
 
         private async Task ManualBackupAsync()
         {
-            var record = await _backupService.CreateManualBackupAsync("desktop-user");
+            var record = await _backupService.CreateManualBackupAsync(AuthSession.Current?.Usuario?.Email ?? "desktop-user");
             Records.Insert(0, record);
             StatusMessage = "Backup manual completado";
         }
@@ -172,7 +172,7 @@ namespace StockManufactura.Desktop.ViewModels
                 return;
             }
 
-            var record = await _backupService.RestoreBackupAsync(RestoreFilePath, "desktop-user");
+            var record = await _backupService.RestoreBackupAsync(RestoreFilePath, AuthSession.Current?.Usuario?.Email ?? "desktop-user");
             Records.Insert(0, record);
             StatusMessage = "Restauración completada";
         }

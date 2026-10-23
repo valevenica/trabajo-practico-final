@@ -49,7 +49,7 @@ namespace StockManufactura.Desktop.Infrastructure
 
             report.RolesCount = _dbContext.Roles.Count();
             report.UsersCount = _dbContext.Usuarios.Count();
-            report.AdminUserExists = _dbContext.Usuarios.Any(u => u.Email == DatabaseSeeder.AdminEmail);
+            report.AdminUserExists = DatabaseSeeder.AdminUserExists(_dbContext);
 
             return report;
         }

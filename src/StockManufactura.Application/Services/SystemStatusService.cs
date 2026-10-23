@@ -75,10 +75,27 @@ namespace StockManufactura.Application.Services
                 .Sum(history => history.CostoNuevo);
 
             var productsById = products.ToDictionary(product => product.Id, product => product);
-            var monthlySalesTotal = orders
-                .Where(order => order.Estado == EstadoOrdenProduccion.Finalizada)
-                .Where(order => IsInPeriod(order.FechaFin ?? order.CreatedAt, year, month))
-                .Sum(order => (productsById.TryGetValue(order.ProductoId, out var product) ? product.PrecioSugeridoActual : 0m) * order.CantidadPlaneada);
+            var finishedInPeriod = FinishedIn(orders, year, month);
+            var monthlySalesTotal = SalesOf(finishedInPeriod, productsById);
+            var monthlySalesCost = finishedInPeriod
+                .Sum(order => (productsById.TryGetValue(order.ProductoId, out var product) ? product.CostoFabricacionActual : 0m) * order.CantidadPlaneada);
+
+            decimal? previousSales = null;
+            decimal? salesVariation = null;
+            if (year is not null && month is not null)
+            {
+                var previous = new DateTime(year.Value, month.Value, 1).AddMonths(-1);
+                previousSales = SalesOf(FinishedIn(orders, previous.Year, previous.Month), productsById);
+                if (previousSales > 0)
+                {
+                    salesVariation = Math.Round((monthlySalesTotal - previousSales.Value) * 100m / previousSales.Value, 1);
+                }
+            }
+
+            var ordersInPeriodCount = orders.Count(order =>
+                order.Estado != EstadoOrdenProduccion.Cancelada && IsInPeriod(order.CreatedAt, year, month));
+            var openOrdersCount = orders.Count(order =>
+                order.Estado is EstadoOrdenProduccion.Borrador or EstadoOrdenProduccion.Planificada or EstadoOrdenProduccion.EnProceso);
 
             var auditsInPeriod = auditLogs.Where(log => IsInPeriod(log.FechaHora, year, month)).ToArray();
             var lastAudit = auditLogs.OrderByDescending(log => log.FechaHora).FirstOrDefault();
@@ -97,6 +114,14 @@ namespace StockManufactura.Application.Services
                 OrdersInProcessCount = ordersInProcessCount,
                 MonthlyCostTotal = monthlyCostTotal,
                 MonthlySalesTotal = monthlySalesTotal,
+                MonthlySalesCost = monthlySalesCost,
+                OrdersInPeriodCount = ordersInPeriodCount,
+                OpenOrdersCount = openOrdersCount,
+                FinishedOrdersInPeriodCount = finishedInPeriod.Length,
+                AverageTicket = finishedInPeriod.Length == 0 ? 0m : Math.Round(monthlySalesTotal / finishedInPeriod.Length, 2),
+                GrossMarginPercent = monthlySalesTotal > 0 ? Math.Round((monthlySalesTotal - monthlySalesCost) * 100m / monthlySalesTotal, 1) : null,
+                PreviousPeriodSalesTotal = previousSales,
+                SalesVariationPercent = salesVariation,
                 LastBackupAt = latestBackup?.FechaHora,
                 LastDollarUpdateAt = monetaryState?.LastUpdate,
                 LastDollarSource = monetaryState?.Source ?? string.Empty,
@@ -120,6 +145,15 @@ namespace StockManufactura.Application.Services
                 TraceabilityCoveragePercent = traceabilityCoverage
             };
         }
+
+        private static OrdenProduccion[] FinishedIn(IEnumerable<OrdenProduccion> orders, int? year, int? month)
+            => orders
+                .Where(order => order.Estado == EstadoOrdenProduccion.Finalizada)
+                .Where(order => IsInPeriod(order.FechaFin ?? order.CreatedAt, year, month))
+                .ToArray();
+
+        private static decimal SalesOf(IEnumerable<OrdenProduccion> finished, IReadOnlyDictionary<Guid, Producto> productsById)
+            => finished.Sum(order => (productsById.TryGetValue(order.ProductoId, out var product) ? product.PrecioSugeridoActual : 0m) * order.CantidadPlaneada);
 
         private static bool IsInPeriod(DateTime value, int? year, int? month)
         {

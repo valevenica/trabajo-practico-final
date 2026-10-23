@@ -27,46 +27,66 @@
 
                 <Border Style="{StaticResource CardBorderStyle}">
                     <StackPanel Orientation="Vertical" Margin="0 2 0 0">
-                        <TextBlock Text="Usuario" Margin="0 0 0 4" />
-                        <TextBox Text="{Binding Usuario, UpdateSourceTrigger=PropertyChanged}" Height="32" KeyDown="OnLoginEnterPressed" />
+                        <!-- Ingreso -->
+                        <StackPanel Visibility="{Binding IsLoginMode, Converter={StaticResource BoolToVisibilityConverter}}">
+                            <TextBlock Text="Usuario" Margin="0 0 0 4" />
+                            <TextBox Text="{Binding Usuario, UpdateSourceTrigger=PropertyChanged}" Height="32" KeyDown="OnLoginEnterPressed" />
 
-                        <TextBlock Text="Contraseña" Margin="0 16 0 4" />
-                        <Grid Height="32">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="36" />
-                            </Grid.ColumnDefinitions>
-                            
-                            <!-- PasswordBox visible cuando HidePassword=true (ShowPassword=false) -->
-                            <PasswordBox x:Name="PasswordBox" PasswordChanged="OnPasswordChanged" KeyDown="OnLoginEnterPressed" Grid.Column="0" Visibility="{Binding HidePassword, Converter={StaticResource BoolToVisibilityConverter}}" />
-                            <!-- TextBox visible cuando ShowPassword=true -->
-                            <TextBox x:Name="VisiblePasswordBox" Text="{Binding Password, UpdateSourceTrigger=PropertyChanged}" KeyDown="OnLoginEnterPressed" Grid.Column="0" Visibility="{Binding ShowPassword, Converter={StaticResource BoolToVisibilityConverter}}" />
-                            
-                            <Button x:Name="TogglePasswordButton" 
-                                    Grid.Column="1" 
-                                    Height="32" 
-                                    Width="32"
-                                    Margin="4 0 0 0"
-                                    Command="{Binding ToggleShowPasswordCommand}"
-                                    Style="{StaticResource SecondaryButtonStyle}"
-                                    Content="👁" />
-                        </Grid>
+                            <TextBlock Text="Contraseña" Margin="0 16 0 4" />
+                            <Grid Height="32">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="36" />
+                                </Grid.ColumnDefinitions>
 
-                        <StackPanel Visibility="{Binding RequiresPasswordChange, Converter={StaticResource BoolToVisibilityConverter}}" Margin="0 16 0 0">
-                            <TextBlock Text="Nueva contraseña" Margin="0 0 0 4" />
-                            <PasswordBox x:Name="NewPasswordBox" Height="32" PasswordChanged="OnNewPasswordChanged" />
+                                <!-- PasswordBox visible cuando HidePassword=true (ShowPassword=false) -->
+                                <PasswordBox x:Name="PasswordBox" PasswordChanged="OnPasswordChanged" KeyDown="OnLoginEnterPressed" Grid.Column="0" Visibility="{Binding HidePassword, Converter={StaticResource BoolToVisibilityConverter}}" />
+                                <!-- TextBox visible cuando ShowPassword=true -->
+                                <TextBox x:Name="VisiblePasswordBox" Text="{Binding Password, UpdateSourceTrigger=PropertyChanged}" KeyDown="OnLoginEnterPressed" Grid.Column="0" Visibility="{Binding ShowPassword, Converter={StaticResource BoolToVisibilityConverter}}" />
 
-                            <TextBlock Text="Confirmar nueva contraseña" Margin="0 12 0 4" />
-                            <PasswordBox x:Name="ConfirmPasswordBox" Height="32" PasswordChanged="OnConfirmNewPasswordChanged" />
+                                <Button x:Name="TogglePasswordButton"
+                                        Grid.Column="1"
+                                        Height="32"
+                                        Width="32"
+                                        Margin="4 0 0 0"
+                                        Command="{Binding ToggleShowPasswordCommand}"
+                                        Style="{StaticResource SecondaryButtonStyle}"
+                                        Content="👁" />
+                            </Grid>
 
-                            <Button Content="Cambiar contraseña"
-                                    Command="{Binding ChangePasswordCommand}"
-                                    Margin="0 12 0 0"
-                                    Style="{StaticResource PrimaryButtonStyle}" />
+                            <Button Content="Ingresar" Command="{Binding LoginCommand}" Height="36" Margin="0 20 0 0" Style="{StaticResource PrimaryButtonStyle}" />
+                            <Button Content="¿Olvidó su contraseña?" Command="{Binding ShowRecoveryCommand}"
+                                    HorizontalAlignment="Center" Margin="0 10 0 0" Cursor="Hand"
+                                    Background="Transparent" BorderThickness="0" Foreground="#175CD3" />
                         </StackPanel>
 
-                        <Button Content="Ingresar" Command="{Binding LoginCommand}" Height="36" Margin="0 20 0 0" Style="{StaticResource PrimaryButtonStyle}" />
-                        <TextBlock Text="{Binding StatusMessage}" Margin="0 12 0 0" Style="{StaticResource StatusMessageStyle}" />
+                        <!-- Recuperación por correo -->
+                        <StackPanel Visibility="{Binding IsRecoveryMode, Converter={StaticResource BoolToVisibilityConverter}}">
+                            <TextBlock Text="Recuperar contraseña" FontWeight="SemiBold" FontSize="14" Margin="0 0 0 10" />
+
+                            <TextBlock Text="Correo de su perfil" Margin="0 0 0 4" />
+                            <TextBox Text="{Binding RecoveryEmail, UpdateSourceTrigger=PropertyChanged}" Height="32" />
+                            <Button Content="Enviar código" Command="{Binding SendRecoveryCodeCommand}" Height="34" Margin="0 10 0 0" Style="{StaticResource SecondaryButtonStyle}" />
+
+                            <StackPanel Visibility="{Binding IsRecoveryCodeSent, Converter={StaticResource BoolToVisibilityConverter}}" Margin="0 14 0 0">
+                                <TextBlock Text="Código recibido" Margin="0 0 0 4" />
+                                <TextBox Text="{Binding RecoveryCode, UpdateSourceTrigger=PropertyChanged}" Height="32" MaxLength="6" />
+
+                                <TextBlock Text="Nueva contraseña" Margin="0 12 0 4" />
+                                <PasswordBox x:Name="NewPasswordBox" Height="32" PasswordChanged="OnNewPasswordChanged" />
+
+                                <TextBlock Text="Confirmar nueva contraseña" Margin="0 12 0 4" />
+                                <PasswordBox x:Name="ConfirmPasswordBox" Height="32" PasswordChanged="OnConfirmNewPasswordChanged" />
+
+                                <Button Content="Restablecer contraseña" Command="{Binding ResetWithCodeCommand}" Height="36" Margin="0 14 0 0" Style="{StaticResource PrimaryButtonStyle}" />
+                            </StackPanel>
+
+                            <Button Content="Volver al ingreso" Command="{Binding BackToLoginCommand}"
+                                    HorizontalAlignment="Center" Margin="0 10 0 0" Cursor="Hand"
+                                    Background="Transparent" BorderThickness="0" Foreground="#175CD3" />
+                        </StackPanel>
+
+                        <TextBlock Text="{Binding StatusMessage}" Margin="0 12 0 0" TextWrapping="Wrap" Style="{StaticResource StatusMessageStyle}" />
                     </StackPanel>
                 </Border>
             </StackPanel>

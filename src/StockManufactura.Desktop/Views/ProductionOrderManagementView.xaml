@@ -1,10 +1,14 @@
-<UserControl x:Class="StockManufactura.Desktop.Views.ProductionOrderManagementView"
+﻿<UserControl x:Class="StockManufactura.Desktop.Views.ProductionOrderManagementView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:converters="clr-namespace:StockManufactura.Desktop.Converters"
              mc:Ignorable="d"
              d:DesignHeight="500" d:DesignWidth="980">
+    <UserControl.Resources>
+        <converters:EntityNameConverter x:Key="EntityName" />
+    </UserControl.Resources>
     <Grid Background="{StaticResource BackgroundSoftLightBrush}">
         <Grid Margin="22 18 18 18">
             <Grid.RowDefinitions>
@@ -29,9 +33,6 @@
 
                 <StackPanel Grid.Column="1" HorizontalAlignment="Right">
                     <TextBlock Text="{Binding CurrentUserName, StringFormat=Usuario: {0}}" FontWeight="SemiBold" HorizontalAlignment="Right" />
-                    <Border Background="#E7F4E8" BorderBrush="#9FC59C" BorderThickness="1" CornerRadius="8" Padding="10 4" Margin="0 6 0 0">
-                        <TextBlock Text="{Binding FactoryConnectionStatus, StringFormat=Servidor Fabrica: {0}}" Foreground="#2E7D32" FontWeight="SemiBold" />
-                    </Border>
                 </StackPanel>
             </Grid>
 
@@ -45,16 +46,16 @@
 
                 <Border Grid.Column="0" Style="{StaticResource CardBorderStyle}" Margin="0 0 8 0">
                     <StackPanel>
-                        <TextBlock Text="STOCK CRITICO" Foreground="{StaticResource PrimaryAccentBrush}" FontWeight="Bold" FontSize="18" />
+                        <TextBlock Text="STOCK CRÍTICO" Foreground="{StaticResource PrimaryAccentBrush}" FontWeight="Bold" FontSize="18" />
                         <Border Background="#F3F1EC" CornerRadius="8" Padding="10" Margin="0 10 0 0">
-                            <TextBlock Text="{Binding CriticalStockCount, StringFormat=STOCK MINIMO ({0} items)}" Foreground="{StaticResource SecondaryAccentBrush}" FontWeight="SemiBold" FontSize="17" />
+                            <TextBlock Text="{Binding CriticalStockCount, StringFormat=EN FALTANTE ({0} ítems)}" Foreground="{StaticResource SecondaryAccentBrush}" FontWeight="SemiBold" FontSize="17" />
                         </Border>
                     </StackPanel>
                 </Border>
 
                 <Border Grid.Column="1" Style="{StaticResource CardBorderStyle}" Margin="4 0 4 0">
                     <StackPanel>
-                        <TextBlock Text="ORDENES DE PRODUCCION" Foreground="{StaticResource SecondaryAccentBrush}" FontWeight="Bold" FontSize="18" />
+                        <TextBlock Text="ÓRDENES DE PRODUCCIÓN" Foreground="{StaticResource SecondaryAccentBrush}" FontWeight="Bold" FontSize="18" />
                         <Border Background="#F3F1EC" CornerRadius="8" Padding="10" Margin="0 10 0 0">
                             <TextBlock Text="{Binding OrdersInProcessCount, StringFormat=EN PROCESO ({0})}" Foreground="{StaticResource PrimaryAccentBrush}" FontWeight="SemiBold" FontSize="17" />
                         </Border>
@@ -63,15 +64,15 @@
 
                 <Border Grid.Column="2" Style="{StaticResource CardBorderStyle}" Margin="4 0 4 0">
                     <StackPanel>
-                        <TextBlock Text="COSTOS TOTALES MES" Foreground="{StaticResource PrimaryAccentBrush}" FontWeight="Bold" FontSize="18" />
-                        <TextBlock Text="{Binding EstimatedOrdersCost, StringFormat=$ {0:N2}}" FontWeight="Bold" FontSize="28" Margin="0 14 0 0" HorizontalAlignment="Center" />
+                        <TextBlock Text="COSTO ÓRDENES DEL MES" Foreground="{StaticResource PrimaryAccentBrush}" FontWeight="Bold" FontSize="18" />
+                        <TextBlock Text="{Binding EstimatedOrdersCost, StringFormat=$ {0:N2}, ConverterCulture=es-AR}" FontWeight="Bold" FontSize="28" Margin="0 14 0 0" HorizontalAlignment="Center" />
                     </StackPanel>
                 </Border>
 
                 <Border Grid.Column="3" Style="{StaticResource CardBorderStyle}" Margin="8 0 0 0">
                     <StackPanel>
                         <TextBlock Text="VENTAS MENSUALES" Foreground="{StaticResource SecondaryAccentBrush}" FontWeight="Bold" FontSize="18" />
-                        <TextBlock Text="{Binding MonthlySalesTotal, StringFormat=$ {0:N2}}" FontWeight="Bold" FontSize="28" Margin="0 14 0 0" HorizontalAlignment="Center" />
+                        <TextBlock Text="{Binding MonthlySalesTotal, StringFormat=$ {0:N2}, ConverterCulture=es-AR}" FontWeight="Bold" FontSize="28" Margin="0 14 0 0" HorizontalAlignment="Center" />
                     </StackPanel>
                 </Border>
             </Grid>
@@ -94,6 +95,7 @@
                             <ColumnDefinition Width="1.4*" />
                             <ColumnDefinition Width="2*" />
                             <ColumnDefinition Width="2*" />
+                            <ColumnDefinition Width="2*" />
                             <ColumnDefinition Width="1.2*" />
                         </Grid.ColumnDefinitions>
                         <StackPanel Grid.Column="0" Margin="0 0 8 0">
@@ -106,10 +108,15 @@
                             <ComboBox ItemsSource="{Binding Products}" SelectedItem="{Binding SelectedProduct}" DisplayMemberPath="Nombre" Height="34" />
                         </StackPanel>
                         <StackPanel Grid.Column="2" Margin="0 0 8 0">
+                            <TextBlock Text="Cliente" />
+                            <ComboBox ItemsSource="{Binding ClientOptions}" SelectedItem="{Binding SelectedClientOption}" DisplayMemberPath="Nombre" Height="34"
+                                      ToolTip="Sin cliente, el pedido se registra como venta a consumidor final." />
+                        </StackPanel>
+                        <StackPanel Grid.Column="3" Margin="0 0 8 0">
                             <TextBlock Text="Observaciones" />
                             <TextBox Text="{Binding Observaciones, UpdateSourceTrigger=PropertyChanged}" Height="34" />
                         </StackPanel>
-                        <StackPanel Grid.Column="3">
+                        <StackPanel Grid.Column="4">
                             <TextBlock Text="Cantidad" />
                             <TextBox Text="{Binding CantidadPlaneada, UpdateSourceTrigger=PropertyChanged}" Height="34" />
                         </StackPanel>
@@ -158,10 +165,25 @@
                         </DataGrid.RowStyle>
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="ID ORDEN" Binding="{Binding Codigo}" Width="1.3*" />
-                            <DataGridTextColumn Header="PRODUCTO ID" Binding="{Binding ProductoId}" Width="1.8*" />
+                            <DataGridTextColumn Header="PRODUCTO" Width="1.8*">
+                                <DataGridTextColumn.Binding>
+                                    <MultiBinding Converter="{StaticResource EntityName}">
+                                        <Binding Path="ProductoId" />
+                                        <Binding Path="DataContext.Products" RelativeSource="{RelativeSource AncestorType=DataGrid}" />
+                                    </MultiBinding>
+                                </DataGridTextColumn.Binding>
+                            </DataGridTextColumn>
+                            <DataGridTextColumn Header="CLIENTE" Width="1.6*">
+                                <DataGridTextColumn.Binding>
+                                    <MultiBinding Converter="{StaticResource EntityName}" ConverterParameter="Consumidor final">
+                                        <Binding Path="ClienteId" />
+                                        <Binding Path="DataContext.Clients" RelativeSource="{RelativeSource AncestorType=DataGrid}" />
+                                    </MultiBinding>
+                                </DataGridTextColumn.Binding>
+                            </DataGridTextColumn>
                             <DataGridTextColumn Header="CANTIDAD" Binding="{Binding CantidadPlaneada, StringFormat=N2}" Width="1*" />
                             <DataGridTextColumn Header="ESTADO" Binding="{Binding Estado}" Width="1.2*" />
-                            <DataGridTextColumn Header="FECHA ENTREGA" Binding="{Binding FechaFin, StringFormat=yyyy-MM-dd}" Width="1.2*" />
+                            <DataGridTextColumn Header="FECHA ENTREGA" Binding="{Binding FechaFin, Converter={StaticResource UtcToLocal}, StringFormat=dd/MM/yyyy}" Width="1.2*" />
                         </DataGrid.Columns>
                     </DataGrid>
 
@@ -172,6 +194,8 @@
                         <Button Content="Borrador" Command="{Binding SetDraftCommand}" Width="95" Margin="0 0 8 8" Style="{StaticResource SecondaryButtonStyle}" />
                         <Button Content="Cancelar" Command="{Binding CancelCommand}" Width="95" Margin="0 0 8 8" Style="{StaticResource SecondaryButtonStyle}" />
                         <Button Content="Eliminar" Command="{Binding DeleteOrderCommand}" Width="95" Margin="0 0 8 8" Style="{StaticResource SecondaryButtonStyle}" />
+                        <Button Content="Asignar cliente" Command="{Binding AssignClientCommand}" Width="130" Margin="0 0 8 8" Style="{StaticResource SecondaryButtonStyle}"
+                                ToolTip="Asigna al pedido seleccionado el cliente elegido arriba." />
                     </WrapPanel>
 
                     <Grid Grid.Row="5">

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -74,6 +74,14 @@ namespace StockManufactura.Application.Services
             }
 
             var productsById = allProducts.ToDictionary(x => x.Id);
+
+            // Los ítems de receta traen su producto componente en seguimiento. Se usa esa misma instancia: así el Update
+            // no choca con una segunda copia del producto, y el costo del producto contenedor lee el valor recién
+            // recalculado del componente en lugar del anterior.
+            foreach (var componente in allRecipeItems.Where(x => x.ComponenteProducto is not null).Select(x => x.ComponenteProducto!))
+            {
+                productsById[componente.Id] = componente;
+            }
             var orderedIds = OrderByComponentDependency(impactedIds, recipeByProduct);
 
             var latestRate = await _unitOfWork.ExchangeRates.GetLatestAsync();
@@ -93,7 +101,7 @@ namespace StockManufactura.Application.Services
                 var previousCost = product.CostoFabricacionActual;
                 var previousSuggested = product.PrecioSugeridoActual;
 
-                var newCost = recipeItems.Sum(x => GetItemCost(x, tramosByRecursoId));
+                var newCost = recipeItems.Sum(x => GetItemCost(x, tramosByRecursoId, exchangeRateValue));
                 var newSuggested = newCost * (1 + product.MargenActual);
 
                 product.CostoFabricacionActual = newCost;
@@ -143,8 +151,8 @@ namespace StockManufactura.Application.Services
                     }
                     else
                     {
-                        precioUnitario = recurso.Precio;
-                        costoParcial = item.Cantidad * recurso.Precio;
+                        precioUnitario = recurso.PrecioEnPesos(exchangeRateValue);
+                        costoParcial = item.Cantidad * precioUnitario;
                     }
 
                     var snapshotItem = new ProductCostSnapshotItem
@@ -164,7 +172,7 @@ namespace StockManufactura.Application.Services
             await _unitOfWork.SaveChangesAsync();
         }
 
-        private static decimal GetItemCost(RecetaProductoItem item, IReadOnlyDictionary<Guid, IReadOnlyList<RecursoTramoPrecio>> tramosByRecursoId)
+        private static decimal GetItemCost(RecetaProductoItem item, IReadOnlyDictionary<Guid, IReadOnlyList<RecursoTramoPrecio>> tramosByRecursoId, decimal cotizacion)
         {
             if (!item.RecursoId.HasValue)
             {
@@ -177,7 +185,7 @@ namespace StockManufactura.Application.Services
                 return TramoPrecioCalculator.Calcular(tramos, item.Cantidad).CostoTotal;
             }
 
-            return item.Cantidad * recurso.Precio;
+            return item.Cantidad * recurso.PrecioEnPesos(cotizacion);
         }
 
         private static List<Guid> OrderByComponentDependency(HashSet<Guid> impactedIds, Dictionary<Guid, IReadOnlyList<RecetaProductoItem>> recipeByProduct)

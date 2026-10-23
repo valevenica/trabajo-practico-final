@@ -12,6 +12,8 @@ namespace StockManufactura.Application.DTOs
         public bool EsActivo { get; init; }
         public bool RequiereCambioPassword { get; init; }
         public DateTime? UltimoAcceso { get; init; }
+        public DateTime? BloqueadoHastaUtc { get; init; }
+        public bool EstaBloqueado => BloqueadoHastaUtc.HasValue && BloqueadoHastaUtc.Value > DateTime.UtcNow;
         public DateTime CreatedAt { get; init; }
         public DateTime UpdatedAt { get; init; }
         public bool IsDeleted { get; init; }

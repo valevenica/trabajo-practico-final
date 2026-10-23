@@ -1,4 +1,4 @@
-#nullable enable
+﻿#nullable enable
 
 using System;
 using System.Collections.Generic;
@@ -25,6 +25,7 @@ public sealed class FakeUnitOfWork : IUnitOfWork
     public FakeRolRepository RolesFake { get; } = new();
     public FakeUsuarioRepository UsuariosFake { get; } = new();
     public FakeProveedorRepository ProveedoresFake { get; } = new();
+    public FakeClienteRepository ClientesFake { get; } = new();
     public FakeRecursoRepository RecursosFake { get; } = new();
     public FakeExchangeRateRepository ExchangeRatesFake { get; } = new();
     public FakeResourcePriceHistoryRepository ResourcePriceHistoryFake { get; } = new();
@@ -43,6 +44,7 @@ public sealed class FakeUnitOfWork : IUnitOfWork
     public IRolRepository Roles => RolesFake;
     public IUsuarioRepository Usuarios => UsuariosFake;
     public IProveedorRepository Proveedores => ProveedoresFake;
+    public IClienteRepository Clientes => ClientesFake;
     public IRecursoRepository Recursos => RecursosFake;
     public IExchangeRateRepository ExchangeRates => ExchangeRatesFake;
     public IResourcePriceHistoryRepository ResourcePriceHistory => ResourcePriceHistoryFake;
@@ -106,14 +108,18 @@ public sealed class FakeUsuarioRepository : FakeRepository<Usuario>, IUsuarioRep
     public Task<Usuario?> GetByEmailAsync(string email, bool includeRole = false)
         => Task.FromResult(Items.FirstOrDefault(x => x.Email.Equals(email, StringComparison.OrdinalIgnoreCase)));
 
-    public Task<Usuario?> GetByEmailOrNombreAsync(string emailOrNombre, bool includeRole = false)
-        => Task.FromResult(Items.FirstOrDefault(x =>
-            x.Email.Equals(emailOrNombre, StringComparison.OrdinalIgnoreCase) ||
-            x.Nombre.Equals(emailOrNombre, StringComparison.OrdinalIgnoreCase)));
+    public Task<Usuario?> GetByNombreAsync(string nombre, bool includeRole = false)
+        => Task.FromResult(Items.FirstOrDefault(x => x.Nombre.Equals(nombre.Trim(), StringComparison.OrdinalIgnoreCase)));
 
     public Task<Usuario?> GetByIdWithRoleAsync(Guid id) => GetByIdAsync(id);
 
     public Task<IReadOnlyList<Usuario>> ListWithRoleAsync() => Task.FromResult<IReadOnlyList<Usuario>>(Items.ToArray());
+}
+
+public sealed class FakeClienteRepository : FakeRepository<Cliente>, IClienteRepository
+{
+    public Task<Cliente?> GetByDocumentoAsync(string documento)
+        => Task.FromResult(Items.FirstOrDefault(x => x.Documento == documento));
 }
 
 public sealed class FakeProveedorRepository : FakeRepository<Proveedor>, IProveedorRepository

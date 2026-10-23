@@ -1,4 +1,4 @@
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using StockManufactura.Application.Interfaces;
 using StockManufactura.Domain.Entities;
 using StockManufactura.Infrastructure.Db;
@@ -16,6 +16,7 @@ namespace StockManufactura.Infrastructure.Repositories
             Roles = new RolRepository(context);
             Usuarios = new UsuarioRepository(context);
             Proveedores = new ProveedorRepository(context);
+            Clientes = new ClienteRepository(context);
             Recursos = new RecursoRepository(context);
             ExchangeRates = new ExchangeRateRepository(context);
             ResourcePriceHistory = new ResourcePriceHistoryRepository(context);
@@ -35,6 +36,7 @@ namespace StockManufactura.Infrastructure.Repositories
         public IRolRepository Roles { get; }
         public IUsuarioRepository Usuarios { get; }
         public IProveedorRepository Proveedores { get; }
+        public IClienteRepository Clientes { get; }
         public IRecursoRepository Recursos { get; }
         public IExchangeRateRepository ExchangeRates { get; }
         public IResourcePriceHistoryRepository ResourcePriceHistory { get; }

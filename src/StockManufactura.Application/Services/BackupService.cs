@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
@@ -14,21 +14,21 @@ namespace StockManufactura.Application.Services
 {
     public sealed class BackupService : IBackupService
     {
-        private readonly IBackupRecordRepository _backupRecordRepository;
-        private readonly IBackupSettingsRepository _backupSettingsRepository;
         private readonly ICloudBackupSyncService _cloudSyncService;
         private readonly IAuditLogService _auditLogService;
         private readonly IUnitOfWork _unitOfWork;
 
+        private readonly IDatabaseSnapshotService _databaseSnapshotService;
+
+        // Copias y configuración se leen y escriben con los repositorios de la unidad de trabajo: inyectados por separado
+        // usaban otro contexto y SaveChangesAsync de la unidad de trabajo nunca los persistía.
         public BackupService(
-            IBackupRecordRepository backupRecordRepository,
-            IBackupSettingsRepository backupSettingsRepository,
             ICloudBackupSyncService cloudSyncService,
             IAuditLogService auditLogService,
-            IUnitOfWork unitOfWork)
+            IUnitOfWork unitOfWork,
+            IDatabaseSnapshotService databaseSnapshotService)
         {
-            _backupRecordRepository = backupRecordRepository;
-            _backupSettingsRepository = backupSettingsRepository;
+            _databaseSnapshotService = databaseSnapshotService;
             _cloudSyncService = cloudSyncService;
             _auditLogService = auditLogService;
             _unitOfWork = unitOfWork;
@@ -36,7 +36,7 @@ namespace StockManufactura.Application.Services
 
         public async Task<BackupSettings> GetSettingsAsync(CancellationToken cancellationToken = default)
         {
-            var settings = await _backupSettingsRepository.GetCurrentAsync();
+            var settings = await _unitOfWork.BackupSettings.GetCurrentAsync();
             if (settings is not null)
             {
                 return settings;
@@ -50,14 +50,14 @@ namespace StockManufactura.Application.Services
                 IntervaloMinutos = 60
             };
 
-            await _backupSettingsRepository.AddAsync(settings);
+            await _unitOfWork.BackupSettings.AddAsync(settings);
             await _unitOfWork.SaveChangesAsync();
             return settings;
         }
 
         public async Task SaveSettingsAsync(BackupSettings settings, CancellationToken cancellationToken = default)
         {
-            _backupSettingsRepository.Update(settings);
+            _unitOfWork.BackupSettings.Update(settings);
             await _unitOfWork.SaveChangesAsync();
         }
 
@@ -85,25 +85,38 @@ namespace StockManufactura.Application.Services
 
             var record = await CreateBackupInternalAsync("Automatico", usuario, cancellationToken);
             settings.UltimoBackupAutomatico = DateTime.UtcNow;
-            _backupSettingsRepository.Update(settings);
+            _unitOfWork.BackupSettings.Update(settings);
             await _unitOfWork.SaveChangesAsync();
             return record;
         }
 
         public async Task<BackupRecord> RestoreBackupAsync(string zipPath, string usuario, CancellationToken cancellationToken = default)
         {
-            var settings = await GetSettingsAsync(cancellationToken);
-            var targetDbPath = AppPaths.DatabaseFilePath;
-            Directory.CreateDirectory(Path.GetDirectoryName(targetDbPath)!);
-
-            using var archive = ZipFile.OpenRead(zipPath);
-            var entry = archive.Entries.FirstOrDefault(x => x.Name.Equals("StockManufactura.db", StringComparison.OrdinalIgnoreCase));
-            if (entry is null)
+            var restoredPath = Path.Combine(Path.GetTempPath(), $"stockmanufactura-restaurar-{Guid.NewGuid():N}.db");
+            try
             {
-                throw new InvalidOperationException("El backup no contiene StockManufactura.db");
-            }
+                using (var archive = ZipFile.OpenRead(zipPath))
+                {
+                    var entry = archive.Entries.FirstOrDefault(x => x.Name.Equals("StockManufactura.db", StringComparison.OrdinalIgnoreCase));
+                    if (entry is null)
+                    {
+                        throw new InvalidOperationException("El backup no contiene StockManufactura.db");
+                    }
 
-            entry.ExtractToFile(targetDbPath, overwrite: true);
+                    entry.ExtractToFile(restoredPath, overwrite: true);
+                }
+
+                // Se copia dentro de la base en uso con el motor, en lugar de sobrescribir el archivo abierto (que además
+                // dejaría el WAL de la base anterior aplicado sobre la restaurada).
+                await _databaseSnapshotService.ImportAsync(restoredPath, cancellationToken);
+            }
+            finally
+            {
+                if (File.Exists(restoredPath))
+                {
+                    File.Delete(restoredPath);
+                }
+            }
 
             var record = new BackupRecord
             {
@@ -115,7 +128,7 @@ namespace StockManufactura.Application.Services
                 Mensaje = $"Restaurado por {usuario}"
             };
 
-            await _backupRecordRepository.AddAsync(record);
+            await _unitOfWork.BackupRecords.AddAsync(record);
             await _unitOfWork.SaveChangesAsync();
             await RegisterAuditAsync("Backups", "Restaurar", usuario, $"Restauracion desde {Path.GetFileName(zipPath)}", cancellationToken);
             return record;
@@ -123,7 +136,7 @@ namespace StockManufactura.Application.Services
 
         public Task<IReadOnlyList<BackupRecord>> GetRecentBackupsAsync(int top = 50, CancellationToken cancellationToken = default)
         {
-            return _backupRecordRepository.ListRecentAsync(top);
+            return _unitOfWork.BackupRecords.ListRecentAsync(top);
         }
 
         public async Task<CloudSyncResult> SynchronizeCloudAsync(string usuario, CancellationToken cancellationToken = default)
@@ -141,7 +154,7 @@ namespace StockManufactura.Application.Services
             foreach (var descargado in result.Descargados)
             {
                 var rutaLocal = Path.Combine(settings.CarpetaLocal, descargado);
-                await _backupRecordRepository.AddAsync(new BackupRecord
+                await _unitOfWork.BackupRecords.AddAsync(new BackupRecord
                 {
                     FechaHora = DateTime.UtcNow,
                     Tipo = "NubeDescarga",
@@ -153,7 +166,7 @@ namespace StockManufactura.Application.Services
             }
 
             settings.UltimaSincronizacionNube = result.FechaUtc;
-            _backupSettingsRepository.Update(settings);
+            _unitOfWork.BackupSettings.Update(settings);
             await _unitOfWork.SaveChangesAsync();
 
             await RegisterAuditAsync(
@@ -171,12 +184,32 @@ namespace StockManufactura.Application.Services
             var settings = await GetSettingsAsync(cancellationToken);
             Directory.CreateDirectory(settings.CarpetaLocal);
 
-            var dbPath = AppPaths.DatabaseFilePath;
             var zipPath = Path.Combine(settings.CarpetaLocal, $"backup-{DateTime.UtcNow:yyyyMMdd-HHmmss}.zip");
+            var snapshotPath = Path.Combine(Path.GetTempPath(), $"stockmanufactura-copia-{Guid.NewGuid():N}.db");
 
-            using (var archive = ZipFile.Open(zipPath, ZipArchiveMode.Create))
+            try
             {
-                archive.CreateEntryFromFile(dbPath, "StockManufactura.db");
+                // La base está abierta: se toma una copia consistente con el motor y se comprime esa copia.
+                await _databaseSnapshotService.ExportAsync(snapshotPath, cancellationToken);
+                using var archive = ZipFile.Open(zipPath, ZipArchiveMode.Create);
+                archive.CreateEntryFromFile(snapshotPath, "StockManufactura.db");
+            }
+            catch
+            {
+                // No se deja un .zip incompleto que luego parezca una copia válida.
+                if (File.Exists(zipPath))
+                {
+                    File.Delete(zipPath);
+                }
+
+                throw;
+            }
+            finally
+            {
+                if (File.Exists(snapshotPath))
+                {
+                    File.Delete(snapshotPath);
+                }
             }
 
             var record = new BackupRecord
@@ -189,7 +222,7 @@ namespace StockManufactura.Application.Services
                 Mensaje = $"Backup {tipo} generado por {usuario}"
             };
 
-            await _backupRecordRepository.AddAsync(record);
+            await _unitOfWork.BackupRecords.AddAsync(record);
             await _unitOfWork.SaveChangesAsync();
 
             await TrySyncCloudAsync(record, settings, cancellationToken);
@@ -213,7 +246,7 @@ namespace StockManufactura.Application.Services
             }
 
             settings.UltimaSincronizacionNube = DateTime.UtcNow;
-            _backupSettingsRepository.Update(settings);
+            _unitOfWork.BackupSettings.Update(settings);
             await _unitOfWork.SaveChangesAsync();
         }
 

@@ -140,6 +140,26 @@ public class BusinessIntelligenceServiceTests
         Assert.Equal("Agosto 2026", (await service.GetReportAsync(Anio, Mes)).PeriodoDescripcion);
     }
 
+    [Fact]
+    public async Task GetReportAsync_OrdenesPorEstado_NoDuplicaLosAliasDelEstado()
+    {
+        var unitOfWork = new FakeUnitOfWork();
+        var finalizada = new OrdenProduccion("OP-3", Guid.NewGuid(), 1m, string.Empty);
+        finalizada.Planificar();
+        finalizada.MarcarEnProgreso();
+        finalizada.RegistrarProduccion(1m);
+        finalizada.Completar();
+        unitOfWork.OrdenesProduccionFake.Seed(
+            new OrdenProduccion("OP-1", Guid.NewGuid(), 1m, string.Empty),
+            new OrdenProduccion("OP-2", Guid.NewGuid(), 1m, string.Empty),
+            finalizada);
+
+        var report = await BuildService(unitOfWork).GetReportAsync(Anio, Mes);
+
+        Assert.Equal(new[] { "Borrador", "Finalizada" }, report.OrdenesPorEstado.Select(p => p.Etiqueta).ToArray());
+        Assert.Equal(new[] { 2m, 1m }, report.OrdenesPorEstado.Select(p => p.Valor).ToArray());
+    }
+
     private static DateTime EnPeriodo(int dia) => new(Anio, Mes, dia, 10, 0, 0, DateTimeKind.Utc);
 
     private static BusinessIntelligenceService BuildService(FakeUnitOfWork unitOfWork, ShortageReport? faltantes = null)

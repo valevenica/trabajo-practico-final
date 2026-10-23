@@ -1,4 +1,4 @@
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using StockManufactura.Domain.Entities;
 
 namespace StockManufactura.Application.Interfaces
@@ -8,6 +8,7 @@ namespace StockManufactura.Application.Interfaces
         IRolRepository Roles { get; }
         IUsuarioRepository Usuarios { get; }
         IProveedorRepository Proveedores { get; }
+        IClienteRepository Clientes { get; }
         IRecursoRepository Recursos { get; }
         IExchangeRateRepository ExchangeRates { get; }
         IResourcePriceHistoryRepository ResourcePriceHistory { get; }

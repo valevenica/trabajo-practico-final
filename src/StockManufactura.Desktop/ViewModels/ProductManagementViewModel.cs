@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Input;
@@ -79,6 +79,9 @@ namespace StockManufactura.Desktop.ViewModels
         private ProductRecipeRow? _selectedRecipeItem;
 
         private List<RecetaProductoItem> _currentRecipeItems = new();
+
+        // Cotización con la que se muestran en pesos los insumos en dólares, la misma que usa el cálculo de costos.
+        private decimal _cotizacion = 1m;
 
         public ObservableCollection<ProductRecipeRow> RecipeItems { get; } = new();
         public ObservableCollection<ComponentOption> AvailableComponents { get; } = new();
@@ -249,12 +252,14 @@ namespace StockManufactura.Desktop.ViewModels
 
             try
             {
-                var (products, resources) = await Task.Run(async () =>
+                var (products, resources, rate) = await Task.Run(async () =>
                 {
                     var p = await _unitOfWork.Productos.ListAsync();
                     var r = await _unitOfWork.Recursos.ListActivosAsync();
-                    return (p, r);
+                    var c = await _unitOfWork.ExchangeRates.GetLatestAsync();
+                    return (p, r, c);
                 });
+                _cotizacion = rate?.Valor ?? 1m;
 
                 var orderedProducts = products.OrderBy(x => x.Nombre).ToArray();
 
@@ -269,7 +274,7 @@ namespace StockManufactura.Desktop.ViewModels
                 AvailableComponents.Clear();
                 foreach (var resource in resources.OrderBy(x => x.Nombre))
                 {
-                    AvailableComponents.Add(new ComponentOption(resource.Id, resource.Nombre, false, resource.Precio, resource.UnidadMedida));
+                    AvailableComponents.Add(new ComponentOption(resource.Id, resource.Nombre, false, resource.PrecioEnPesos(_cotizacion), resource.UnidadMedida));
                 }
                 foreach (var product in orderedProducts.Where(x => x.Activo))
                 {
@@ -405,7 +410,12 @@ namespace StockManufactura.Desktop.ViewModels
                         return;
                     }
 
-                    product = SelectedProduct;
+                    // El listado se carga sin seguimiento (AsNoTracking), pero la consulta por código anterior
+                    // deja la entidad seguida por el contexto. Se editan los valores sobre esa instancia seguida:
+                    // adjuntar la del listado provocaba "another instance with the same key value is already
+                    // being tracked" y el cambio (por ejemplo, del stock) no se guardaba.
+                    product = existing ?? await _unitOfWork.Productos.GetByIdAsync(SelectedProduct.Id)
+                        ?? throw new InvalidOperationException("El producto ya no existe; recargue el listado.");
                     product.Codigo = codigoNormalizado;
                     product.Nombre = Nombre.Trim();
                     product.Descripcion = Descripcion.Trim();
@@ -515,7 +525,7 @@ namespace StockManufactura.Desktop.ViewModels
                 }
                 else
                 {
-                    unitCost = esProducto ? item.ComponenteProducto!.CostoFabricacionActual : item.Recurso!.Precio;
+                    unitCost = esProducto ? item.ComponenteProducto!.CostoFabricacionActual : item.Recurso!.PrecioEnPesos(_cotizacion);
                     subtotal = decimal.Round(item.Cantidad * unitCost, 4, MidpointRounding.AwayFromZero);
                 }
 
@@ -757,7 +767,8 @@ namespace StockManufactura.Desktop.ViewModels
 
             try
             {
-                var producto = SelectedProduct;
+                // Se elimina la instancia seguida por el contexto (o se la carga), no la del listado sin seguimiento.
+                var producto = await _unitOfWork.Productos.GetByIdAsync(SelectedProduct.Id) ?? SelectedProduct;
                 _unitOfWork.Productos.Delete(producto);
                 await _unitOfWork.SaveChangesAsync();
                 await RegisterAuditAsync("Eliminar", producto, "Producto eliminado.");

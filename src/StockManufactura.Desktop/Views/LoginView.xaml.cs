@@ -14,11 +14,21 @@ namespace StockManufactura.Desktop.Views
             TryLoadLogo();
             DataContextChanged += (s, e) =>
             {
-                if (DataContext is ObservableObject oldVm)
+                if (e.OldValue is ObservableObject oldVm)
                     oldVm.PropertyChanged -= OnViewModelPropertyChanged;
-                if (DataContext is ObservableObject newVm)
+                if (e.OldValue is LoginViewModel oldLogin)
+                    oldLogin.RecoveryPasswordsCleared -= OnRecoveryPasswordsCleared;
+                if (e.NewValue is ObservableObject newVm)
                     newVm.PropertyChanged += OnViewModelPropertyChanged;
+                if (e.NewValue is LoginViewModel newLogin)
+                    newLogin.RecoveryPasswordsCleared += OnRecoveryPasswordsCleared;
             };
+        }
+
+        private void OnRecoveryPasswordsCleared(object? sender, System.EventArgs e)
+        {
+            NewPasswordBox.Clear();
+            ConfirmPasswordBox.Clear();
         }
 
         private void OnViewModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)

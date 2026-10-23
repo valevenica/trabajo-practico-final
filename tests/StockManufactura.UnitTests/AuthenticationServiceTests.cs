@@ -42,10 +42,10 @@ public class AuthenticationServiceTests
 
         for (var i = 0; i < 5; i++)
         {
-            await service.AuthenticateDetailedAsync("admin@test.com", "incorrecta");
+            await service.AuthenticateDetailedAsync("Admin", "incorrecta");
         }
 
-        var lockedResult = await service.AuthenticateDetailedAsync("admin@test.com", "Secret123!");
+        var lockedResult = await service.AuthenticateDetailedAsync("Admin", "Secret123!");
 
         Assert.False(lockedResult.IsSuccess);
         Assert.True(lockedResult.IsLockedOut);

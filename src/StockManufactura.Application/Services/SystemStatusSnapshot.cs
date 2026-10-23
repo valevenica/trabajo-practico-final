@@ -24,6 +24,22 @@ namespace StockManufactura.Application.Services
         public decimal MonthlyCostTotal { get; set; }
         public decimal MonthlySalesTotal { get; set; }
 
+        // Indicadores comerciales del periodo. Las ventas son los pedidos finalizados valorizados al precio
+        // sugerido vigente del producto, y su costo, al costo de fabricacion vigente.
+        public int OrdersInPeriodCount { get; set; }
+        public int OpenOrdersCount { get; set; }
+        public int FinishedOrdersInPeriodCount { get; set; }
+        public decimal AverageTicket { get; set; }
+        public decimal MonthlySalesCost { get; set; }
+
+        /// <summary>Ganancia bruta sobre ventas, en porcentaje; nulo si no hubo ventas.</summary>
+        public decimal? GrossMarginPercent { get; set; }
+
+        public decimal? PreviousPeriodSalesTotal { get; set; }
+
+        /// <summary>Variacion porcentual de las ventas contra el mes anterior; nula sin base de comparacion.</summary>
+        public decimal? SalesVariationPercent { get; set; }
+
         // Indicadores de trazabilidad y auditoria del periodo seleccionado.
         public int AuditEventCount { get; set; }
         public int AuditUserCount { get; set; }

@@ -12,9 +12,11 @@ namespace StockManufactura.Infrastructure.Db.Configurations
 
             builder.HasKey(u => u.Id);
 
+            // El nombre de usuario es la credencial de ingreso: único y sin distinguir mayúsculas.
             builder.Property(u => u.Nombre)
                 .IsRequired()
-                .HasMaxLength(150);
+                .HasMaxLength(150)
+                .UseCollation("NOCASE");
 
             builder.Property(u => u.Email)
                 .IsRequired()
@@ -55,6 +57,9 @@ namespace StockManufactura.Infrastructure.Db.Configurations
                 .OnDelete(DeleteBehavior.Restrict);
 
             builder.HasIndex(u => u.Email)
+                .IsUnique();
+
+            builder.HasIndex(u => u.Nombre)
                 .IsUnique();
         }
     }

@@ -125,6 +125,15 @@
 
                     <Expander IsExpanded="False" Margin="0,0,0,8">
                         <Expander.Header>
+                            <TextBlock Text="Clientes" Foreground="White" FontWeight="Bold" />
+                        </Expander.Header>
+                        <StackPanel Margin="0,6,0,0">
+                            <Button Content="Clientes" Margin="0,0,0,6" Command="{Binding NavigateClientsCommand}" Tag="{Binding IsClientsSelected}" Style="{StaticResource SidebarMenuButtonStyle}" />
+                        </StackPanel>
+                    </Expander>
+
+                    <Expander IsExpanded="False" Margin="0,0,0,8">
+                        <Expander.Header>
                             <TextBlock Text="Producción" Foreground="White" FontWeight="Bold" />
                         </Expander.Header>
                         <StackPanel Margin="0,6,0,0">
@@ -186,6 +195,9 @@
                 </DataTemplate>
                 <DataTemplate DataType="{x:Type viewModels:ProductManagementViewModel}">
                     <views:ProductManagementView />
+                </DataTemplate>
+                <DataTemplate DataType="{x:Type viewModels:ClientManagementViewModel}">
+                    <views:ClientManagementView />
                 </DataTemplate>
                 <DataTemplate DataType="{x:Type viewModels:ProviderManagementViewModel}">
                     <views:ProviderManagementView />

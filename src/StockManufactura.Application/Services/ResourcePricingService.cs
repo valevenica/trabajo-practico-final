@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -66,7 +66,8 @@ namespace StockManufactura.Application.Services
             resource.Activo = request.Activo;
             resource.FechaUltimaActualizacion = DateTime.UtcNow;
 
-            if (oldPrice != request.Precio || oldCurrency != request.Moneda)
+            var precioCambio = oldPrice != request.Precio || oldCurrency != request.Moneda;
+            if (precioCambio)
             {
                 var rate = request.Moneda == Moneda.USD ? await _unitOfWork.ExchangeRates.GetLatestAsync() : null;
                 var rateValue = rate?.Valor ?? 1m;
@@ -100,6 +101,14 @@ namespace StockManufactura.Application.Services
                     Equipo = Environment.MachineName
                 });
 
+            }
+
+            await _unitOfWork.SaveChangesAsync();
+
+            // El recálculo usa su propio contexto y lee el precio desde la base: debe correr después de guardarlo, o los
+            // productos quedarían costeados con el precio anterior.
+            if (precioCambio)
+            {
                 await _productCostService.RecalculateAffectedProductsAsync(new Products.ProductRecalculationRequest
                 {
                     Usuario = request.Usuario,
@@ -108,7 +117,6 @@ namespace StockManufactura.Application.Services
                 });
             }
 
-            await _unitOfWork.SaveChangesAsync();
             return resource;
         }
 
@@ -147,6 +155,18 @@ namespace StockManufactura.Application.Services
                     Usuario = usuario
                 };
                 await UpsertResourceAsync(request, cancellationToken);
+            }
+
+            // El precio en dólares no cambia, cambia la cotización: se recalculan todos los productos para valorizar
+            // sus insumos importados con la cotización vigente.
+            if (usdResources.Count > 0)
+            {
+                await _productCostService.RecalculateAffectedProductsAsync(new Products.ProductRecalculationRequest
+                {
+                    Usuario = usuario,
+                    Motivo = $"Recálculo masivo USD @ cotización {rate.Valor:0.00}",
+                    CambioCotizacion = true
+                }, cancellationToken);
             }
 
             return usdResources.Count;

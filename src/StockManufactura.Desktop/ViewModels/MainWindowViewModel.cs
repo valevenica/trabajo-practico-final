@@ -1,4 +1,4 @@
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -36,6 +36,7 @@ namespace StockManufactura.Desktop.ViewModels
             NavigateResourcesCommand = new RelayCommand(NavigateResources);
             NavigateNewResourceCommand = new RelayCommand(NavigateNewResource);
             NavigateProvidersCommand = new RelayCommand(NavigateProviders);
+            NavigateClientsCommand = new RelayCommand(NavigateClients);
             NavigateProductionOrdersCommand = new RelayCommand(NavigateProductionOrders);
             NavigateSpecialResourcesCommand = new RelayCommand(NavigateSpecialResources);
             NavigateStockIntakeCommand = new RelayCommand(NavigateStockIntake);
@@ -67,6 +68,7 @@ namespace StockManufactura.Desktop.ViewModels
         public bool IsResourcesSelected => _activeMenuKey == "Resources";
         public bool IsNewResourceSelected => _activeMenuKey == "NewResource";
         public bool IsProvidersSelected => _activeMenuKey == "Providers";
+        public bool IsClientsSelected => _activeMenuKey == "Clients";
         public bool IsProductionOrdersSelected => _activeMenuKey == "ProductionOrders";
         public bool IsSpecialResourcesSelected => _activeMenuKey == "SpecialResources";
         public bool IsStockIntakeSelected => _activeMenuKey == "StockIntake";
@@ -84,6 +86,7 @@ namespace StockManufactura.Desktop.ViewModels
         public ICommand NavigateResourcesCommand { get; }
         public ICommand NavigateNewResourceCommand { get; }
         public ICommand NavigateProvidersCommand { get; }
+        public ICommand NavigateClientsCommand { get; }
         public ICommand NavigateProductionOrdersCommand { get; }
         public ICommand NavigateSpecialResourcesCommand { get; }
         public ICommand NavigateStockIntakeCommand { get; }
@@ -151,7 +154,9 @@ namespace StockManufactura.Desktop.ViewModels
                 _serviceProvider.GetRequiredService<IProductCostService>(),
                 _serviceProvider.GetRequiredService<ISystemStatusService>(),
                 _serviceProvider.GetRequiredService<IUserManagementService>(),
-                _serviceProvider.GetRequiredService<IShortageService>());
+                _serviceProvider.GetRequiredService<IShortageService>(),
+                _serviceProvider.GetRequiredService<IPasswordRecoveryService>(),
+                () => _serviceProvider.GetRequiredService<IUnitOfWork>());
 
             dashboard = _dashboardViewModel;
             return true;
@@ -168,6 +173,11 @@ namespace StockManufactura.Desktop.ViewModels
         private void NavigateDashboard()
         {
             Log.Debug("NavigateDashboard called. AuthSession.Current?.Usuario = {usuario}", AuthSession.Current?.Usuario?.Nombre);
+            if (!ModuleAccess.TryEnter(ModuleAccess.Dashboard))
+            {
+                return;
+            }
+
             if (!EnsureDashboardAvailable(out var dashboard))
             {
                 Log.Warning("EnsureDashboardAvailable returned false");
@@ -181,6 +191,11 @@ namespace StockManufactura.Desktop.ViewModels
 
         private void NavigateBusinessIntelligence()
         {
+            if (!ModuleAccess.TryEnter(ModuleAccess.BusinessIntelligence))
+            {
+                return;
+            }
+
             if (EnsureDashboardAvailable(out _))
             {
                 _navigationService.NavigateTo(new BusinessIntelligenceViewModel(
@@ -191,6 +206,11 @@ namespace StockManufactura.Desktop.ViewModels
 
         private void NavigateShortages()
         {
+            if (!ModuleAccess.TryEnter(ModuleAccess.Shortages))
+            {
+                return;
+            }
+
             if (EnsureDashboardAvailable(out var dashboard))
             {
                 _navigationService.NavigateTo(new ShortagesViewModel(
@@ -203,6 +223,11 @@ namespace StockManufactura.Desktop.ViewModels
 
         private void NavigateProducts()
         {
+            if (!ModuleAccess.TryEnter(ModuleAccess.Products))
+            {
+                return;
+            }
+
             Log.Debug("NavigateProducts called. AuthSession.Current?.Usuario = {usuario}", AuthSession.Current?.Usuario?.Nombre);
             if (EnsureDashboardAvailable(out var dashboard))
             {
@@ -222,6 +247,11 @@ namespace StockManufactura.Desktop.ViewModels
 
         private void NavigateNewProduct()
         {
+            if (!ModuleAccess.TryEnter(ModuleAccess.NewProduct))
+            {
+                return;
+            }
+
             if (EnsureDashboardAvailable(out var dashboard))
             {
                 _navigationService.NavigateTo(new ProductManagementViewModel(
@@ -237,6 +267,11 @@ namespace StockManufactura.Desktop.ViewModels
 
         private void NavigateResources()
         {
+            if (!ModuleAccess.TryEnter(ModuleAccess.Resources))
+            {
+                return;
+            }
+
             Log.Debug("NavigateResources called. AuthSession.Current?.Usuario = {usuario}", AuthSession.Current?.Usuario?.Nombre);
             if (EnsureDashboardAvailable(out _))
             {
@@ -261,6 +296,11 @@ namespace StockManufactura.Desktop.ViewModels
 
         private void NavigateProviders()
         {
+            if (!ModuleAccess.TryEnter(ModuleAccess.Providers))
+            {
+                return;
+            }
+
             if (EnsureDashboardAvailable(out var dashboard))
             {
                 _navigationService.NavigateTo(new ProviderManagementViewModel(
@@ -272,21 +312,50 @@ namespace StockManufactura.Desktop.ViewModels
             }
         }
 
+        private void NavigateClients()
+        {
+            if (!ModuleAccess.TryEnter(ModuleAccess.Clients))
+            {
+                return;
+            }
+
+            if (EnsureDashboardAvailable(out var dashboard))
+            {
+                _navigationService.NavigateTo(new ClientManagementViewModel(
+                    _serviceProvider.GetRequiredService<IUnitOfWork>(),
+                    _serviceProvider.GetRequiredService<IAuditLogService>(),
+                    _navigationService,
+                    dashboard));
+                SetActiveMenu("Clients");
+            }
+        }
+
         private void NavigateProductionOrders()
         {
+            if (!ModuleAccess.TryEnter(ModuleAccess.ProductionOrders))
+            {
+                return;
+            }
+
             if (EnsureDashboardAvailable(out var dashboard))
             {
                 _navigationService.NavigateTo(new ProductionOrderManagementViewModel(
                     _serviceProvider.GetRequiredService<IUnitOfWork>(),
                     _serviceProvider.GetRequiredService<IAuditLogService>(),
                     _navigationService,
-                    dashboard));
+                    dashboard,
+                    _serviceProvider.GetRequiredService<IShortageService>()));
                 SetActiveMenu("ProductionOrders");
             }
         }
 
         private void NavigateSpecialResources()
         {
+            if (!ModuleAccess.TryEnter(ModuleAccess.SpecialResources))
+            {
+                return;
+            }
+
             if (EnsureDashboardAvailable(out _))
             {
                 _navigationService.NavigateTo(new SpecialResourcesViewModel(
@@ -297,6 +366,11 @@ namespace StockManufactura.Desktop.ViewModels
 
         private void NavigateStockIntake()
         {
+            if (!ModuleAccess.TryEnter(ModuleAccess.StockIntake))
+            {
+                return;
+            }
+
             if (EnsureDashboardAvailable(out _))
             {
                 _navigationService.NavigateTo(new StockIntakeViewModel(
@@ -308,6 +382,11 @@ namespace StockManufactura.Desktop.ViewModels
 
         private void NavigatePriceImport()
         {
+            if (!ModuleAccess.TryEnter(ModuleAccess.PriceImport))
+            {
+                return;
+            }
+
             if (EnsureDashboardAvailable(out _))
             {
                 _navigationService.NavigateTo(new ResourcePriceImportViewModel(
@@ -319,6 +398,11 @@ namespace StockManufactura.Desktop.ViewModels
 
         private void NavigateMonetary()
         {
+            if (!ModuleAccess.TryEnter(ModuleAccess.Monetary))
+            {
+                return;
+            }
+
             if (EnsureDashboardAvailable(out _))
             {
                 _navigationService.NavigateTo(new MonetaryConfigurationViewModel(
@@ -329,16 +413,27 @@ namespace StockManufactura.Desktop.ViewModels
 
         private void NavigateAudit()
         {
+            if (!ModuleAccess.TryEnter(ModuleAccess.Audit))
+            {
+                return;
+            }
+
             if (EnsureDashboardAvailable(out _))
             {
                 _navigationService.NavigateTo(new AuditLogViewModel(
-                    _serviceProvider.GetRequiredService<IAuditLogService>()));
+                    _serviceProvider.GetRequiredService<IAuditLogService>(),
+                    _serviceProvider.GetRequiredService<ISystemStatusService>()));
                 SetActiveMenu("Audit");
             }
         }
 
         private void NavigateBackups()
         {
+            if (!ModuleAccess.TryEnter(ModuleAccess.Backups))
+            {
+                return;
+            }
+
             if (EnsureDashboardAvailable(out _))
             {
                 _navigationService.NavigateTo(new BackupManagementViewModel(
@@ -353,6 +448,7 @@ namespace StockManufactura.Desktop.ViewModels
             {
                 _navigationService.NavigateTo(new UserManagementViewModel(
                     _serviceProvider.GetRequiredService<IUserManagementService>(),
+                    _serviceProvider.GetRequiredService<IPasswordRecoveryService>(),
                     _navigationService,
                     dashboard));
                 SetActiveMenu("Users");
@@ -375,6 +471,7 @@ namespace StockManufactura.Desktop.ViewModels
             OnPropertyChanged(nameof(IsResourcesSelected));
             OnPropertyChanged(nameof(IsNewResourceSelected));
             OnPropertyChanged(nameof(IsProvidersSelected));
+            OnPropertyChanged(nameof(IsClientsSelected));
             OnPropertyChanged(nameof(IsProductionOrdersSelected));
             OnPropertyChanged(nameof(IsSpecialResourcesSelected));
             OnPropertyChanged(nameof(IsStockIntakeSelected));

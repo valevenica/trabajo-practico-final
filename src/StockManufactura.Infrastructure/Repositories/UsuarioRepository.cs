@@ -22,12 +22,12 @@ namespace StockManufactura.Infrastructure.Repositories
                 query = query.Include(x => x.Rol);
             }
 
-            return await query.FirstOrDefaultAsync(x => x.Email == email);
+            return await RefreshAsync(await query.FirstOrDefaultAsync(x => x.Email == email));
         }
 
-        public async Task<Usuario?> GetByEmailOrNombreAsync(string emailOrNombre, bool includeRole = false)
+        public async Task<Usuario?> GetByNombreAsync(string nombre, bool includeRole = false)
         {
-            var normalized = (emailOrNombre ?? string.Empty).Trim().ToLower();
+            var normalized = (nombre ?? string.Empty).Trim().ToLower();
             if (string.IsNullOrWhiteSpace(normalized))
             {
                 return null;
@@ -39,9 +39,23 @@ namespace StockManufactura.Infrastructure.Repositories
                 query = query.Include(x => x.Rol);
             }
 
-            return await query.FirstOrDefaultAsync(x =>
-                x.Email.ToLower() == normalized ||
-                x.Nombre.ToLower() == normalized);
+            return await RefreshAsync(await query.FirstOrDefaultAsync(x => x.Nombre.ToLower() == normalized));
+        }
+
+        /// <summary>
+        /// La pantalla de ingreso conserva su contexto mientras está abierta. Si el usuario ya estaba en seguimiento,
+        /// la consulta devuelve la copia en memoria y no el estado persistido, de modo que un desbloqueo o un cambio de
+        /// contraseña hecho desde otro contexto (recuperación por correo, administrador) no se vería hasta reiniciar.
+        /// Se recarga solo si no tiene cambios pendientes, para no descartar una edición en curso.
+        /// </summary>
+        private async Task<Usuario?> RefreshAsync(Usuario? usuario)
+        {
+            if (usuario is not null && _context.Entry(usuario).State == EntityState.Unchanged)
+            {
+                await _context.Entry(usuario).ReloadAsync();
+            }
+
+            return usuario;
         }
 
         public Task<Usuario?> GetByIdWithRoleAsync(Guid id)

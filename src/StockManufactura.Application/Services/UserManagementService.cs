@@ -33,8 +33,10 @@ namespace StockManufactura.Application.Services
         public async Task<UsuarioDto> CreateAsync(UpsertUsuarioRequest request, string plainPassword, string actor, CancellationToken cancellationToken = default)
         {
             ValidatePassword(plainPassword);
+            var nombre = NormalizeNombre(request.Nombre);
             var normalizedEmail = NormalizeEmail(request.Email);
 
+            await EnsureNombreDisponibleAsync(nombre, null);
             var existingUser = await _unitOfWork.Usuarios.GetByEmailAsync(normalizedEmail);
             if (existingUser is not null)
             {
@@ -48,7 +50,7 @@ namespace StockManufactura.Application.Services
             }
 
             var passwordHash = BCrypt.Net.BCrypt.HashPassword(plainPassword);
-            var usuario = new Usuario(request.Nombre.Trim(), normalizedEmail, passwordHash, request.RolId);
+            var usuario = new Usuario(nombre, normalizedEmail, passwordHash, request.RolId);
             usuario.AsignarRol(rol);
             if (!request.EsActivo)
             {
@@ -77,14 +79,16 @@ namespace StockManufactura.Application.Services
                 throw new InvalidOperationException("Rol no encontrado.");
             }
 
+            var nombre = NormalizeNombre(request.Nombre);
             var normalizedEmail = NormalizeEmail(request.Email);
+            await EnsureNombreDisponibleAsync(nombre, usuario.Id);
             var existingUser = await _unitOfWork.Usuarios.GetByEmailAsync(normalizedEmail);
             if (existingUser is not null && existingUser.Id != usuario.Id)
             {
                 throw new InvalidOperationException("Ya existe un usuario con ese email.");
             }
 
-            usuario.ActualizarDatos(request.Nombre.Trim(), normalizedEmail);
+            usuario.ActualizarDatos(nombre, normalizedEmail);
             usuario.AsignarRol(rol);
             if (request.EsActivo)
             {
@@ -155,10 +159,13 @@ namespace StockManufactura.Application.Services
                 throw new InvalidOperationException("Usuario no encontrado.");
             }
 
+            // Contraseña temporal asignada por un administrador: desbloquea la cuenta y obliga al usuario
+            // a reemplazarla en su próximo ingreso, para que el administrador no la conozca.
             usuario.CambiarPasswordHash(BCrypt.Net.BCrypt.HashPassword(newPassword));
+            usuario.ForzarCambioPassword();
             _unitOfWork.Usuarios.Update(usuario);
             await _unitOfWork.SaveChangesAsync();
-            await RegisterAuditAsync(actor, "CambiarPassword", usuario, $"Cambio de contraseña para {usuario.Email}", cancellationToken);
+            await RegisterAuditAsync(actor, "RestablecerPassword", usuario, $"Contraseña temporal asignada a {usuario.Email}; cuenta desbloqueada", cancellationToken);
         }
 
         public async Task<Rol> CreateRoleAsync(string nombre, string descripcion, string actor, CancellationToken cancellationToken = default)
@@ -250,6 +257,28 @@ namespace StockManufactura.Application.Services
             if (string.IsNullOrWhiteSpace(password) || password.Length < 8)
             {
                 throw new InvalidOperationException("La contraseña debe tener al menos 8 caracteres.");
+            }
+        }
+
+        private static string NormalizeNombre(string nombre)
+        {
+            if (string.IsNullOrWhiteSpace(nombre))
+            {
+                throw new InvalidOperationException("Nombre de usuario requerido.");
+            }
+
+            return nombre.Trim();
+        }
+
+        /// <summary>
+        /// El nombre de usuario es la credencial de ingreso, por lo que no puede repetirse (sin distinguir mayúsculas).
+        /// </summary>
+        private async Task EnsureNombreDisponibleAsync(string nombre, Guid? usuarioEditadoId)
+        {
+            var existente = await _unitOfWork.Usuarios.GetByNombreAsync(nombre);
+            if (existente is not null && existente.Id != usuarioEditadoId)
+            {
+                throw new InvalidOperationException("Ya existe un usuario con ese nombre de usuario.");
             }
         }
 

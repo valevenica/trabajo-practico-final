@@ -80,14 +80,44 @@ namespace StockManufactura.Desktop.ViewModels
         [ObservableProperty]
         private bool _isNewRolePanelVisible;
 
+        [ObservableProperty]
+        private bool _isPasswordChangeRequired;
+
+        [ObservableProperty]
+        private string _smtpHost = string.Empty;
+
+        [ObservableProperty]
+        private string _smtpPuerto = "587";
+
+        [ObservableProperty]
+        private bool _smtpUsarSsl = true;
+
+        [ObservableProperty]
+        private string _smtpUsuario = string.Empty;
+
+        [ObservableProperty]
+        private string _smtpPassword = string.Empty;
+
+        [ObservableProperty]
+        private string _smtpRemitente = string.Empty;
+
+        [ObservableProperty]
+        private string _smtpNombreRemitente = "Integra Manufacturing";
+
+        [ObservableProperty]
+        private bool _smtpTienePasswordGuardada;
+
         private readonly Dictionary<Guid, Rol> _rolesById = new();
+        private readonly IPasswordRecoveryService _passwordRecoveryService;
 
         public UserManagementViewModel(
             IUserManagementService userManagementService,
+            IPasswordRecoveryService passwordRecoveryService,
             NavigationService navigationService,
             DashboardViewModel dashboardViewModel)
         {
             _userManagementService = userManagementService ?? throw new ArgumentNullException(nameof(userManagementService));
+            _passwordRecoveryService = passwordRecoveryService ?? throw new ArgumentNullException(nameof(passwordRecoveryService));
             _navigationService = navigationService ?? throw new ArgumentNullException(nameof(navigationService));
             _dashboardViewModel = dashboardViewModel ?? throw new ArgumentNullException(nameof(dashboardViewModel));
 
@@ -104,6 +134,7 @@ namespace StockManufactura.Desktop.ViewModels
             SaveMyDataCommand = new AsyncRelayCommand(SaveMyDataAsync);
             SaveMyPasswordCommand = new AsyncRelayCommand(SaveMyPasswordAsync);
             ToggleMyChangePasswordCommand = new RelayCommand(ToggleMyChangePassword);
+            CancelMyChangePasswordCommand = new RelayCommand(CancelMyChangePassword);
             ToggleShowMyNewPasswordCommand = new RelayCommand(ToggleShowMyNewPassword);
             OpenUserAdminTabCommand = new RelayCommand(OpenUserAdminTab);
             OpenRoleAdminTabCommand = new RelayCommand(OpenRoleAdminTab);
@@ -113,10 +144,19 @@ namespace StockManufactura.Desktop.ViewModels
             DeleteUserCommand = new AsyncRelayCommand(DeleteUserAsync);
             DeleteRoleCommand = new AsyncRelayCommand(DeleteRoleAsync);
             BackCommand = new RelayCommand(GoBack);
+            SaveEmailSettingsCommand = new AsyncRelayCommand(SaveEmailSettingsAsync);
+            SendTestEmailCommand = new AsyncRelayCommand(SendTestEmailAsync);
 
             SelectedTabIndex = 0;
             MyNombre = AuthSession.Current?.Usuario?.Nombre ?? string.Empty;
             MyEmail = AuthSession.Current?.Usuario?.Email ?? string.Empty;
+
+            IsPasswordChangeRequired = ModuleAccess.PasswordChangePending;
+            if (IsPasswordChangeRequired)
+            {
+                IsMyChangePasswordVisible = true;
+                StatusMessage = "Su contraseña es inicial o fue asignada por un administrador. Reemplácela para continuar.";
+            }
 
             _ = LoadAsync();
         }
@@ -135,6 +175,7 @@ namespace StockManufactura.Desktop.ViewModels
         public ICommand SaveMyDataCommand { get; }
         public ICommand SaveMyPasswordCommand { get; }
         public ICommand ToggleMyChangePasswordCommand { get; }
+        public ICommand CancelMyChangePasswordCommand { get; }
         public ICommand ToggleShowMyNewPasswordCommand { get; }
         public ICommand OpenUserAdminTabCommand { get; }
         public ICommand OpenRoleAdminTabCommand { get; }
@@ -144,13 +185,32 @@ namespace StockManufactura.Desktop.ViewModels
         public ICommand DeleteUserCommand { get; }
         public ICommand DeleteRoleCommand { get; }
         public ICommand BackCommand { get; }
+        public ICommand SaveEmailSettingsCommand { get; }
+        public ICommand SendTestEmailCommand { get; }
 
         public bool CanManageUsers => AuthSession.Current?.TienePermiso("USUARIOS_ADMIN") == true;
         public bool CanManageRoles => CanManageUsers;
         public bool EsExistente => !EsNuevo;
         public bool HideNewPassword => !ShowNewPassword;
         public bool HideMyNewPassword => !ShowMyNewPassword;
-        public bool ShowBackButton => SelectedTabIndex != 1;
+
+        /// <summary>El botón "Cambiar contraseña" solo se muestra mientras los campos están ocultos.</summary>
+        public bool ShowMyChangePasswordButton => !IsMyChangePasswordVisible;
+
+        /// <summary>Durante un cambio obligatorio no se puede cancelar: hay que completarlo para seguir.</summary>
+        public bool CanCancelMyChangePassword => !IsPasswordChangeRequired;
+
+        partial void OnIsMyChangePasswordVisibleChanged(bool value)
+        {
+            OnPropertyChanged(nameof(ShowMyChangePasswordButton));
+        }
+        public bool ShowBackButton => SelectedTabIndex != 1 && !IsPasswordChangeRequired;
+
+        partial void OnIsPasswordChangeRequiredChanged(bool value)
+        {
+            OnPropertyChanged(nameof(ShowBackButton));
+            OnPropertyChanged(nameof(CanCancelMyChangePassword));
+        }
 
         partial void OnSelectedUserChanged(UsuarioDto? value)
         {
@@ -207,7 +267,11 @@ namespace StockManufactura.Desktop.ViewModels
         {
             if (!CanManageUsers)
             {
-                StatusMessage = "No tiene permisos para administrar usuarios.";
+                if (!IsPasswordChangeRequired)
+                {
+                    StatusMessage = "No tiene permisos para administrar usuarios.";
+                }
+
                 return;
             }
 
@@ -243,7 +307,12 @@ namespace StockManufactura.Desktop.ViewModels
                 foreach (var user in users)
                     Users.Add(user);
 
-                StatusMessage = "Usuarios cargados.";
+                await LoadEmailSettingsAsync();
+
+                if (!IsPasswordChangeRequired)
+                {
+                    StatusMessage = "Usuarios cargados.";
+                }
             }
             catch (Exception ex)
             {
@@ -346,7 +415,8 @@ namespace StockManufactura.Desktop.ViewModels
             NewPassword = string.Empty;
             IsChangePasswordVisible = false;
             ShowNewPassword = false;
-            StatusMessage = "Contraseña actualizada.";
+            await LoadAsync();
+            StatusMessage = "Contraseña temporal asignada. La cuenta quedó desbloqueada y el usuario deberá cambiarla al ingresar.";
         }
 
         private void StartNewUser()
@@ -373,6 +443,20 @@ namespace StockManufactura.Desktop.ViewModels
             MyCurrentPassword = string.Empty;
             MyNewPassword = string.Empty;
             ShowMyNewPassword = false;
+        }
+
+        private void CancelMyChangePassword()
+        {
+            if (IsPasswordChangeRequired)
+            {
+                return;
+            }
+
+            IsMyChangePasswordVisible = false;
+            MyCurrentPassword = string.Empty;
+            MyNewPassword = string.Empty;
+            ShowMyNewPassword = false;
+            StatusMessage = string.Empty;
         }
 
         private void ToggleShowMyNewPassword()
@@ -403,11 +487,29 @@ namespace StockManufactura.Desktop.ViewModels
 
             try
             {
+                if (string.Equals(MyCurrentPassword, MyNewPassword, StringComparison.Ordinal))
+                {
+                    StatusMessage = "La nueva contraseña debe ser distinta de la actual.";
+                    return;
+                }
+
                 await _userManagementService.ChangePasswordAsync(currentUser.Id, MyCurrentPassword, MyNewPassword, currentUser.Email);
                 MyCurrentPassword = string.Empty;
                 MyNewPassword = string.Empty;
                 IsMyChangePasswordVisible = false;
                 ShowMyNewPassword = false;
+
+                if (IsPasswordChangeRequired)
+                {
+                    currentUser.MarcarCambioPasswordRealizado();
+                    IsPasswordChangeRequired = false;
+                    _dashboardViewModel.NotifyPasswordChanged();
+                    MessageBox.Show("Contraseña actualizada. Ya puede usar el sistema.", "Cambio de contraseña",
+                        MessageBoxButton.OK, MessageBoxImage.Information);
+                    _navigationService.NavigateTo(_dashboardViewModel);
+                    return;
+                }
+
                 StatusMessage = "Contraseña actualizada.";
             }
             catch (Exception ex)
@@ -627,7 +729,92 @@ namespace StockManufactura.Desktop.ViewModels
 
         private void GoBack()
         {
+            if (IsPasswordChangeRequired)
+            {
+                StatusMessage = "Debe cambiar su contraseña antes de continuar.";
+                return;
+            }
+
             _navigationService.NavigateTo(_dashboardViewModel);
+        }
+
+        private async Task LoadEmailSettingsAsync()
+        {
+            if (!CanManageUsers)
+            {
+                return;
+            }
+
+            var settings = await _passwordRecoveryService.GetEmailSettingsAsync();
+            SmtpHost = settings.Host;
+            SmtpPuerto = settings.Puerto.ToString();
+            SmtpUsarSsl = settings.UsarSsl;
+            SmtpUsuario = settings.Usuario;
+            SmtpRemitente = settings.Remitente;
+            SmtpNombreRemitente = settings.NombreRemitente;
+            SmtpTienePasswordGuardada = !string.IsNullOrEmpty(settings.Password);
+            SmtpPassword = string.Empty;
+        }
+
+        private async Task SaveEmailSettingsAsync()
+        {
+            if (!CanManageUsers)
+            {
+                StatusMessage = "No tiene permisos para configurar el correo.";
+                return;
+            }
+
+            if (!int.TryParse(SmtpPuerto, out var puerto) || puerto <= 0)
+            {
+                StatusMessage = "El puerto debe ser un número (habitualmente 587).";
+                return;
+            }
+
+            try
+            {
+                // Si no se escribe una contraseña nueva se conserva la guardada.
+                var actual = await _passwordRecoveryService.GetEmailSettingsAsync();
+                var settings = new StockManufactura.Application.Email.EmailSettings
+                {
+                    Host = SmtpHost,
+                    Puerto = puerto,
+                    UsarSsl = SmtpUsarSsl,
+                    Usuario = SmtpUsuario,
+                    Password = string.IsNullOrEmpty(SmtpPassword) ? actual.Password : SmtpPassword,
+                    Remitente = SmtpRemitente,
+                    NombreRemitente = string.IsNullOrWhiteSpace(SmtpNombreRemitente) ? "Integra Manufacturing" : SmtpNombreRemitente
+                };
+
+                var actor = AuthSession.Current?.Usuario.Email ?? "desktop-user";
+                await _passwordRecoveryService.SaveEmailSettingsAsync(settings, actor);
+                await LoadEmailSettingsAsync();
+                StatusMessage = "Configuración de correo guardada.";
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = ex.Message;
+            }
+        }
+
+        private async Task SendTestEmailAsync()
+        {
+            var destinatario = AuthSession.Current?.Usuario.Email;
+            if (string.IsNullOrWhiteSpace(destinatario))
+            {
+                StatusMessage = "Su usuario no tiene un correo cargado.";
+                return;
+            }
+
+            try
+            {
+                StatusMessage = "Enviando correo de prueba...";
+                await _passwordRecoveryService.SendTestEmailAsync(destinatario);
+                StatusMessage = $"Correo de prueba enviado a {destinatario}.";
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"No se pudo enviar el correo de prueba: {ex.InnerException?.Message ?? ex.Message}";
+            }
         }
 
         public sealed record RolOption(Guid Id, string Nombre);

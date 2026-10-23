@@ -13,6 +13,7 @@ namespace StockManufactura.Desktop.Infrastructure
         private const string LegacyAdminEmail = "admin@stockmanufactura.local";
         private const string AdminName = "Admin";
         private const string DefaultAdminPassword = "Admin123";
+        private const string AdminPasswordVariable = "STOCKMANUFACTURA_ADMIN_PASSWORD";
 
         internal readonly record struct SeedStatus(bool AdminRoleExists, bool OperatorRoleExists, bool AdminUserExists)
         {
@@ -25,9 +26,16 @@ namespace StockManufactura.Desktop.Infrastructure
         {
             var adminRoleExists = dbContext.Roles.Any(r => r.Nombre == AdminRoleName);
             var operatorRoleExists = dbContext.Roles.Any(r => r.Nombre == OperatorRoleName);
-            var adminUserExists = dbContext.Usuarios.Any(u => u.Email == AdminEmail);
+            return new SeedStatus(adminRoleExists, operatorRoleExists, AdminUserExists(dbContext));
+        }
 
-            return new SeedStatus(adminRoleExists, operatorRoleExists, adminUserExists);
+        /// <summary>
+        /// El administrador se identifica por su rol y no por su correo ni por su nombre, que el propio usuario puede
+        /// modificar desde «Mis datos». Buscarlo por correo hacía que, tras cambiarlo, se creara un segundo «Admin».
+        /// </summary>
+        public static bool AdminUserExists(StockManufacturaDbContext dbContext)
+        {
+            return dbContext.Usuarios.Any(u => dbContext.Roles.Any(r => r.Id == u.RolId && r.Nombre == AdminRoleName));
         }
 
         public static void Seed(StockManufacturaDbContext dbContext)
@@ -92,42 +100,51 @@ namespace StockManufactura.Desktop.Infrastructure
                 hasChanges = true;
             }
 
-            var adminUser = dbContext.Usuarios.FirstOrDefault(u => u.Email == AdminEmail)
-                ?? dbContext.Usuarios.FirstOrDefault(u => u.Email == LegacyAdminEmail);
+            var adminUser = dbContext.Usuarios
+                .Where(u => u.RolId == adminRole.Id)
+                .OrderBy(u => u.CreatedAt)
+                .FirstOrDefault();
             if (adminUser is null)
             {
                 var passwordHash = BCrypt.Net.BCrypt.HashPassword(GetAdminPassword());
-                adminUser = new Usuario(AdminName, AdminEmail, passwordHash, adminRole.Id);
+                adminUser = new Usuario(GetFreeAdminName(dbContext), GetFreeAdminEmail(dbContext), passwordHash, adminRole.Id);
                 adminUser.AsignarRol(adminRole);
+                // La contraseña inicial es conocida: se exige reemplazarla en el primer ingreso.
+                adminUser.ForzarCambioPassword();
                 dbContext.Usuarios.Add(adminUser);
                 hasChanges = true;
             }
             else
             {
-                var configuredPassword = GetAdminPassword();
                 var adminUserChanged = false;
-                var shouldUpdateIdentity = !string.Equals(adminUser.Email, AdminEmail, StringComparison.OrdinalIgnoreCase)
-                    || !string.Equals(adminUser.Nombre, AdminName, StringComparison.Ordinal);
-                var shouldUpdatePassword = !BCrypt.Net.BCrypt.Verify(configuredPassword, adminUser.PasswordHash);
-                var shouldDisableForcedChange = adminUser.RequiereCambioPassword;
 
-                if (shouldUpdateIdentity)
+                // El nombre y el correo del administrador existente no se tocan: los define el usuario. Solo se
+                // migra el correo de las bases que aún conservan el dominio interno de versiones anteriores.
+                if (string.Equals(adminUser.Email, LegacyAdminEmail, StringComparison.OrdinalIgnoreCase)
+                    && !dbContext.Usuarios.Any(u => u.Email == AdminEmail))
                 {
-                    adminUser.ActualizarDatos(AdminName, AdminEmail);
+                    adminUser.ActualizarDatos(adminUser.Nombre, AdminEmail);
                     adminUserChanged = true;
                     hasChanges = true;
                 }
 
-                if (shouldUpdatePassword)
+                // La contraseña del administrador existente no se toca en cada inicio, para no revertir
+                // la que eligió el usuario. Solo se restablece si se configuró de forma explícita la
+                // variable de entorno de recuperación, y aun así se exige cambiarla en el próximo ingreso.
+                var recoveryPassword = Environment.GetEnvironmentVariable(AdminPasswordVariable);
+                if (!string.IsNullOrWhiteSpace(recoveryPassword)
+                    && !BCrypt.Net.BCrypt.Verify(recoveryPassword, adminUser.PasswordHash))
                 {
-                    adminUser.CambiarPasswordHash(BCrypt.Net.BCrypt.HashPassword(configuredPassword));
+                    adminUser.CambiarPasswordHash(BCrypt.Net.BCrypt.HashPassword(recoveryPassword));
+                    adminUser.ForzarCambioPassword();
                     adminUserChanged = true;
                     hasChanges = true;
                 }
-                else if (shouldDisableForcedChange)
+                else if (!adminUser.RequiereCambioPassword
+                    && BCrypt.Net.BCrypt.Verify(DefaultAdminPassword, adminUser.PasswordHash))
                 {
-                    // Clear forced-password flag without changing hash.
-                    adminUser.CambiarPasswordHash(adminUser.PasswordHash);
+                    // Bases creadas antes de esta correccion conservan la contraseña por defecto, que es publica.
+                    adminUser.ForzarCambioPassword();
                     adminUserChanged = true;
                     hasChanges = true;
                 }
@@ -330,9 +347,31 @@ namespace StockManufactura.Desktop.Infrastructure
             return true;
         }
 
+        private static string GetFreeAdminName(StockManufacturaDbContext dbContext)
+        {
+            var nombre = AdminName;
+            for (var i = 2; dbContext.Usuarios.Any(u => u.Nombre.ToLower() == nombre.ToLower()); i++)
+            {
+                nombre = AdminName + i;
+            }
+
+            return nombre;
+        }
+
+        private static string GetFreeAdminEmail(StockManufacturaDbContext dbContext)
+        {
+            var email = AdminEmail;
+            for (var i = 2; dbContext.Usuarios.Any(u => u.Email == email); i++)
+            {
+                email = $"admin{i}@test.com";
+            }
+
+            return email;
+        }
+
         private static string GetAdminPassword()
         {
-            var configured = Environment.GetEnvironmentVariable("STOCKMANUFACTURA_ADMIN_PASSWORD");
+            var configured = Environment.GetEnvironmentVariable(AdminPasswordVariable);
             return string.IsNullOrWhiteSpace(configured) ? DefaultAdminPassword : configured;
         }
     }

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Globalization;
 using System.Windows.Media;
 using StockManufactura.Domain.Entities;
@@ -7,8 +7,9 @@ namespace StockManufactura.Desktop.ViewModels
 {
     public sealed class DashboardOrderRow
     {
-        public DashboardOrderRow(OrdenProduccion order, string productName, decimal estimatedCost)
+        public DashboardOrderRow(OrdenProduccion order, string productName, decimal estimatedCost, string clientName = ClientOption.ConsumidorFinal)
         {
+            ClientName = clientName;
             OrderId = order.Id;
             RawEstado = order.Estado;
             Codigo = order.Codigo;
@@ -16,9 +17,12 @@ namespace StockManufactura.Desktop.ViewModels
             Quantity = order.CantidadPlaneada.ToString("0.##", CultureInfo.InvariantCulture);
             StatusFilter = GetStatusFilter(order.Estado);
             Estado = GetStatusText(order.Estado);
-            Fecha = order.CreatedAt.ToString("dd/MM/yyyy");
+            Fecha = DateTime.SpecifyKind(order.CreatedAt, DateTimeKind.Utc).ToLocalTime().ToString("dd/MM/yyyy");
             Costo = FormatMoney(estimatedCost);
             CreatedAt = order.CreatedAt;
+            IsOpen = order.Estado != EstadoOrdenProduccion.Finalizada && order.Estado != EstadoOrdenProduccion.Cancelada;
+            // Un pedido cerrado pertenece al período en que se cerró, el mismo criterio que usan las ventas del mes.
+            PeriodDate = IsOpen ? order.CreatedAt : order.FechaFin ?? order.CreatedAt;
             EstimatedCostValue = estimatedCost;
             StatusSortOrder = GetStatusSortOrder(order.Estado);
             (StatusBackground, StatusForeground) = GetStatusBrushes(order.Estado);
@@ -37,12 +41,15 @@ namespace StockManufactura.Desktop.ViewModels
 
         public string Codigo { get; }
         public string ProductName { get; }
+        public string ClientName { get; }
         public string Quantity { get; }
         public string StatusFilter { get; }
         public string Estado { get; }
         public string Fecha { get; }
         public string Costo { get; }
         public DateTime CreatedAt { get; }
+        public bool IsOpen { get; }
+        public DateTime PeriodDate { get; }
         public decimal EstimatedCostValue { get; }
         public int StatusSortOrder { get; }
         public Brush StatusBackground { get; }
@@ -76,7 +83,7 @@ namespace StockManufactura.Desktop.ViewModels
 
         private static string FormatMoney(decimal amount)
         {
-            return $"${amount.ToString("N2", CultureInfo.InvariantCulture)}";
+            return $"$ {amount.ToString("N2", CultureInfo.GetCultureInfo("es-AR"))}";
         }
 
         private static int GetStatusSortOrder(EstadoOrdenProduccion estado)

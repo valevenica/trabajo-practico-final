@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using StockManufactura.Domain.Entities;
 
 namespace StockManufactura.Infrastructure.Db
@@ -12,6 +12,7 @@ namespace StockManufactura.Infrastructure.Db
         public DbSet<Usuario> Usuarios { get; set; } = null!;
         public DbSet<Rol> Roles { get; set; } = null!;
         public DbSet<Proveedor> Proveedores { get; set; } = null!;
+        public DbSet<Cliente> Clientes { get; set; } = null!;
         public DbSet<Recurso> Recursos { get; set; } = null!;
         public DbSet<ExchangeRate> ExchangeRates { get; set; } = null!;
         public DbSet<ResourcePriceHistory> ResourcePriceHistory { get; set; } = null!;

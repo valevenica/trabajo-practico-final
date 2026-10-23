@@ -1,15 +1,16 @@
-using System;
+﻿using System;
 
 namespace StockManufactura.Domain.Entities
 {
     public sealed class OrdenProduccion : BaseEntity
     {
-        public OrdenProduccion(string codigo, Guid productoId, decimal cantidadPlaneada, string observaciones)
+        public OrdenProduccion(string codigo, Guid productoId, decimal cantidadPlaneada, string observaciones, Guid? clienteId = null)
         {
             Codigo = codigo;
             ProductoId = productoId;
             CantidadPlaneada = cantidadPlaneada;
             Observaciones = observaciones;
+            ClienteId = clienteId;
             Estado = EstadoOrdenProduccion.Borrador;
         }
 
@@ -17,12 +18,26 @@ namespace StockManufactura.Domain.Entities
 
         public string Codigo { get; private set; } = string.Empty;
         public Guid ProductoId { get; private set; }
+
+        /// <summary>Cliente del pedido; <c>null</c> cuando la venta es a consumidor final.</summary>
+        public Guid? ClienteId { get; private set; }
         public decimal CantidadPlaneada { get; private set; }
         public decimal CantidadProducida { get; private set; }
         public EstadoOrdenProduccion Estado { get; private set; }
         public string Observaciones { get; private set; } = string.Empty;
         public DateTime? FechaInicio { get; private set; }
         public DateTime? FechaFin { get; private set; }
+
+        public void AsignarCliente(Guid? clienteId)
+        {
+            if (Estado == EstadoOrdenProduccion.Finalizada || Estado == EstadoOrdenProduccion.Cancelada)
+            {
+                throw new InvalidOperationException("No se puede cambiar el cliente de una orden finalizada o cancelada.");
+            }
+
+            ClienteId = clienteId;
+            UpdateTimestamp();
+        }
 
         public void Planificar()
         {

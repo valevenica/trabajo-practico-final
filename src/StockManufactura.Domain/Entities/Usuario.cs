@@ -53,6 +53,15 @@ namespace StockManufactura.Domain.Entities
             UpdateTimestamp();
         }
 
+        /// <summary>
+        /// Refleja en una instancia ya cargada que el usuario completo el cambio obligatorio de contraseña,
+        /// sin tocar el hash (que fue reemplazado por otra instancia).
+        /// </summary>
+        public void MarcarCambioPasswordRealizado()
+        {
+            RequiereCambioPassword = false;
+        }
+
         public void ForzarCambioPassword()
         {
             RequiereCambioPassword = true;

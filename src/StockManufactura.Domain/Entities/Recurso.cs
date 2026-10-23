@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 
 namespace StockManufactura.Domain.Entities
 {
@@ -19,5 +19,11 @@ namespace StockManufactura.Domain.Entities
         public string Observaciones { get; set; } = string.Empty;
         public bool Activo { get; set; } = true;
         public bool EsServicio { get; set; }
+
+        /// <summary>
+        /// Precio por unidad en pesos: los insumos cotizados en dólares se convierten con la cotización vigente. Es el
+        /// valor que usan el costo de fabricación, la valorización del inventario y la pantalla de productos.
+        /// </summary>
+        public decimal PrecioEnPesos(decimal cotizacion) => Moneda == Moneda.USD ? Precio * cotizacion : Precio;
     }
 }

@@ -4,10 +4,12 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Threading;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
+using StockManufactura.Application.Interfaces;
 using StockManufactura.Desktop.Extensions;
 using StockManufactura.Desktop.Infrastructure;
 using StockManufactura.Desktop.Services;
@@ -22,7 +24,11 @@ namespace StockManufactura.Desktop;
 /// </summary>
 public partial class App : global::System.Windows.Application
 {
+    private static readonly TimeSpan AutomaticBackupCheckInterval = TimeSpan.FromMinutes(5);
+
     private IHost? _host;
+    private DispatcherTimer? _backupTimer;
+    private bool _automaticBackupRunning;
 
     protected override async void OnStartup(StartupEventArgs e)
     {
@@ -93,6 +99,8 @@ public partial class App : global::System.Windows.Application
 
             splashWindow.Close();
             mainWindow.Show();
+
+            StartAutomaticBackupTimer();
         }
         catch (Exception ex)
         {
@@ -111,8 +119,51 @@ public partial class App : global::System.Windows.Application
         }
     }
 
+    /// <summary>
+    /// Verifica periodicamente si corresponde generar la copia automatica. El servicio decide segun
+    /// la configuracion (activada o no) y el intervalo transcurrido desde la ultima copia automatica.
+    /// </summary>
+    private void StartAutomaticBackupTimer()
+    {
+        _backupTimer = new DispatcherTimer { Interval = AutomaticBackupCheckInterval };
+        _backupTimer.Tick += async (_, _) => await RunAutomaticBackupIfDueAsync();
+        _backupTimer.Start();
+        _ = RunAutomaticBackupIfDueAsync();
+    }
+
+    private async Task RunAutomaticBackupIfDueAsync()
+    {
+        if (_host is null || _automaticBackupRunning)
+        {
+            return;
+        }
+
+        _automaticBackupRunning = true;
+        try
+        {
+            using var scope = _host.Services.CreateScope();
+            var backupService = scope.ServiceProvider.GetRequiredService<IBackupService>();
+            var usuario = AuthSession.Current?.Usuario.Email ?? "sistema";
+            var record = await backupService.RunAutomaticBackupIfDueAsync(usuario);
+            if (record is not null)
+            {
+                Log.Information("Copia de seguridad automatica generada en {Ruta}", record.RutaArchivo);
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Automatic backup failed");
+        }
+        finally
+        {
+            _automaticBackupRunning = false;
+        }
+    }
+
     protected override async void OnExit(ExitEventArgs e)
     {
+        _backupTimer?.Stop();
+
         if (_host is not null)
         {
             await _host.StopAsync();

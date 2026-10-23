@@ -125,6 +125,39 @@ public class SystemStatusServiceTests
         Assert.Equal(1, snapshot.CostRecalculationCount);
     }
 
+    [Fact]
+    public async Task GetSnapshotAsync_ComputesSalesIndicatorsForPeriod()
+    {
+        var unitOfWork = new FakeUnitOfWork();
+        var producto = new Producto { Codigo = "P1", Activo = true, PrecioSugeridoActual = 100m, CostoFabricacionActual = 60m };
+        unitOfWork.ProductosFake.Seed(producto);
+
+        var finalizada1 = new OrdenProduccion("OP-1", producto.Id, 2m, string.Empty);
+        finalizada1.Completar();
+        var finalizada2 = new OrdenProduccion("OP-2", producto.Id, 3m, string.Empty);
+        finalizada2.Completar();
+        var enCurso = new OrdenProduccion("OP-3", producto.Id, 1m, string.Empty);
+        var cancelada = new OrdenProduccion("OP-4", producto.Id, 5m, string.Empty);
+        cancelada.Cancelar("prueba");
+        unitOfWork.OrdenesProduccionFake.Seed(finalizada1, finalizada2, enCurso, cancelada);
+
+        var service = BuildService(unitOfWork, new BackupSettings());
+        var hoy = DateTime.UtcNow;
+
+        var snapshot = await service.GetSnapshotAsync(hoy.Year, hoy.Month);
+
+        // Ventas: (2 + 3) unidades x $100; costo: 5 x $60; la orden cancelada no cuenta como pedido.
+        Assert.Equal(500m, snapshot.MonthlySalesTotal);
+        Assert.Equal(300m, snapshot.MonthlySalesCost);
+        Assert.Equal(40m, snapshot.GrossMarginPercent);
+        Assert.Equal(250m, snapshot.AverageTicket);
+        Assert.Equal(3, snapshot.OrdersInPeriodCount);
+        Assert.Equal(1, snapshot.OpenOrdersCount);
+        Assert.Equal(2, snapshot.FinishedOrdersInPeriodCount);
+        Assert.Equal(0m, snapshot.PreviousPeriodSalesTotal);
+        Assert.Null(snapshot.SalesVariationPercent);
+    }
+
     private static SystemStatusService BuildService(FakeUnitOfWork unitOfWork, BackupSettings settings)
     {
         var backupService = new FakeBackupService(new BackupRecord { FechaHora = Backup }, settings);

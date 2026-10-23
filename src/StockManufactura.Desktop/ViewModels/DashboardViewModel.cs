@@ -1,9 +1,10 @@
-using System;
+﻿using System;
 using System.Collections.ObjectModel;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using System.Windows.Data;
@@ -67,9 +68,14 @@ namespace StockManufactura.Desktop.ViewModels
         private readonly ISystemStatusService _systemStatusService;
         private readonly IUserManagementService _userManagementService;
         private readonly IShortageService _shortageService;
+        private readonly IPasswordRecoveryService _passwordRecoveryService;
         private SystemStatusSnapshot? _status;
         private string _statusMessage = string.Empty;
         private readonly ICollectionView _ordersView;
+
+        // Las pantallas que se abren desde el panel reciben su propio contexto de datos: el del panel vive toda la sesión
+        // y compartirlo hacía que las consultas de ambas pantallas se pisaran.
+        private readonly Func<IUnitOfWork>? _unitOfWorkFactory;
 
         public DashboardViewModel(
             Usuario usuario,
@@ -82,8 +88,12 @@ namespace StockManufactura.Desktop.ViewModels
             IProductCostService productCostService,
             ISystemStatusService systemStatusService,
             IUserManagementService userManagementService,
-            IShortageService shortageService)
+            IShortageService shortageService,
+            IPasswordRecoveryService passwordRecoveryService,
+            Func<IUnitOfWork>? unitOfWorkFactory = null)
         {
+            _unitOfWorkFactory = unitOfWorkFactory;
+            _passwordRecoveryService = passwordRecoveryService;
             Usuario = usuario;
             _navigationService = navigationService;
             _resourcePricingService = resourcePricingService;
@@ -105,6 +115,7 @@ namespace StockManufactura.Desktop.ViewModels
             NavigateToProvidersCommand = new RelayCommand(NavigateToProviders);
             NavigateToProductionOrdersCommand = new RelayCommand(NavigateToProductionOrders);
             NavigateToUserManagementCommand = new RelayCommand(NavigateToUserManagement);
+            NavigateToMyAccountCommand = new RelayCommand(NavigateToMyAccount);
             RefreshStatusCommand = new AsyncRelayCommand(LoadStatusAsync);
             OrderStatusFilters = new ObservableCollection<StatusFilterItem>
             {
@@ -150,6 +161,13 @@ namespace StockManufactura.Desktop.ViewModels
         public ICommand NavigateToProvidersCommand { get; }
         public ICommand NavigateToProductionOrdersCommand { get; }
         public ICommand NavigateToUserManagementCommand { get; }
+        public ICommand NavigateToMyAccountCommand { get; }
+
+        /// <summary>Contraseña inicial o temporal todavía no reemplazada: el panel muestra el aviso.</summary>
+        public bool IsPasswordChangePending => ModuleAccess.PasswordChangePending;
+
+        /// <summary>Lo invoca "Mi cuenta" al completar el cambio, para ocultar el aviso.</summary>
+        public void NotifyPasswordChanged() => OnPropertyChanged(nameof(IsPasswordChangePending));
         public ICommand RefreshStatusCommand { get; }
         public ICommand AdvanceOrderCommand { get; }
         public ICommand CancelOrderCommand { get; }
@@ -221,8 +239,9 @@ namespace StockManufactura.Desktop.ViewModels
             nameof(ResourceCountText), nameof(CustomerCountText), nameof(VersionText),
             nameof(DollarSourceText), nameof(BackupStatusText), nameof(CloudStatusText),
             nameof(StatusToneText), nameof(BackupHealthy), nameof(SyncHealthy),
-            nameof(AuditEventCountText), nameof(AuditUserCountText), nameof(TraceabilityCoverageText),
-            nameof(TraceabilityChangesText), nameof(CloudSyncStatusText), nameof(LastAuditText)
+            nameof(SalesTotalText), nameof(SalesVariationText), nameof(SalesVariationPositive), nameof(SalesVariationNegative),
+            nameof(OrdersInPeriodText), nameof(OpenOrdersText), nameof(AverageTicketText), nameof(AverageTicketDetailText),
+            nameof(GrossMarginText), nameof(GrossMarginDetailText), nameof(CriticalStockCount), nameof(HasCriticalStock)
         };
 
         public string StatusMessage
@@ -247,21 +266,30 @@ namespace StockManufactura.Desktop.ViewModels
         public bool BackupHealthy => Status?.BackupEnabled == true;
         public bool SyncHealthy => Status?.DriveSyncEnabled == true;
 
-        // Indicadores de trazabilidad y auditoría del período seleccionado.
-        public string AuditEventCountText => Status?.AuditEventCount.ToString() ?? "0";
-        public string AuditUserCountText => Status is null
-            ? "Sin actividad"
-            : $"{Status.AuditUserCount} usuario(s) distintos";
-        public string TraceabilityCoverageText => Status is null
-            ? "0 %"
-            : $"{Status.TraceabilityCoveragePercent:0.#} %";
-        public string TraceabilityChangesText => Status is null
-            ? "0"
-            : (Status.PriceChangeCount + Status.CostRecalculationCount).ToString();
-        public string CloudSyncStatusText => Status?.CloudSyncStatus ?? "No configurado";
-        public string LastAuditText => Status?.LastAuditAt is DateTime auditAt
-            ? $"Último evento: {auditAt.ToLocalTime():dd/MM/yyyy HH:mm} · {Status!.LastAuditDescription}"
-            : "Sin eventos registrados";
+        // Indicadores comerciales del período seleccionado. Los indicadores de trazabilidad y auditoría
+        // se muestran en la pantalla de Auditoría, reservada al administrador.
+        private static readonly System.Globalization.CultureInfo Moneda = System.Globalization.CultureInfo.GetCultureInfo("es-AR");
+
+        private static string Pesos(decimal value) => $"$ {value.ToString("N2", Moneda)}";
+
+        public string SalesTotalText => Pesos(Status?.MonthlySalesTotal ?? 0m);
+        public string SalesVariationText => Status?.SalesVariationPercent is decimal variation
+            ? $"{(variation >= 0 ? "▲" : "▼")} {Math.Abs(variation).ToString("0.#", Moneda)} % vs. mes anterior"
+            : Status?.PreviousPeriodSalesTotal is null ? "Sin comparación para el período" : "Sin ventas el mes anterior";
+        public bool SalesVariationPositive => Status?.SalesVariationPercent >= 0;
+        public bool SalesVariationNegative => Status?.SalesVariationPercent < 0;
+        public string OrdersInPeriodText => (Status?.OrdersInPeriodCount ?? 0).ToString();
+        public string OpenOrdersText => $"{Status?.OpenOrdersCount ?? 0} en curso · {Status?.FinishedOrdersInPeriodCount ?? 0} finalizados";
+        public string AverageTicketText => Pesos(Status?.AverageTicket ?? 0m);
+        public string AverageTicketDetailText => "Venta promedio por pedido finalizado";
+        public string GrossMarginText => Status?.GrossMarginPercent is decimal margin
+            ? $"{margin.ToString("0.#", Moneda)} %"
+            : "—";
+        public string GrossMarginDetailText => Status is null || Status.MonthlySalesTotal == 0
+            ? "Sin ventas en el período"
+            : $"Ganancia bruta {Pesos(Status.MonthlySalesTotal - Status.MonthlySalesCost)}";
+        public int CriticalStockCount => Status?.CriticalStockCount ?? 0;
+        public bool HasCriticalStock => CriticalStockCount > 0;
 
         partial void OnSelectedOrderStatusFilterChanged(string value)
         {
@@ -301,36 +329,71 @@ namespace StockManufactura.Desktop.ViewModels
 
         private void NavigateToShortages()
         {
+            if (!ModuleAccess.TryEnter(ModuleAccess.Shortages))
+            {
+                return;
+            }
+
             _navigationService.NavigateTo(new ShortagesViewModel(_shortageService, _navigationService, this));
         }
 
         private void NavigateToResources()
         {
+            if (!ModuleAccess.TryEnter(ModuleAccess.Resources))
+            {
+                return;
+            }
+
             _navigationService.NavigateTo(new ResourceManagementViewModel(_resourcePricingService, _monetaryConfigurationService, _unitOfWork, _auditLogService));
         }
 
         private void NavigateToMonetaryConfiguration()
         {
+            if (!ModuleAccess.TryEnter(ModuleAccess.Monetary))
+            {
+                return;
+            }
+
             _navigationService.NavigateTo(new MonetaryConfigurationViewModel(_monetaryConfigurationService));
         }
 
         private void NavigateToAuditLog()
         {
-            _navigationService.NavigateTo(new AuditLogViewModel(_auditLogService));
+            if (!ModuleAccess.TryEnter(ModuleAccess.Audit))
+            {
+                return;
+            }
+
+            _navigationService.NavigateTo(new AuditLogViewModel(_auditLogService, _systemStatusService));
         }
 
         private void NavigateToBackups()
         {
+            if (!ModuleAccess.TryEnter(ModuleAccess.Backups))
+            {
+                return;
+            }
+
             _navigationService.NavigateTo(new BackupManagementViewModel(_backupService));
         }
 
         private void NavigateToProductCostHistory()
         {
+            if (!ModuleAccess.TryEnter(ModuleAccess.CostHistory))
+            {
+                return;
+            }
+
             _navigationService.NavigateTo(new ProductCostHistoryViewModel(_unitOfWork, _productCostService, _navigationService, this));
         }
 
         private void NavigateToProducts()
         {
+            if (!ModuleAccess.TryEnter(ModuleAccess.Products))
+            {
+                return;
+            }
+
             if (!CanViewProducts)
             {
                 StatusMessage = "No tiene permisos para gestionar productos.";
@@ -342,6 +405,11 @@ namespace StockManufactura.Desktop.ViewModels
 
         private void NavigateToProviders()
         {
+            if (!ModuleAccess.TryEnter(ModuleAccess.Providers))
+            {
+                return;
+            }
+
             if (!CanManageProviders)
             {
                 StatusMessage = "No tiene permisos para gestionar proveedores.";
@@ -353,13 +421,24 @@ namespace StockManufactura.Desktop.ViewModels
 
         private void NavigateToProductionOrders()
         {
+            if (!ModuleAccess.TryEnter(ModuleAccess.ProductionOrders))
+            {
+                return;
+            }
+
             if (!CanManageProductionOrders)
             {
                 StatusMessage = "No tiene permisos para gestionar órdenes de producción.";
                 return;
             }
 
-            _navigationService.NavigateTo(new ProductionOrderManagementViewModel(_unitOfWork, _auditLogService, _navigationService, this));
+            _navigationService.NavigateTo(new ProductionOrderManagementViewModel(
+                _unitOfWorkFactory?.Invoke() ?? _unitOfWork, _auditLogService, _navigationService, this, _shortageService));
+        }
+
+        private void NavigateToMyAccount()
+        {
+            _navigationService.NavigateTo(new UserManagementViewModel(_userManagementService, _passwordRecoveryService, _navigationService, this));
         }
 
         private void NavigateToUserManagement()
@@ -370,37 +449,51 @@ namespace StockManufactura.Desktop.ViewModels
                 return;
             }
 
-            _navigationService.NavigateTo(new UserManagementViewModel(_userManagementService, _navigationService, this));
+            _navigationService.NavigateTo(new UserManagementViewModel(_userManagementService, _passwordRecoveryService, _navigationService, this));
         }
+
+        // El panel comparte un contexto de datos entre todas sus cargas, y al abrirse se disparan dos a la vez (la del
+        // período inicial y la explícita): se serializan para que no usen el contexto en paralelo.
+        private readonly SemaphoreSlim _loadGate = new(1, 1);
 
         private async Task LoadStatusAsync()
         {
+            await _loadGate.WaitAsync();
             try
             {
-                var period = SelectedPeriod;
-                var (snapshot, orders) = await Task.Run(async () =>
+                try
                 {
-                    var s = await _systemStatusService.GetSnapshotAsync(period?.Year, period?.Month);
-                    var o = await _unitOfWork.OrdenesProduccion.ListByCreatedDescAsync();
-                    return (s, o);
-                });
+                    var period = SelectedPeriod;
+                    var (snapshot, orders) = await Task.Run(async () =>
+                    {
+                        var s = await _systemStatusService.GetSnapshotAsync(period?.Year, period?.Month);
+                        var o = await _unitOfWork.OrdenesProduccion.ListByCreatedDescAsync();
+                        return (s, o);
+                    });
 
-                var productIds = orders.Select(x => x.ProductoId).Distinct();
-                var products = await Task.Run(async () => await _unitOfWork.Productos.ListByIdsAsync(productIds.ToArray()));
+                    var productIds = orders.Select(x => x.ProductoId).Distinct();
+                    var products = await Task.Run(async () => await _unitOfWork.Productos.ListByIdsAsync(productIds.ToArray()));
+                    var clients = await Task.Run(async () => await _unitOfWork.Clientes.ListAsync());
 
-                Status = snapshot;
-                LoadOrders(orders, products);
-                StatusMessage = string.Empty;
+                    Status = snapshot;
+                    LoadOrders(orders, products, clients);
+                    StatusMessage = string.Empty;
+                }
+                catch (Exception ex)
+                {
+                    StatusMessage = $"No se pudo cargar el estado del sistema: {ex.Message}";
+                }
             }
-            catch (Exception ex)
+            finally
             {
-                StatusMessage = $"No se pudo cargar el estado del sistema: {ex.Message}";
+                _loadGate.Release();
             }
         }
 
-        private void LoadOrders(IEnumerable<OrdenProduccion> orders, IEnumerable<Producto> products)
+        private void LoadOrders(IEnumerable<OrdenProduccion> orders, IEnumerable<Producto> products, IEnumerable<Cliente> clients)
         {
             var productsById = products.ToDictionary(product => product.Id, product => product);
+            var clientNames = clients.ToDictionary(client => client.Id, client => client.Nombre);
             Orders.Clear();
 
             foreach (var order in orders)
@@ -408,7 +501,10 @@ namespace StockManufactura.Desktop.ViewModels
                 productsById.TryGetValue(order.ProductoId, out var product);
                 var productName = product?.Nombre ?? "Producto eliminado";
                 var estimatedCost = (product?.CostoFabricacionActual ?? 0m) * order.CantidadPlaneada;
-                Orders.Add(new DashboardOrderRow(order, productName, estimatedCost));
+                var clientName = order.ClienteId is Guid clientId && clientNames.TryGetValue(clientId, out var name)
+                    ? name
+                    : ClientOption.ConsumidorFinal;
+                Orders.Add(new DashboardOrderRow(order, productName, estimatedCost, clientName));
             }
 
             OnPropertyChanged(nameof(Orders));
@@ -419,14 +515,18 @@ namespace StockManufactura.Desktop.ViewModels
         {
             if (obj is not DashboardOrderRow row) return false;
 
-            if (SelectedPeriod is { Year: not null, Month: not null } period
-                && (row.CreatedAt.Year != period.Year || row.CreatedAt.Month != period.Month))
+            // Los pedidos abiertos son trabajo pendiente y se muestran en cualquier período, aunque se hayan creado
+            // en un mes anterior; el período solo acota los pedidos ya finalizados o cancelados.
+            if (!row.IsOpen
+                && SelectedPeriod is { Year: not null, Month: not null } period
+                && (row.PeriodDate.Year != period.Year || row.PeriodDate.Month != period.Month))
             {
                 return false;
             }
 
             if (!string.IsNullOrWhiteSpace(OrderIdSearchText)
-                && row.Codigo.IndexOf(OrderIdSearchText, StringComparison.OrdinalIgnoreCase) < 0)
+                && row.Codigo.IndexOf(OrderIdSearchText, StringComparison.OrdinalIgnoreCase) < 0
+                && row.ClientName.IndexOf(OrderIdSearchText, StringComparison.OrdinalIgnoreCase) < 0)
             {
                 return false;
             }
@@ -438,6 +538,7 @@ namespace StockManufactura.Desktop.ViewModels
         private async Task AdvanceOrderAsync(DashboardOrderRow? row)
         {
             if (row is null) return;
+            if (!ModuleAccess.TryEnter(ModuleAccess.ProductionOrders)) return;
             try
             {
                 var order = await _unitOfWork.OrdenesProduccion.GetByIdAsync(row.OrderId);
@@ -461,6 +562,7 @@ namespace StockManufactura.Desktop.ViewModels
         private async Task CancelOrderAsync(DashboardOrderRow? row)
         {
             if (row is null) return;
+            if (!ModuleAccess.TryEnter(ModuleAccess.ProductionOrders)) return;
             try
             {
                 var order = await _unitOfWork.OrdenesProduccion.GetByIdAsync(row.OrderId);
