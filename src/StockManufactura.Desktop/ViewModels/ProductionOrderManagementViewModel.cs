@@ -491,19 +491,14 @@ namespace StockManufactura.Desktop.ViewModels
 
         private async Task ApplyStockMovementAsync(EstadoOrdenProduccion previousState, OrdenProduccion order)
         {
-            var wasWaiting = previousState == EstadoOrdenProduccion.Borrador || previousState == EstadoOrdenProduccion.Planificada;
-            var wasInProcess = previousState == EstadoOrdenProduccion.EnProceso;
-
-            var shouldDispatch = wasWaiting
-                && (order.Estado == EstadoOrdenProduccion.EnProceso || order.Estado == EstadoOrdenProduccion.Finalizada);
-
-            var shouldReturn = wasInProcess
-                && (order.Estado == EstadoOrdenProduccion.Borrador || order.Estado == EstadoOrdenProduccion.Cancelada);
-
-            if (!shouldDispatch && !shouldReturn)
+            // Antes, planificar una orden en proceso no reintegraba las unidades y al iniciarla de nuevo se descontaban dos veces.
+            var movimiento = OrdenProduccion.MovimientoDeStock(previousState, order.Estado);
+            if (movimiento == 0)
             {
                 return;
             }
+
+            var shouldDispatch = movimiento < 0;
 
             var product = await _unitOfWork.Productos.GetByIdAsync(order.ProductoId);
             if (product is null)

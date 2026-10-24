@@ -142,6 +142,29 @@ namespace StockManufactura.Domain.Entities
             Observaciones = observaciones ?? string.Empty;
             UpdateTimestamp();
         }
+
+        /// <summary>
+        /// Efecto de un cambio de estado sobre el stock del producto: -1 descuenta las unidades planeadas, +1 las reintegra
+        /// y 0 no mueve stock. Las órdenes en espera (borrador o planificada) solo reservan; el descuento se aplica al salir
+        /// de la espera hacia en proceso o finalizada, y se revierte cuando una orden en proceso vuelve a la espera o se cancela.
+        /// </summary>
+        public static int MovimientoDeStock(EstadoOrdenProduccion anterior, EstadoOrdenProduccion nuevo)
+        {
+            var enEspera = (EstadoOrdenProduccion estado) =>
+                estado == EstadoOrdenProduccion.Borrador || estado == EstadoOrdenProduccion.Planificada;
+
+            if (enEspera(anterior) && (nuevo == EstadoOrdenProduccion.EnProceso || nuevo == EstadoOrdenProduccion.Finalizada))
+            {
+                return -1;
+            }
+
+            if (anterior == EstadoOrdenProduccion.EnProceso && (enEspera(nuevo) || nuevo == EstadoOrdenProduccion.Cancelada))
+            {
+                return 1;
+            }
+
+            return 0;
+        }
     }
 
     public enum EstadoOrdenProduccion
