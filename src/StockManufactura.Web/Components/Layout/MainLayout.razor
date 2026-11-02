@@ -34,6 +34,7 @@
                 <div class="user-name">@Session.Usuario.Nombre</div>
                 <div class="muted small">@Session.Usuario.Rol?.Nombre</div>
                 <a href="cuenta" class="small">Mi cuenta</a>
+                <a href="ayuda/manual-de-usuario.pdf" target="_blank" rel="noopener" class="small">📘 Ayuda (manual de usuario)</a>
                 <form method="post" action="cuenta/salir">
                     <AntiforgeryToken />
                     <button type="submit" class="btn btn-link small">Cerrar sesión</button>

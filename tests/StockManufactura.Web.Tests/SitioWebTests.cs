@@ -22,6 +22,7 @@ public class SitioWebTests : IClassFixture<SitioWebFactory>
         Assert.Equal(HttpStatusCode.OK, respuesta.StatusCode);
         Assert.Contains("¿Olvidó su contraseña?", html);
         Assert.Contains("btn-eye", html);
+        Assert.Contains("ayuda/manual-de-usuario.pdf", html);
     }
 
     [Fact]
@@ -54,6 +55,7 @@ public class SitioWebTests : IClassFixture<SitioWebFactory>
     [InlineData("/js/app.js")]
     [InlineData("/img/logo.png")]
     [InlineData("/app.css")]
+    [InlineData("/ayuda/manual-de-usuario.pdf")]
     public async Task ArchivosEstaticos_SeSirven(string ruta)
     {
         var respuesta = await _sitio.Cliente().GetAsync(ruta);
