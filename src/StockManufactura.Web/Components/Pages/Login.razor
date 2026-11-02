@@ -1,0 +1,131 @@
+@page "/login"
+@layout EmptyLayout
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Authentication
+@using Microsoft.AspNetCore.Authentication.Cookies
+@inject StockManufactura.Application.Interfaces.IAuthenticationService AuthenticationService
+@inject IAuditLogService AuditLogService
+@inject NavigationManager Navigation
+@inject IConfiguration Configuration
+
+@* Se renderiza en el servidor sin interactividad: el inicio de sesión necesita el HttpContext para emitir la cookie. *@
+
+<PageTitle>Ingresar · StockManufactura</PageTitle>
+
+<div class="auth-card">
+    <img src="img/logo.png" alt="" class="auth-logo" />
+    <h1>StockManufactura</h1>
+    <p class="muted">Ingresá con tu nombre de usuario.</p>
+
+    <EditForm Model="Input" FormName="login" OnValidSubmit="IngresarAsync" method="post">
+        <label for="usuario">Usuario</label>
+        <InputText id="usuario" @bind-Value="Input.Usuario" autocomplete="username" autofocus />
+
+        <label for="password">Contraseña</label>
+        <div class="password-field">
+            <InputText id="password" type="password" @bind-Value="Input.Password" autocomplete="current-password" />
+            @* La página no es interactiva: el botón alterna el tipo del campo directamente en el navegador. *@
+            <button type="button" class="btn-eye" title="Mostrar u ocultar la contraseña" aria-label="Mostrar u ocultar la contraseña"
+                    onclick="var p=document.getElementById('password');p.type=p.type==='password'?'text':'password';">👁</button>
+        </div>
+
+        @if (!string.IsNullOrEmpty(_error))
+        {
+            <div class="alert alert-error">@_error</div>
+        }
+
+        <button type="submit" class="btn btn-primary btn-block">Ingresar</button>
+    </EditForm>
+    <a class="auth-link" href="cuenta/recuperar">¿Olvidó su contraseña?</a>
+
+    @if (DemoSetup.Habilitada(Configuration))
+    {
+        <div class="demo-box">
+            <strong>Versión de demostración</strong>
+            <p>Los datos son ficticios y vuelven a su estado inicial cada vez que el servidor se reinicia.</p>
+            <table>
+                <thead><tr><th>Usuario</th><th>Contraseña</th><th>Perfil</th></tr></thead>
+                <tbody>
+                    @foreach (var u in DemoSetup.Usuarios)
+                    {
+                        <tr><td>@u.Nombre</td><td>@u.Password</td><td>@u.Descripcion</td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@code {
+    [CascadingParameter] private HttpContext HttpContext { get; set; } = default!;
+
+    [SupplyParameterFromForm] private LoginInput Input { get; set; } = default!;
+
+    [SupplyParameterFromQuery] private string? ReturnUrl { get; set; }
+
+    private string? _error;
+
+    protected override void OnInitialized() => Input ??= new();
+
+    private async Task IngresarAsync()
+    {
+        if (string.IsNullOrWhiteSpace(Input.Usuario) || string.IsNullOrWhiteSpace(Input.Password))
+        {
+            _error = "Usuario y contraseña son requeridos.";
+            return;
+        }
+
+        var result = await AuthenticationService.AuthenticateDetailedAsync(Input.Usuario.Trim(), Input.Password);
+        if (!result.IsSuccess || result.Usuario is null)
+        {
+            _error = result.IsLockedOut
+                ? $"{result.Message} Puede recuperar el acceso con «¿Olvidó su contraseña?» o pedirle al administrador una contraseña temporal."
+                : result.Message;
+            await RegistrarAuditoriaAsync("LoginFallido", result.Message, null);
+            return;
+        }
+
+        if (result.RequiresPasswordChange)
+        {
+            await RegistrarAuditoriaAsync("LoginPendienteCambioPassword", "Ingreso válido con cambio de contraseña pendiente.", result.Usuario.Id);
+        }
+
+        var usuario = await AuthenticationService.RegisterLoginAsync(result.Usuario);
+        await RegistrarAuditoriaAsync("LoginExitoso", "Ingreso exitoso al sistema.", usuario.Id);
+        var claims = new List<Claim>
+        {
+            new(ClaimTypes.NameIdentifier, usuario.Id.ToString()),
+            new(ClaimTypes.Name, usuario.Nombre),
+            new(ClaimTypes.Email, usuario.Email),
+        };
+        var principal = new ClaimsPrincipal(new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme));
+        await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
+
+        var destino = result.RequiresPasswordChange ? "cuenta/password" : ReturnUrl;
+        Navigation.NavigateTo(EsRutaLocal(destino) ? destino! : "", forceLoad: true);
+    }
+
+    // Mismo registro que el ingreso de escritorio, para que la bitácora muestre los accesos de ambas versiones.
+    private Task RegistrarAuditoriaAsync(string accion, string descripcion, Guid? usuarioId)
+    {
+        return AuditLogService.RegisterAsync(new AuditLog
+        {
+            Usuario = string.IsNullOrWhiteSpace(Input.Usuario) ? "anonymous" : Input.Usuario.Trim(),
+            Modulo = "Autenticacion",
+            Accion = accion,
+            Entidad = "Usuario",
+            IdEntidad = usuarioId?.ToString() ?? string.Empty,
+            Descripcion = descripcion,
+            Equipo = WebSession.Equipo
+        });
+    }
+
+    private static bool EsRutaLocal(string? url)
+        => !string.IsNullOrWhiteSpace(url) && !url.Contains("://") && !url.StartsWith("//") && !url.StartsWith("login", StringComparison.OrdinalIgnoreCase);
+
+    private sealed class LoginInput
+    {
+        public string Usuario { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
+    }
+}

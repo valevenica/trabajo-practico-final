@@ -1,0 +1,332 @@
+@page "/ordenes"
+@attribute [Authorize]
+@rendermode RenderModes.Interactivo
+@inherits PaginaBase
+
+<PageTitle>Órdenes de producción · StockManufactura</PageTitle>
+
+<PaginaMarco Titulo="Órdenes de producción" Cargando="Cargando" AccesoDenegado="@AccesoDenegado">
+    <div class="kpis">
+        <div class="kpi"><span class="kpi-label">En proceso</span><span class="kpi-value">@_ordenes.Count(x => x.Estado == EstadoOrdenProduccion.EnProceso)</span></div>
+        <div class="kpi"><span class="kpi-label">Finalizadas este mes</span><span class="kpi-value">@_ordenes.Count(x => x.Estado == EstadoOrdenProduccion.Finalizada && EsMesActual(x.FechaFin ?? x.UpdatedAt))</span></div>
+        <div class="kpi"><span class="kpi-label">En espera</span><span class="kpi-value">@_ordenes.Count(x => EnEspera(x.Estado))</span></div>
+        <div class="kpi @(_stockCritico > 0 ? "kpi-alert" : "")"><span class="kpi-label">Stock crítico</span><span class="kpi-value">@_stockCritico</span></div>
+    </div>
+
+    <div class="split">
+        <section class="card">
+            <h2>@(_seleccionada is null ? "Nueva orden" : $"Orden {_seleccionada.Codigo}")</h2>
+            <div class="form-grid">
+                <div><label>Código (vacío = automático)</label><input @bind="_codigo" disabled="@(_seleccionada is not null)" /></div>
+                <div>
+                    <label>Producto</label>
+                    <select @bind="_productoId" disabled="@(_seleccionada is not null)">
+                        @foreach (var p in ProductosParaSelector)
+                        {
+                            <option value="@p.Id">@p.Nombre @(p.Activo ? "" : "(inactivo)")</option>
+                        }
+                    </select>
+                </div>
+                <div><label>Cantidad planeada</label><input type="number" step="1" min="0" @bind="_cantidad" disabled="@(_seleccionada is not null)" /></div>
+                <div>
+                    <label>Cliente</label>
+                    <select @bind="_clienteId">
+                        <option value="">Consumidor final</option>
+                        @foreach (var c in ClientesParaSelector)
+                        {
+                            <option value="@c.Id">@c.Nombre @(c.Activo ? "" : "(inactivo)")</option>
+                        }
+                    </select>
+                </div>
+                <div class="span-2"><label>Observaciones</label><textarea rows="2" @bind="_observaciones"></textarea></div>
+            </div>
+            @if (ProductoElegido is { } prod)
+            {
+                <p class="muted">Stock de @prod.Nombre: @prod.StockActual.ToString("0.##") · reservado en órdenes en espera: @Reservado(prod.Id).ToString("0.##")</p>
+            }
+
+            <div class="form-actions wrap">
+                @if (_seleccionada is null)
+                {
+                    <button class="btn btn-primary" disabled="@Ocupado" @onclick="() => EjecutarAsync(CrearAsync)">Crear orden</button>
+                }
+                else
+                {
+                    <span>Estado: <EstadoOrdenBadge Estado="_seleccionada.Estado" /></span>
+                    <button class="btn btn-secondary" disabled="@Ocupado" @onclick="() => EjecutarAsync(BorradorAsync)">Borrador</button>
+                    <button class="btn btn-secondary" disabled="@Ocupado" @onclick="() => EjecutarAsync(PlanificarAsync)">Planificar</button>
+                    <button class="btn btn-secondary" disabled="@Ocupado" @onclick="() => EjecutarAsync(IniciarAsync)">Iniciar</button>
+                    <button class="btn btn-primary" disabled="@Ocupado" @onclick="() => EjecutarAsync(FinalizarAsync)">Finalizar</button>
+                    <button class="btn btn-secondary" disabled="@Ocupado" @onclick="() => EjecutarAsync(CancelarAsync)">Cancelar orden</button>
+                    <button class="btn btn-secondary" disabled="@Ocupado" @onclick="() => EjecutarAsync(AsignarClienteAsync)">Asignar cliente</button>
+                    <button class="btn btn-secondary danger" disabled="@Ocupado" @onclick="() => EjecutarAsync(EliminarAsync)">Eliminar</button>
+                    <button class="btn btn-link" @onclick="NuevaOrden">Nueva orden</button>
+                }
+            </div>
+            <StatusBar Mensaje="@StatusMessage" />
+        </section>
+
+        <section class="card">
+            <h2>Órdenes</h2>
+            <div class="table-wrap">
+                <table class="table selectable">
+                    <thead><tr><th>Código</th><th>Producto</th><th>Cliente</th><th class="num">Cant.</th><th>Estado</th><th>Creada</th></tr></thead>
+                    <tbody>
+                        @foreach (var o in _ordenes)
+                        {
+                            <tr class="@(o.Id == _seleccionada?.Id ? "selected" : "")" @onclick="() => Seleccionar(o)">
+                                <td class="code">@o.Codigo</td>
+                                <td>@NombreProducto(o.ProductoId)</td>
+                                <td>@(o.ClienteId is { } c ? _clientes.FirstOrDefault(x => x.Id == c)?.Nombre ?? "—" : "Consumidor final")</td>
+                                <td class="num">@o.CantidadPlaneada.ToString("0.##")</td>
+                                <td><EstadoOrdenBadge Estado="o.Estado" /></td>
+                                <td>@o.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy")</td>
+                            </tr>
+                        }
+                        @if (_ordenes.Count == 0)
+                        {
+                            <tr><td colspan="6" class="muted">Sin órdenes.</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+</PaginaMarco>
+
+@code {
+    protected override string Modulo => ModuleAccess.ProductionOrders;
+
+    private List<Producto> _productos = new();
+    private List<Cliente> _clientes = new();
+    private List<OrdenProduccion> _ordenes = new();
+    private OrdenProduccion? _seleccionada;
+    private int _stockCritico;
+
+    private string _codigo = string.Empty;
+    private Guid _productoId;
+    private decimal _cantidad;
+    private string _clienteId = string.Empty;
+    private string _observaciones = string.Empty;
+
+    private IUnitOfWork UnitOfWork => Servicio<IUnitOfWork>();
+
+    private Producto? ProductoElegido => _productos.FirstOrDefault(x => x.Id == _productoId);
+
+    // Las órdenes nuevas solo ofrecen productos y clientes activos; una orden existente muestra los suyos aunque estén inactivos.
+    private IEnumerable<Producto> ProductosParaSelector => _productos.Where(p => p.Activo || p.Id == _seleccionada?.ProductoId);
+    private IEnumerable<Cliente> ClientesParaSelector => _clientes.Where(c => c.Activo || c.Id == _seleccionada?.ClienteId);
+
+    protected override async Task CargarAsync()
+    {
+        _productos = (await UnitOfWork.Productos.ListAsync()).OrderBy(x => x.Nombre).ToList();
+        _clientes = (await UnitOfWork.Clientes.ListAsync()).OrderBy(x => x.Nombre).ToList();
+        _ordenes = (await UnitOfWork.OrdenesProduccion.ListByCreatedDescAsync()).ToList();
+        _stockCritico = (await Servicio<IShortageService>().GetShortagesAsync()).TotalCount;
+
+        if (_seleccionada is not null)
+        {
+            _seleccionada = _ordenes.FirstOrDefault(x => x.Id == _seleccionada.Id);
+        }
+
+        if (_seleccionada is null && ProductoElegido is not { Activo: true })
+        {
+            _productoId = _productos.FirstOrDefault(x => x.Activo)?.Id ?? Guid.Empty;
+        }
+    }
+
+    private static bool EnEspera(EstadoOrdenProduccion e) => e is EstadoOrdenProduccion.Borrador or EstadoOrdenProduccion.Planificada;
+
+    private static bool EsMesActual(DateTime value)
+    {
+        var now = DateTime.UtcNow;
+        return value.Year == now.Year && value.Month == now.Month;
+    }
+
+    private string NombreProducto(Guid id) => _productos.FirstOrDefault(x => x.Id == id)?.Nombre ?? "—";
+
+    private decimal Reservado(Guid productoId)
+        => _ordenes.Where(o => EnEspera(o.Estado) && o.ProductoId == productoId).Sum(o => o.CantidadPlaneada);
+
+    private void Seleccionar(OrdenProduccion o)
+    {
+        _seleccionada = o;
+        _codigo = o.Codigo;
+        _productoId = o.ProductoId;
+        _cantidad = o.CantidadPlaneada;
+        _clienteId = o.ClienteId?.ToString() ?? string.Empty;
+        _observaciones = o.Observaciones;
+        StatusMessage = string.Empty;
+    }
+
+    private void NuevaOrden()
+    {
+        _seleccionada = null;
+        _cantidad = 0;
+        _observaciones = string.Empty;
+        _clienteId = string.Empty;
+        if (ProductoElegido is not { Activo: true })
+        {
+            _productoId = _productos.FirstOrDefault(x => x.Activo)?.Id ?? Guid.Empty;
+        }
+        StatusMessage = "Nueva orden. Para agregar otro producto al mismo pedido, mantené el código y elegí otro producto.";
+    }
+
+    private Guid? ClienteElegido => Guid.TryParse(_clienteId, out var id) ? id : null;
+
+    private async Task CrearAsync()
+    {
+        if (ProductoElegido is not { Activo: true } producto) { StatusMessage = "Debe seleccionar un producto."; return; }
+        if (_cantidad <= 0) { StatusMessage = "Cantidad planeada inválida."; return; }
+
+        var codigo = string.IsNullOrWhiteSpace(_codigo) ? GenerarCodigo() : _codigo.Trim().ToUpperInvariant();
+        var orden = new OrdenProduccion(codigo, producto.Id, _cantidad, _observaciones.Trim(), ClienteElegido);
+        await UnitOfWork.OrdenesProduccion.AddAsync(orden);
+        await UnitOfWork.SaveChangesAsync();
+        await RegistrarAuditoriaAsync("Crear", orden, "Alta de orden de producción.");
+
+        await CargarAsync();
+        // Queda seleccionada, como en escritorio, para poder avanzarla de estado enseguida.
+        Seleccionar(_ordenes.First(x => x.Id == orden.Id));
+        StatusMessage = await AvisoStockAsync(codigo, producto.Id);
+    }
+
+    private async Task<string> AvisoStockAsync(string codigo, Guid productoId)
+    {
+        var producto = _productos.First(x => x.Id == productoId);
+        var disponible = producto.StockActual - Reservado(productoId);
+        if (disponible >= 0)
+        {
+            return $"Orden {codigo} creada. Para agregar otro producto a la misma orden, mantené el código y seleccioná otro producto.";
+        }
+
+        var faltante = -disponible;
+        var aviso = $"La orden {codigo} quedó en espera: falta stock de {producto.Nombre} para completar el pedido (faltan {faltante:0.##} unidades, considerando otras órdenes en espera de este producto).";
+
+        // Solo informativo: ¿alcanzan los insumos para fabricar las unidades faltantes?
+        var faltantesInsumos = new List<string>();
+        foreach (var item in (await UnitOfWork.RecetaProductoItems.ListByProductIdAsync(productoId)).Where(x => x.RecursoId.HasValue))
+        {
+            var recurso = await UnitOfWork.Recursos.GetByIdAsync(item.RecursoId!.Value);
+            if (recurso is null || recurso.EsServicio) { continue; }
+
+            var requerido = item.Cantidad * faltante;
+            if (recurso.StockActual < requerido)
+            {
+                faltantesInsumos.Add($"{recurso.Nombre} (faltan {requerido - recurso.StockActual:0.##} {recurso.UnidadMedida})");
+            }
+        }
+
+        if (faltantesInsumos.Count > 0)
+        {
+            aviso += $" Además, no alcanzan los insumos para fabricar esas {faltante:0.##} unidades: {string.Join(", ", faltantesInsumos)}.";
+        }
+
+        await JS.InvokeVoidAsync("alert", aviso);
+        return aviso;
+    }
+
+    private async Task TransicionAsync(Action<OrdenProduccion> transicion, string accion, string mensaje)
+    {
+        if (_seleccionada is null) { StatusMessage = "Debe seleccionar una orden."; return; }
+
+        var orden = _seleccionada;
+        try
+        {
+            var estadoAnterior = orden.Estado;
+            var observaciones = _observaciones.Trim();
+            if (!string.Equals(orden.Observaciones, observaciones, StringComparison.Ordinal))
+            {
+                orden.ActualizarObservaciones(observaciones);
+            }
+
+            transicion(orden);
+            await OrdenStock.AplicarMovimientoAsync(UnitOfWork, estadoAnterior, orden);
+            UnitOfWork.OrdenesProduccion.Update(orden);
+            await UnitOfWork.SaveChangesAsync();
+            await RegistrarAuditoriaAsync(accion, orden, mensaje);
+            StatusMessage = mensaje;
+        }
+        catch (InvalidOperationException ex)
+        {
+            StatusMessage = ex.Message;
+        }
+
+        // Se recarga siempre: si la transición falló, descarta el estado que quedó cambiado en memoria.
+        var mensajeFinal = StatusMessage;
+        await CargarAsync();
+        if (_seleccionada is not null) { Seleccionar(_seleccionada); }
+        StatusMessage = mensajeFinal;
+    }
+
+    private Task BorradorAsync() => TransicionAsync(o => o.VolverABorrador(), "Borrador", "Orden regresada a borrador.");
+    private Task PlanificarAsync() => TransicionAsync(o => o.Planificar(), "Planificada", "Orden planificada.");
+    private Task IniciarAsync() => TransicionAsync(o => o.MarcarEnProgreso(), "EnProceso", "Orden en proceso.");
+    private Task FinalizarAsync() => TransicionAsync(o => o.Completar(), "Finalizada", "Orden finalizada.");
+
+    private Task CancelarAsync()
+    {
+        var motivo = string.IsNullOrWhiteSpace(_observaciones) ? "Cancelada desde módulo de producción." : _observaciones;
+        return TransicionAsync(o => o.Cancelar(motivo), "Cancelada", "Orden cancelada.");
+    }
+
+    private async Task AsignarClienteAsync()
+    {
+        if (_seleccionada is null) { StatusMessage = "Seleccione el pedido al que quiere asignar el cliente."; return; }
+
+        var orden = _seleccionada;
+        try
+        {
+            orden.AsignarCliente(ClienteElegido);
+            UnitOfWork.OrdenesProduccion.Update(orden);
+            await UnitOfWork.SaveChangesAsync();
+            var nombre = ClienteElegido is { } id ? _clientes.FirstOrDefault(x => x.Id == id)?.Nombre ?? "—" : "Consumidor final";
+            await RegistrarAuditoriaAsync("AsignarCliente", orden, $"Cliente del pedido: «{nombre}».");
+            StatusMessage = $"Pedido {orden.Codigo} asignado al cliente «{nombre}».";
+        }
+        catch (InvalidOperationException ex)
+        {
+            StatusMessage = ex.Message;
+        }
+
+        await CargarAsync();
+    }
+
+    private async Task EliminarAsync()
+    {
+        if (_seleccionada is null) { return; }
+
+        var orden = _seleccionada;
+        if (orden.Estado == EstadoOrdenProduccion.EnProceso) { StatusMessage = "No se puede eliminar una orden en proceso. Cancelala primero para liberar el stock reservado."; return; }
+        if (orden.Estado == EstadoOrdenProduccion.Finalizada) { StatusMessage = "No se pueden eliminar órdenes finalizadas; forman parte del historial."; return; }
+        if (!await ConfirmarAsync($"¿Eliminar la orden '{orden.Codigo}'? Esta acción no se puede deshacer.")) { return; }
+
+        UnitOfWork.OrdenesProduccion.Delete(orden);
+        await UnitOfWork.SaveChangesAsync();
+        await RegistrarAuditoriaAsync("Eliminar", orden, "Orden eliminada.");
+        _seleccionada = null;
+        await CargarAsync();
+        NuevaOrden();
+        StatusMessage = "Orden eliminada.";
+    }
+
+    private string GenerarCodigo()
+    {
+        var secuencia = _ordenes.Count(x => x.CreatedAt.Date == DateTime.UtcNow.Date) + 1;
+        return $"OP-{DateTime.UtcNow:yyyyMMdd}-{secuencia:000}";
+    }
+
+    private Task RegistrarAuditoriaAsync(string accion, OrdenProduccion orden, string descripcion)
+    {
+        return Servicio<IAuditLogService>().RegisterAsync(new AuditLog
+        {
+            Usuario = Session.Actor,
+            Modulo = "Produccion",
+            Accion = accion,
+            Entidad = "OrdenProduccion",
+            IdEntidad = orden.Id.ToString(),
+            Descripcion = descripcion,
+            Equipo = WebSession.Equipo
+        });
+    }
+}

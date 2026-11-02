@@ -1,0 +1,114 @@
+@page "/inteligencia"
+@attribute [Authorize]
+@rendermode RenderModes.Interactivo
+@inherits PaginaBase
+@using StockManufactura.Application.Reports
+
+<PageTitle>Inteligencia de negocio · StockManufactura</PageTitle>
+
+<PaginaMarco Titulo="Inteligencia de negocio" Cargando="Cargando" AccesoDenegado="@AccesoDenegado">
+    <Acciones>
+        <label class="period-picker">
+            <span>Período</span>
+            <select value="@_periodo" @onchange="CambiarPeriodoAsync">
+                @foreach (var p in _periodos)
+                {
+                    <option value="@p.Clave">@p.Etiqueta</option>
+                }
+            </select>
+        </label>
+        <button class="btn btn-primary" disabled="@Ocupado" @onclick="() => EjecutarAsync(CargarAsync)">Actualizar</button>
+    </Acciones>
+    <ChildContent>
+        @if (_reporte is { } r)
+        {
+            <p class="muted">Indicadores y alertas para la toma de decisiones · @r.PeriodoDescripcion</p>
+
+            <div class="kpis">
+                <div class="kpi"><span class="kpi-label">Costo promedio por producto</span><span class="kpi-value">@Moneda(r.CostoPromedioProducto)</span></div>
+                <div class="kpi"><span class="kpi-label">Variación de costos del período</span>
+                    <span class="kpi-value tono-@TonoVariacion(r.VariacionCostoPromedioPct)">@(r.VariacionCostoPromedioPct >= 0 ? "+" : "")@r.VariacionCostoPromedioPct.ToString("N2", Cultura) %</span></div>
+                <div class="kpi"><span class="kpi-label">Margen promedio configurado</span><span class="kpi-value">@((r.MargenPromedio * 100m).ToString("N1", Cultura)) %</span></div>
+                <div class="kpi"><span class="kpi-label">Cotización vigente del dólar</span><span class="kpi-value">@Moneda(r.CotizacionVigente)</span></div>
+                <div class="kpi"><span class="kpi-label">Capital inmovilizado en insumos</span><span class="kpi-value">@Moneda(r.ValorInventarioInsumos)</span></div>
+                <div class="kpi"><span class="kpi-label">Valor de productos terminados</span><span class="kpi-value">@Moneda(r.ValorInventarioProductos)</span></div>
+                <div class="kpi"><span class="kpi-label">Producción valorizada del período</span><span class="kpi-value">@Moneda(r.ProduccionValorizada)</span></div>
+                <div class="kpi"><span class="kpi-label">Órdenes finalizadas / en proceso</span>
+                    <span class="kpi-value">@r.OrdenesFinalizadas <span class="muted">/</span> <span class="accent">@r.OrdenesEnProceso</span></span></div>
+            </div>
+
+            <div class="card">
+                <h2>Alertas y recomendaciones</h2>
+                <p class="muted small">Situaciones detectadas automáticamente sobre los datos del sistema, con la acción sugerida.</p>
+                @foreach (var a in r.Alertas)
+                {
+                    <div class="decision tono-fondo-@a.Severidad.ToLowerInvariant()">
+                        <div class="decision-title tono-@a.Severidad.ToLowerInvariant()">@a.Titulo</div>
+                        <div>@a.Detalle</div>
+                        @if (!string.IsNullOrWhiteSpace(a.Recomendacion)) { <div class="decision-rec">→ @a.Recomendacion</div> }
+                    </div>
+                }
+                @if (r.Alertas.Count == 0)
+                {
+                    <p class="muted">No hay alertas para el período.</p>
+                }
+            </div>
+
+            <div class="charts">
+                @Grafico("Costo de fabricación por producto", "Los productos más caros de fabricar concentran el impacto de cualquier aumento de insumos.", r.CostoPorProducto)
+                @Grafico("Mayores aumentos de costo", "Variación porcentual acumulada en el período. Son los candidatos a revisar el precio de venta.", r.MayoresAumentos)
+                @Grafico("Evolución del costo promedio", "Promedio de los costos recalculados en cada uno de los últimos seis meses.", r.EvolucionCosto)
+                @Grafico("Capital inmovilizado por insumo", "Stock actual valorizado al precio vigente. Orienta dónde conviene reducir compras.", r.InsumosPorValorInmovilizado)
+                @Grafico("Órdenes de producción por estado", "Distribución del total histórico de órdenes.", r.OrdenesPorEstado)
+                @Grafico("Actividad auditada por módulo", "Eventos registrados en la bitácora durante el período, por módulo del sistema.", r.ActividadPorModulo)
+            </div>
+        }
+        <StatusBar Mensaje="@StatusMessage" />
+    </ChildContent>
+</PaginaMarco>
+
+@code {
+    protected override string Modulo => ModuleAccess.BusinessIntelligence;
+
+    private static readonly CultureInfo Cultura = CultureInfo.GetCultureInfo("es-AR");
+
+    private readonly IReadOnlyList<Periodo> _periodos = Periodos.UltimosDoceMeses("Histórico completo");
+    private string _periodo = Periodos.MesActual;
+    private BusinessIntelligenceReport? _reporte;
+
+    protected override async Task CargarAsync()
+    {
+        var periodo = _periodos.FirstOrDefault(p => p.Clave == _periodo) ?? _periodos[0];
+        _reporte = await Servicio<IBusinessIntelligenceService>().GetReportAsync(periodo.Year, periodo.Month);
+    }
+
+    private Task CambiarPeriodoAsync(ChangeEventArgs e)
+    {
+        _periodo = e.Value?.ToString() ?? "todo";
+        return EjecutarAsync(CargarAsync);
+    }
+
+    private static string TonoVariacion(decimal pct) => pct >= 10m ? "critica" : pct > 0m ? "advertencia" : "ok";
+
+    private static string Moneda(decimal valor) => valor.ToString("C2", Cultura);
+
+    // La escala de cada punto ya viene normalizada entre 0 y 1 desde la capa de aplicación.
+    private static RenderFragment Grafico(string titulo, string subtitulo, IReadOnlyList<ChartPoint> puntos) => __builder =>
+    {
+        <section class="card">
+            <h2>@titulo</h2>
+            <p class="muted small">@subtitulo</p>
+            @foreach (var p in puntos)
+            {
+                <div class="bar-row" title="@p.Detalle">
+                    <div class="bar-label"><span>@p.Etiqueta</span><strong>@p.ValorFormateado</strong></div>
+                    <div class="bar-track"><div class="bar-fill" style="width: @((Math.Clamp(p.Escala, 0, 1) * 100).ToString("0.##", CultureInfo.InvariantCulture))%"></div></div>
+                </div>
+            }
+            @if (puntos.Count == 0)
+            {
+                <p class="muted">Sin datos para el período.</p>
+            }
+        </section>
+    };
+}

@@ -1,0 +1,468 @@
+@page "/insumos"
+@attribute [Authorize]
+@rendermode RenderModes.Interactivo
+@inherits PaginaBase
+@using StockManufactura.Application.Resources
+
+<PageTitle>Insumos · StockManufactura</PageTitle>
+
+<PaginaMarco Titulo="Insumos" Cargando="Cargando" AccesoDenegado="@AccesoDenegado">
+    <Acciones>
+        <button class="btn btn-secondary" disabled="@Ocupado" @onclick="() => EjecutarAsync(RecalcularUsdAsync)"
+                title="Recalcula el equivalente en pesos de todos los insumos en USD con la cotización prioritaria y actualiza los precios de productos">
+            Recalcular todos los USD
+        </button>
+        <button class="btn btn-primary" @onclick="NuevoInsumo">+ Nuevo insumo</button>
+    </Acciones>
+    <ChildContent>
+        <div class="split">
+            <section class="card list-panel">
+                <input class="search" placeholder="Buscar por código o nombre" @bind="_busqueda" @bind:event="oninput" />
+                <label class="check"><input type="checkbox" @bind="_mostrarInactivos" /> Mostrar inactivos</label>
+                <div class="table-wrap">
+                    <table class="table selectable">
+                        <thead><tr><th>Código</th><th>Nombre</th><th class="num">Precio</th><th>Moneda</th><th class="num">Stock</th></tr></thead>
+                        <tbody>
+                            @foreach (var r in InsumosFiltrados)
+                            {
+                                <tr class="@(r.Id == _seleccionado?.Id ? "selected" : "") @(r.Activo ? "" : "inactive")" @onclick="() => Seleccionar(r)">
+                                    <td class="code">@r.Codigo</td>
+                                    <td>@r.Nombre @if (!r.Activo) { <span class="badge badge-inactivo">Inactivo</span> }</td>
+                                    <td class="num">@r.Precio.ToString("0.00")</td>
+                                    <td>@r.Moneda</td>
+                                    <td class="num">@r.StockActual.ToString("0.#")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section>
+                <div class="card">
+                    <div class="card-header">
+                        <h2>@(_seleccionado is null ? "Nuevo insumo" : "Datos del insumo")</h2>
+                        @if (_seleccionado is not null)
+                        {
+                            <button class="btn btn-secondary" disabled="@Ocupado" @onclick="() => EjecutarAsync(ToggleActivoAsync)"
+                                    title="Los insumos no se eliminan: se desactivan para ocultarlos y se pueden reactivar">
+                                @(_seleccionado.Activo ? "Desactivar insumo" : "Reactivar insumo")
+                            </button>
+                        }
+                    </div>
+
+                    @if (_seleccionado is { Activo: false })
+                    {
+                        <div class="alert alert-warning">Insumo desactivado: no aparece en listados, recetas nuevas ni ingresos de stock.</div>
+                    }
+
+                    <div class="form-grid">
+                        <div><label>Código</label><input @bind="_form.Codigo" /></div>
+                        <div><label>Nombre</label><input @bind="_form.Nombre" /></div>
+                        <div><label>Categoría</label><input @bind="_form.Categoria" /></div>
+                        <div><label>Unidad de medida</label><input @bind="_form.UnidadMedida" /></div>
+                        <div><label>Stock actual</label><input type="number" step="0.01" min="0" @bind="_form.StockActual" disabled="@_form.EsServicio" /></div>
+                        <div><label>Stock mínimo</label><input type="number" step="0.01" min="0" @bind="_form.StockMinimo" disabled="@_form.EsServicio" /></div>
+                        <div class="span-2">
+                            <label class="check" title="Un servicio no maneja stock: su costo se calcula por cantidad consumida (ej. kWh) x precio">
+                                <input type="checkbox" checked="@_form.EsServicio" @onchange="CambiarEsServicio" /> Es un servicio (sin stock físico, ej. electricidad, alquiler)
+                            </label>
+                        </div>
+                        <div><label>Descripción</label><input @bind="_form.Descripcion" /></div>
+                        <div><label>Observaciones</label><input @bind="_form.Observaciones" /></div>
+                        <div><label>Precio</label><input type="number" step="0.01" min="0" @bind="_form.Precio" /></div>
+                        <div>
+                            <label>Moneda</label>
+                            <div class="radio-row">
+                                <label class="check"><input type="radio" name="moneda" checked="@(_form.Moneda == Moneda.ARS)" @onchange="() => _form.Moneda = Moneda.ARS" /> $ARS</label>
+                                <label class="check"><input type="radio" name="moneda" checked="@(_form.Moneda == Moneda.USD)" @onchange="() => _form.Moneda = Moneda.USD" /> USD</label>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="accent">Equivalente en pesos: @EquivalentePesos.ToString("0.00") @(_form.Moneda == Moneda.USD ? $"(cotización {_cotizacion:0.00})" : "")</p>
+
+                    <div class="form-actions">
+                        <button class="btn btn-primary" disabled="@Ocupado" @onclick="() => EjecutarAsync(GuardarAsync)">Guardar</button>
+                    </div>
+                    <StatusBar Mensaje="@StatusMessage" />
+                </div>
+
+                @if (_seleccionado is not null)
+                {
+                    <div class="card">
+                        <h2>Proveedores del insumo</h2>
+                        <div class="table-wrap">
+                            <table class="table">
+                                <thead><tr><th>Proveedor</th><th>Código prov.</th><th class="num">Precio</th><th>Prioritario</th><th></th></tr></thead>
+                                <tbody>
+                                    @foreach (var rp in _proveedoresDelInsumo)
+                                    {
+                                        <tr>
+                                            <td>@rp.Proveedor?.Nombre</td>
+                                            <td>@rp.CodigoProveedor</td>
+                                            <td class="num">@rp.Precio.ToString("0.00")</td>
+                                            <td>@(rp.EsPrioritario ? "★ Sí" : "")</td>
+                                            <td class="row-actions">
+                                                @if (!rp.EsPrioritario)
+                                                {
+                                                    <button class="btn btn-link" disabled="@Ocupado" @onclick="() => EjecutarAsync(() => MarcarPrioritarioAsync(rp.Id))">Marcar prioritario</button>
+                                                }
+                                                <button class="btn btn-link danger" disabled="@Ocupado" @onclick="() => EjecutarAsync(() => QuitarProveedorAsync(rp.Id))">Quitar</button>
+                                            </td>
+                                        </tr>
+                                    }
+                                    @if (_proveedoresDelInsumo.Count == 0)
+                                    {
+                                        <tr><td colspan="5" class="muted">Sin proveedores asociados.</td></tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="inline-form">
+                            <select @bind="_nuevoProveedorId">
+                                <option value="">Seleccioná un proveedor…</option>
+                                @foreach (var p in _proveedores.Where(p => _proveedoresDelInsumo.All(x => x.ProveedorId != p.Id)))
+                                {
+                                    <option value="@p.Id">@p.Nombre</option>
+                                }
+                            </select>
+                            <input type="number" step="0.01" min="0" placeholder="Precio" @bind="_nuevoProveedorPrecio" />
+                            <input placeholder="Código del proveedor" @bind="_nuevoProveedorCodigo" />
+                            <button class="btn btn-primary" disabled="@Ocupado" @onclick="() => EjecutarAsync(AgregarProveedorAsync)">+ Agregar</button>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h2>Historial de precios</h2>
+                        <div class="table-wrap">
+                            <table class="table">
+                                <thead><tr><th>Fecha</th><th class="num">Anterior</th><th class="num">Nuevo</th><th>Moneda</th><th class="num">Equiv. $</th><th>Motivo</th><th>Usuario</th></tr></thead>
+                                <tbody>
+                                    @foreach (var h in _historial)
+                                    {
+                                        <tr>
+                                            <td>@h.Fecha.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                                            <td class="num">@h.PrecioAnterior.ToString("0.00")</td>
+                                            <td class="num">@h.PrecioNuevo.ToString("0.00")</td>
+                                            <td>@h.Moneda</td>
+                                            <td class="num">@h.PrecioEquivalentePesos.ToString("0.00")</td>
+                                            <td>@h.MotivoCambio</td>
+                                            <td>@h.Usuario</td>
+                                        </tr>
+                                    }
+                                    @if (_historial.Count == 0)
+                                    {
+                                        <tr><td colspan="7" class="muted">Sin cambios de precio registrados.</td></tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                }
+            </section>
+        </div>
+    </ChildContent>
+</PaginaMarco>
+
+@code {
+    protected override string Modulo => ModuleAccess.Resources;
+
+    private List<Recurso> _insumos = new();
+    private List<Proveedor> _proveedores = new();
+    private List<RecursoProveedor> _proveedoresDelInsumo = new();
+    private List<ResourcePriceHistory> _historial = new();
+    private Recurso? _seleccionado;
+    private ResourceForm _form = new();
+    private string _busqueda = string.Empty;
+    private bool _mostrarInactivos;
+    private decimal _cotizacion = 1m;
+
+    private string _nuevoProveedorId = string.Empty;
+    private decimal _nuevoProveedorPrecio;
+    private string _nuevoProveedorCodigo = string.Empty;
+
+    private IUnitOfWork UnitOfWork => Servicio<IUnitOfWork>();
+    private IResourcePricingService Pricing => Servicio<IResourcePricingService>();
+
+    private decimal EquivalentePesos => _form.Moneda == Moneda.USD ? _form.Precio * (_cotizacion <= 0 ? 1 : _cotizacion) : _form.Precio;
+
+    private IEnumerable<Recurso> InsumosFiltrados
+    {
+        get
+        {
+            var q = _busqueda.Trim().ToLowerInvariant();
+            return _insumos
+                .Where(r => r.Activo || _mostrarInactivos)
+                .Where(r => q.Length == 0 || r.Codigo.ToLowerInvariant().Contains(q) || r.Nombre.ToLowerInvariant().Contains(q));
+        }
+    }
+
+    protected override Task CargarAsync() => RecargarAsync();
+
+    private async Task RecargarAsync()
+    {
+        // Los servicios (electricidad, alquiler) se gestionan como insumos especiales, igual que en escritorio.
+        _insumos = (await Pricing.GetAllResourcesAsync()).Where(x => !x.EsServicio).ToList();
+        _proveedores = (await UnitOfWork.Proveedores.ListAsync()).Where(x => x.Activo).OrderBy(x => x.Nombre).ToList();
+        _cotizacion = (await Servicio<IMonetaryConfigurationService>().GetCurrentStateAsync()).CurrentRate;
+
+        if (_seleccionado is not null)
+        {
+            _seleccionado = _insumos.FirstOrDefault(x => x.Id == _seleccionado.Id);
+        }
+    }
+
+    private async Task Seleccionar(Recurso recurso)
+    {
+        _seleccionado = recurso;
+        _form = ResourceForm.From(recurso);
+        StatusMessage = string.Empty;
+        await EjecutarAsync(CargarDetalleAsync);
+    }
+
+    private async Task CargarDetalleAsync()
+    {
+        if (_seleccionado is null)
+        {
+            _proveedoresDelInsumo.Clear();
+            _historial.Clear();
+            return;
+        }
+
+        _proveedoresDelInsumo = (await UnitOfWork.RecursoProveedores.ListByRecursoIdAsync(_seleccionado.Id)).ToList();
+        _historial = (await Pricing.GetPriceHistoryAsync(_seleccionado.Id)).ToList();
+    }
+
+    private void NuevoInsumo()
+    {
+        _seleccionado = null;
+        _form = new ResourceForm();
+        _proveedoresDelInsumo.Clear();
+        _historial.Clear();
+        StatusMessage = "Nuevo insumo.";
+    }
+
+    private void CambiarEsServicio(ChangeEventArgs e)
+    {
+        _form.EsServicio = e.Value is true;
+        if (_form.EsServicio)
+        {
+            _form.StockActual = 0;
+            _form.StockMinimo = 0;
+        }
+    }
+
+    private async Task GuardarAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_form.Codigo) || string.IsNullOrWhiteSpace(_form.Nombre)) { StatusMessage = "Código y nombre son requeridos."; return; }
+        if (_form.Precio < 0) { StatusMessage = "Precio inválido."; return; }
+
+        var guardado = await Pricing.UpsertResourceAsync(new ResourceUpsertRequest
+        {
+            ResourceId = _seleccionado?.Id,
+            Codigo = _form.Codigo.Trim(),
+            Nombre = _form.Nombre.Trim(),
+            Descripcion = _form.Descripcion.Trim(),
+            Categoria = _form.Categoria.Trim(),
+            UnidadMedida = _form.UnidadMedida.Trim(),
+            StockActual = _form.StockActual,
+            StockMinimo = _form.StockMinimo,
+            Precio = _form.Precio,
+            Moneda = _form.Moneda,
+            ProveedorHabitualId = _seleccionado?.ProveedorHabitualId,
+            Observaciones = _form.Observaciones.Trim(),
+            Activo = _seleccionado?.Activo ?? true,
+            EsServicio = _form.EsServicio,
+            Usuario = Session.Actor
+        });
+
+        _seleccionado = guardado;
+        await RecargarAsync();
+        _seleccionado = _insumos.FirstOrDefault(x => x.Id == guardado.Id);
+        if (_seleccionado is null)
+        {
+            StatusMessage = "Insumo guardado como servicio: sus tramos de precio se gestionan en «Insumos especiales».";
+            NuevoInsumo();
+            return;
+        }
+
+        _form = ResourceForm.From(_seleccionado);
+        await CargarDetalleAsync();
+        StatusMessage = "Insumo guardado.";
+    }
+
+    private async Task ToggleActivoAsync()
+    {
+        if (_seleccionado is null) { return; }
+
+        var activar = !_seleccionado.Activo;
+        if (!activar && !await ConfirmarAsync($"¿Desactivar el insumo '{_seleccionado.Nombre}'? Dejará de aparecer en los listados, en recetas nuevas y en ingresos de stock. Se puede reactivar desde \"Mostrar inactivos\"."))
+        {
+            return;
+        }
+
+        var result = await Servicio<ICatalogActivationService>().SetRecursoActivoAsync(_seleccionado.Id, activar, Session.Actor, WebSession.Equipo);
+        await RecargarAsync();
+        if (_seleccionado is { Activo: false } && !_mostrarInactivos)
+        {
+            NuevoInsumo();
+        }
+
+        StatusMessage = result.Mensaje;
+    }
+
+    private async Task AgregarProveedorAsync()
+    {
+        if (_seleccionado is null || !Guid.TryParse(_nuevoProveedorId, out var proveedorId)) { StatusMessage = "Seleccioná un proveedor."; return; }
+        if (_nuevoProveedorPrecio < 0) { StatusMessage = "Precio inválido."; return; }
+        if (_proveedoresDelInsumo.Any(x => x.ProveedorId == proveedorId)) { StatusMessage = "Ese proveedor ya está asociado a este insumo."; return; }
+
+        var esPrimero = _proveedoresDelInsumo.Count == 0;
+        await UnitOfWork.RecursoProveedores.AddAsync(new RecursoProveedor
+        {
+            RecursoId = _seleccionado.Id,
+            ProveedorId = proveedorId,
+            Precio = _nuevoProveedorPrecio,
+            EsPrioritario = esPrimero,
+            CodigoProveedor = _nuevoProveedorCodigo.Trim()
+        });
+        await UnitOfWork.SaveChangesAsync();
+
+        if (esPrimero)
+        {
+            await ActualizarPrecioDesdeProveedorAsync(_nuevoProveedorPrecio);
+        }
+
+        _nuevoProveedorId = string.Empty;
+        _nuevoProveedorPrecio = 0;
+        _nuevoProveedorCodigo = string.Empty;
+        await CargarDetalleAsync();
+        StatusMessage = "Proveedor agregado.";
+    }
+
+    private async Task QuitarProveedorAsync(Guid id)
+    {
+        if (_seleccionado is null) { return; }
+
+        var items = await UnitOfWork.RecursoProveedores.ListByRecursoIdAsync(_seleccionado.Id);
+        var target = items.FirstOrDefault(x => x.Id == id);
+        if (target is null) { return; }
+
+        UnitOfWork.RecursoProveedores.Delete(target);
+        decimal? nuevoPrecio = null;
+        if (target.EsPrioritario)
+        {
+            // Si era el prioritario, el primero restante pasa a serlo, como en escritorio.
+            var siguiente = items.FirstOrDefault(x => x.Id != target.Id);
+            if (siguiente is not null)
+            {
+                siguiente.EsPrioritario = true;
+                UnitOfWork.RecursoProveedores.Update(siguiente);
+                nuevoPrecio = siguiente.Precio;
+            }
+        }
+
+        await UnitOfWork.SaveChangesAsync();
+        if (nuevoPrecio.HasValue)
+        {
+            await ActualizarPrecioDesdeProveedorAsync(nuevoPrecio.Value);
+        }
+
+        await CargarDetalleAsync();
+        StatusMessage = "Proveedor quitado.";
+    }
+
+    private async Task MarcarPrioritarioAsync(Guid id)
+    {
+        if (_seleccionado is null) { return; }
+
+        var items = await UnitOfWork.RecursoProveedores.ListByRecursoIdAsync(_seleccionado.Id);
+        var prioritario = items.FirstOrDefault(x => x.Id == id);
+        if (prioritario is null) { return; }
+
+        foreach (var item in items)
+        {
+            item.EsPrioritario = item.Id == id;
+            UnitOfWork.RecursoProveedores.Update(item);
+        }
+
+        await UnitOfWork.SaveChangesAsync();
+        await ActualizarPrecioDesdeProveedorAsync(prioritario.Precio);
+        await CargarDetalleAsync();
+        StatusMessage = $"Proveedor prioritario actualizado. Precio del insumo: {prioritario.Precio:0.00}";
+    }
+
+    private async Task ActualizarPrecioDesdeProveedorAsync(decimal precio)
+    {
+        if (_seleccionado is null) { return; }
+
+        var r = _seleccionado;
+        await Pricing.UpsertResourceAsync(new ResourceUpsertRequest
+        {
+            ResourceId = r.Id,
+            Codigo = r.Codigo,
+            Nombre = r.Nombre,
+            Descripcion = r.Descripcion,
+            Categoria = r.Categoria,
+            UnidadMedida = r.UnidadMedida,
+            EsServicio = r.EsServicio,
+            StockActual = r.StockActual,
+            StockMinimo = r.StockMinimo,
+            Precio = precio,
+            Moneda = r.Moneda,
+            MotivoCambio = "Precio de proveedor prioritario actualizado",
+            Observaciones = r.Observaciones,
+            Activo = r.Activo,
+            Usuario = Session.Actor
+        });
+
+        await RecargarAsync();
+        if (_seleccionado is not null)
+        {
+            _form = ResourceForm.From(_seleccionado);
+        }
+    }
+
+    private async Task RecalcularUsdAsync()
+    {
+        var count = await Pricing.RecalcularTodosUSDAsync(Session.Actor);
+        await RecargarAsync();
+        if (_seleccionado is not null)
+        {
+            _form = ResourceForm.From(_seleccionado);
+            await CargarDetalleAsync();
+        }
+
+        StatusMessage = $"Recálculo completado: {count} insumo(s) USD actualizados con la cotización prioritaria.";
+    }
+
+    private sealed class ResourceForm
+    {
+        public string Codigo { get; set; } = string.Empty;
+        public string Nombre { get; set; } = string.Empty;
+        public string Descripcion { get; set; } = string.Empty;
+        public string Categoria { get; set; } = string.Empty;
+        public string UnidadMedida { get; set; } = string.Empty;
+        public decimal StockActual { get; set; }
+        public decimal StockMinimo { get; set; }
+        public decimal Precio { get; set; }
+        public Moneda Moneda { get; set; } = Moneda.ARS;
+        public string Observaciones { get; set; } = string.Empty;
+        public bool EsServicio { get; set; }
+
+        public static ResourceForm From(Recurso r) => new()
+        {
+            Codigo = r.Codigo,
+            Nombre = r.Nombre,
+            Descripcion = r.Descripcion,
+            Categoria = r.Categoria,
+            UnidadMedida = r.UnidadMedida,
+            StockActual = r.StockActual,
+            StockMinimo = r.StockMinimo,
+            Precio = r.Precio,
+            Moneda = r.Moneda,
+            Observaciones = r.Observaciones,
+            EsServicio = r.EsServicio
+        };
+    }
+}

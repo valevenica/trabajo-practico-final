@@ -1,0 +1,30 @@
+@* Encabezado común de las pantallas: título, estado de carga y aviso de acceso denegado. *@
+
+<div class="page-header">
+    <h1>@Titulo</h1>
+    @if (Acciones is not null && !Cargando && AccesoDenegado is null)
+    {
+        <div class="page-actions">@Acciones</div>
+    }
+</div>
+
+@if (Cargando)
+{
+    <p class="muted">Cargando…</p>
+}
+else if (AccesoDenegado is not null)
+{
+    <div class="alert alert-warning">@AccesoDenegado</div>
+}
+else
+{
+    @ChildContent
+}
+
+@code {
+    [Parameter, EditorRequired] public string Titulo { get; set; } = string.Empty;
+    [Parameter] public bool Cargando { get; set; }
+    [Parameter] public string? AccesoDenegado { get; set; }
+    [Parameter] public RenderFragment? Acciones { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

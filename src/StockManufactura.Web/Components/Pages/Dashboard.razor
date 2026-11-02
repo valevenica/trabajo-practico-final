@@ -1,0 +1,304 @@
+@page "/"
+@attribute [Authorize]
+@rendermode RenderModes.Interactivo
+@inherits PaginaBase
+
+<PageTitle>Panel principal · StockManufactura</PageTitle>
+
+<PaginaMarco Titulo="Resumen de ventas" Cargando="Cargando" AccesoDenegado="@AccesoDenegado">
+    <Acciones>
+        @if (!Session.PasswordChangePending)
+        {
+            <label class="period-picker">
+                <span>Período</span>
+                <select value="@_periodo" @onchange="CambiarPeriodoAsync">
+                    @foreach (var p in _periodos)
+                    {
+                        <option value="@p.Clave">@p.Etiqueta</option>
+                    }
+                </select>
+            </label>
+        }
+    </Acciones>
+    <ChildContent>
+        @if (Session.PasswordChangePending)
+        {
+            <div class="alert alert-warning">
+                Su contraseña es inicial o fue asignada por un administrador. Cámbiela para habilitar el resto del sistema.
+                <a href="cuenta/password">Cambiar contraseña</a>
+            </div>
+        }
+        else if (_snapshot is not null)
+        {
+            <div class="kpis">
+                <div class="kpi"><span class="kpi-label">Ventas del mes</span><span class="kpi-value">@Pesos(_snapshot.MonthlySalesTotal)</span>
+                    <span class="kpi-sub @(_snapshot.SalesVariationPercent >= 0 ? "up" : _snapshot.SalesVariationPercent < 0 ? "down" : "")">@VariacionVentas</span></div>
+                <div class="kpi"><span class="kpi-label">Pedidos del mes</span><span class="kpi-value">@_snapshot.OrdersInPeriodCount</span>
+                    <span class="kpi-sub">@_snapshot.OpenOrdersCount en curso · @_snapshot.FinishedOrdersInPeriodCount finalizados</span></div>
+                <div class="kpi"><span class="kpi-label">Ticket promedio</span><span class="kpi-value">@Pesos(_snapshot.AverageTicket)</span>
+                    <span class="kpi-sub">Venta promedio por pedido finalizado</span></div>
+                <div class="kpi"><span class="kpi-label">% de ganancia</span><span class="kpi-value">@(_snapshot.GrossMarginPercent is { } m ? $"{m.ToString("0.#", Cultura)} %" : "—")</span>
+                    <span class="kpi-sub">@(_snapshot.MonthlySalesTotal == 0 ? "Sin ventas en el período" : $"Ganancia bruta {Pesos(_snapshot.MonthlySalesTotal - _snapshot.MonthlySalesCost)}")</span></div>
+            </div>
+
+            @if (_snapshot.CriticalStockCount > 0)
+            {
+                <div class="alert alert-error alert-row">
+                    <span>⚠ @_snapshot.CriticalStockCount producto(s) o insumo(s) por debajo del stock mínimo</span>
+                    @if (Session.CanEnter(ModuleAccess.Shortages)) { <a class="btn btn-secondary" href="faltantes">Ver faltantes</a> }
+                </div>
+            }
+
+            <div class="card">
+                <div class="card-header">
+                    <h2>Pedidos</h2>
+                    @if (PuedeGestionarOrdenes) { <a class="btn btn-primary" href="ordenes">+ Nuevo pedido</a> }
+                </div>
+
+                <div class="filters">
+                    <div>
+                        <label>Filtrar por estado</label>
+                        <details class="multi-select">
+                            <summary>@ResumenFiltro</summary>
+                            <div class="multi-select-panel">
+                                <label class="check strong"><input type="checkbox" checked="@_estados.Values.All(v => v)" @onchange="e => MarcarTodos((bool)e.Value!)" /> Todos</label>
+                                @foreach (var estado in _estados.Keys.ToList())
+                                {
+                                    <label class="check"><input type="checkbox" checked="@_estados[estado]" @onchange="e => _estados[estado] = (bool)e.Value!" /> @estado</label>
+                                }
+                            </div>
+                        </details>
+                    </div>
+                    <div>
+                        <label>Ordenar tabla</label>
+                        <select @bind="_orden">
+                            @foreach (var o in OpcionesOrden) { <option>@o</option> }
+                        </select>
+                    </div>
+                    <div>
+                        <label>Buscar por ID o cliente</label>
+                        <input @bind="_busqueda" @bind:event="oninput" />
+                    </div>
+                </div>
+
+                <div class="table-wrap">
+                    <table class="table">
+                        <thead><tr><th>ID orden</th><th>Producto</th><th>Cliente</th><th class="num">Cantidad</th><th>Estado</th><th>Fecha</th><th class="num">Costo</th>@if (PuedeGestionarOrdenes) { <th></th> }</tr></thead>
+                        <tbody>
+                            @foreach (var f in FilasVisibles)
+                            {
+                                <tr>
+                                    <td class="code">@f.Orden.Codigo</td>
+                                    <td>@f.Producto</td>
+                                    <td>@f.Cliente</td>
+                                    <td class="num">@f.Orden.CantidadPlaneada.ToString("0.##")</td>
+                                    <td><EstadoOrdenBadge Estado="f.Orden.Estado" /></td>
+                                    <td>@f.Orden.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy")</td>
+                                    <td class="num">@Pesos(f.Costo)</td>
+                                    @if (PuedeGestionarOrdenes)
+                                    {
+                                        <td class="row-actions">
+                                            @if (f.Abierta)
+                                            {
+                                                <button class="btn btn-primary btn-icon" disabled="@Ocupado" title="@(f.Orden.Estado == EstadoOrdenProduccion.EnProceso ? "Finalizar" : "Iniciar")"
+                                                        @onclick="() => EjecutarAsync(() => AvanzarAsync(f.Orden))">@(f.Orden.Estado == EstadoOrdenProduccion.EnProceso ? "✓" : "▶")</button>
+                                                <button class="btn btn-secondary btn-icon" disabled="@Ocupado" title="Cancelar orden"
+                                                        @onclick="() => EjecutarAsync(() => CancelarAsync(f.Orden))">✕</button>
+                                            }
+                                        </td>
+                                    }
+                                </tr>
+                            }
+                            @if (!FilasVisibles.Any())
+                            {
+                                <tr><td colspan="8" class="muted">No hay pedidos para los filtros elegidos.</td></tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+        <StatusBar Mensaje="@StatusMessage" />
+    </ChildContent>
+</PaginaMarco>
+
+@code {
+    protected override string Modulo => ModuleAccess.Dashboard;
+
+    private static readonly CultureInfo Cultura = CultureInfo.GetCultureInfo("es-AR");
+    private static readonly string[] OpcionesOrden = { "Más recientes", "Más antiguas", "ID", "Estado", "Costo mayor", "Costo menor" };
+
+    private readonly IReadOnlyList<Periodo> _periodos = Periodos.UltimosDoceMeses("Todos los períodos");
+    private string _periodo = Periodos.MesActual;
+    private Application.Services.SystemStatusSnapshot? _snapshot;
+    private List<Fila> _filas = new();
+    private string _orden = OpcionesOrden[0];
+    private string _busqueda = string.Empty;
+
+    // Igual que en escritorio, las canceladas arrancan ocultas.
+    private readonly Dictionary<string, bool> _estados = new()
+    {
+        ["En espera"] = true,
+        ["En proceso"] = true,
+        ["Finalizada"] = true,
+        ["Cancelada"] = false,
+    };
+
+    private IUnitOfWork UnitOfWork => Servicio<IUnitOfWork>();
+
+    private bool PuedeGestionarOrdenes => Session.CanEnter(ModuleAccess.ProductionOrders);
+
+    private Periodo PeriodoElegido => _periodos.FirstOrDefault(p => p.Clave == _periodo) ?? _periodos[0];
+
+    private string VariacionVentas => _snapshot?.SalesVariationPercent is { } v
+        ? $"{(v >= 0 ? "▲" : "▼")} {Math.Abs(v).ToString("0.#", Cultura)} % vs. mes anterior"
+        : _snapshot?.PreviousPeriodSalesTotal is null ? "Sin comparación para el período" : "Sin ventas el mes anterior";
+
+    private string ResumenFiltro
+    {
+        get
+        {
+            var activos = _estados.Where(x => x.Value).Select(x => x.Key).ToList();
+            return activos.Count == 0 ? "Sin filtro"
+                : activos.Count == _estados.Count ? "Todos los estados"
+                : string.Join(", ", activos);
+        }
+    }
+
+    private IEnumerable<Fila> FilasVisibles
+    {
+        get
+        {
+            var periodo = PeriodoElegido;
+            var activos = _estados.Where(x => x.Value).Select(x => x.Key).ToHashSet();
+            var filas = _filas.Where(f =>
+                // Los pedidos abiertos son trabajo pendiente y se ven en cualquier período; el período solo acota los
+                // finalizados o cancelados, por el mes en que se cerraron (el mismo criterio que las ventas del mes).
+                (f.Abierta || periodo.Year is null || (f.FechaPeriodo.Year == periodo.Year && f.FechaPeriodo.Month == periodo.Month))
+                && (activos.Count == 0 || activos.Contains(f.Estado))
+                && (string.IsNullOrWhiteSpace(_busqueda)
+                    || f.Orden.Codigo.Contains(_busqueda, StringComparison.OrdinalIgnoreCase)
+                    || f.Cliente.Contains(_busqueda, StringComparison.OrdinalIgnoreCase)));
+
+            return _orden switch
+            {
+                "Más antiguas" => filas.OrderBy(f => f.Orden.CreatedAt),
+                "ID" => filas.OrderBy(f => f.Orden.Codigo),
+                "Estado" => filas.OrderBy(f => OrdenEstado(f.Orden.Estado)).ThenByDescending(f => f.Orden.CreatedAt),
+                "Costo mayor" => filas.OrderByDescending(f => f.Costo),
+                "Costo menor" => filas.OrderBy(f => f.Costo),
+                _ => filas.OrderByDescending(f => f.Orden.CreatedAt),
+            };
+        }
+    }
+
+    protected override async Task CargarAsync()
+    {
+        if (Session.PasswordChangePending)
+        {
+            return;
+        }
+
+        var periodo = PeriodoElegido;
+        _snapshot = await Servicio<ISystemStatusService>().GetSnapshotAsync(periodo.Year, periodo.Month);
+        var ordenes = await UnitOfWork.OrdenesProduccion.ListByCreatedDescAsync();
+        var productos = (await UnitOfWork.Productos.ListAsync()).ToDictionary(x => x.Id);
+        var clientes = (await UnitOfWork.Clientes.ListAsync()).ToDictionary(x => x.Id, x => x.Nombre);
+
+        _filas = ordenes.Select(o =>
+        {
+            productos.TryGetValue(o.ProductoId, out var producto);
+            return new Fila(
+                o,
+                producto?.Nombre ?? "Producto eliminado",
+                o.ClienteId is { } c && clientes.TryGetValue(c, out var nombre) ? nombre : "Consumidor final",
+                (producto?.CostoFabricacionActual ?? 0m) * o.CantidadPlaneada);
+        }).ToList();
+    }
+
+    private Task CambiarPeriodoAsync(ChangeEventArgs e)
+    {
+        _periodo = e.Value?.ToString() ?? "todo";
+        return EjecutarAsync(CargarAsync);
+    }
+
+    private void MarcarTodos(bool valor)
+    {
+        foreach (var estado in _estados.Keys.ToList())
+        {
+            _estados[estado] = valor;
+        }
+    }
+
+    private Task AvanzarAsync(OrdenProduccion orden) => orden.Estado == EstadoOrdenProduccion.EnProceso
+        ? TransicionAsync(orden, o => o.Completar(), "Finalizada", $"Pedido {orden.Codigo} finalizado.")
+        : TransicionAsync(orden, o => o.MarcarEnProgreso(), "EnProceso", $"Pedido {orden.Codigo} en proceso.");
+
+    private async Task CancelarAsync(OrdenProduccion orden)
+    {
+        if (!await ConfirmarAsync($"¿Cancelar el pedido {orden.Codigo}?"))
+        {
+            return;
+        }
+
+        await TransicionAsync(orden, o => o.Cancelar("Cancelada desde panel principal"), "Cancelada", $"Pedido {orden.Codigo} cancelado.");
+    }
+
+    private async Task TransicionAsync(OrdenProduccion orden, Action<OrdenProduccion> transicion, string accion, string mensaje)
+    {
+        try
+        {
+            var estadoAnterior = orden.Estado;
+            transicion(orden);
+            await OrdenStock.AplicarMovimientoAsync(UnitOfWork, estadoAnterior, orden);
+            UnitOfWork.OrdenesProduccion.Update(orden);
+            await UnitOfWork.SaveChangesAsync();
+            await Servicio<IAuditLogService>().RegisterAsync(new AuditLog
+            {
+                Usuario = Session.Actor,
+                Modulo = "Produccion",
+                Accion = accion,
+                Entidad = "OrdenProduccion",
+                IdEntidad = orden.Id.ToString(),
+                Descripcion = mensaje + " (desde el panel principal)",
+                Equipo = WebSession.Equipo
+            });
+            StatusMessage = mensaje;
+        }
+        catch (InvalidOperationException ex)
+        {
+            StatusMessage = ex.Message;
+        }
+
+        // Se recarga siempre: si la transición falló, descarta el estado que quedó cambiado en memoria.
+        var mensajeFinal = StatusMessage;
+        await CargarAsync();
+        StatusMessage = mensajeFinal;
+    }
+
+    private static int OrdenEstado(EstadoOrdenProduccion estado) => estado switch
+    {
+        EstadoOrdenProduccion.Borrador or EstadoOrdenProduccion.Planificada => 0,
+        EstadoOrdenProduccion.EnProceso => 1,
+        EstadoOrdenProduccion.Finalizada => 2,
+        EstadoOrdenProduccion.Cancelada => 3,
+        _ => 99
+    };
+
+    private static string Pesos(decimal valor) => $"$ {valor.ToString("N2", Cultura)}";
+
+    private sealed record Fila(OrdenProduccion Orden, string Producto, string Cliente, decimal Costo)
+    {
+        public bool Abierta => Orden.Estado is not (EstadoOrdenProduccion.Finalizada or EstadoOrdenProduccion.Cancelada);
+
+        public DateTime FechaPeriodo => Abierta ? Orden.CreatedAt : Orden.FechaFin ?? Orden.CreatedAt;
+
+        public string Estado => Orden.Estado switch
+        {
+            EstadoOrdenProduccion.EnProceso => "En proceso",
+            EstadoOrdenProduccion.Finalizada => "Finalizada",
+            EstadoOrdenProduccion.Cancelada => "Cancelada",
+            _ => "En espera",
+        };
+    }
+}

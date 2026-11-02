@@ -1,0 +1,8 @@
+@if (!string.IsNullOrWhiteSpace(Mensaje))
+{
+    <div class="status" role="status">@Mensaje</div>
+}
+
+@code {
+    [Parameter] public string? Mensaje { get; set; }
+}

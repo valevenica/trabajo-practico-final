@@ -1,0 +1,195 @@
+@page "/backups"
+@attribute [Authorize]
+@rendermode RenderModes.Interactivo
+@inherits PaginaBase
+
+<PageTitle>Copias de seguridad · StockManufactura</PageTitle>
+
+<PaginaMarco Titulo="Copias de seguridad" Cargando="Cargando" AccesoDenegado="@AccesoDenegado">
+    <Acciones>
+        <button class="btn btn-primary" disabled="@Ocupado" @onclick="() => EjecutarAsync(BackupManualAsync)">Generar copia ahora</button>
+    </Acciones>
+    <ChildContent>
+        @if (_config is not null)
+        {
+            <div class="split">
+                <section class="card">
+                    <h2>Copias locales</h2>
+                    <p class="muted small">La carpeta es del equipo donde corre el servidor web.</p>
+                    <div class="form-grid">
+                        <div class="span-2"><label>Carpeta de copias</label><input @bind="_config.CarpetaLocal" /></div>
+                        <div><label>Mantener últimas copias</label><input type="number" min="1" @bind="_config.MantenerUltimasCopias" /></div>
+                        <div><label>Intervalo automático (minutos)</label><input type="number" min="5" @bind="_config.IntervaloMinutos" /></div>
+                    </div>
+                    <label class="check"><input type="checkbox" @bind="_config.Automatico" /> Copia automática</label>
+                    @if (_config.UltimoBackupAutomatico is { } ultima)
+                    {
+                        <div class="muted small">Última copia automática: @ultima.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</div>
+                    }
+
+                    <h3>Sincronización con la nube</h3>
+                    <p class="muted small">Las copias se intercambian con la carpeta que el cliente de escritorio del proveedor (Google Drive, OneDrive)
+                        replica contra el servicio remoto. Con la sincronización bidireccional, además de subir las copias de este equipo se
+                        descargan las que otros equipos hayan subido.</p>
+                    <div class="form-grid">
+                        <div><label>Carpeta de la nube</label><input @bind="_config.CarpetaNube" /></div>
+                        <div><label>Proveedor</label><input @bind="_config.ProveedorNube" /></div>
+                    </div>
+                    <label class="check"><input type="checkbox" @bind="_config.GoogleDriveHabilitado" /> Sincronizar con la nube</label>
+                    <label class="check"><input type="checkbox" @bind="_config.SincronizacionBidireccional" disabled="@(!_config.GoogleDriveHabilitado)" /> Bidireccional (también descargar)</label>
+                    <div class="muted small">@ResumenNube</div>
+
+                    <div class="form-actions wrap">
+                        <button class="btn btn-primary" disabled="@Ocupado" @onclick="() => EjecutarAsync(GuardarAsync)">Guardar configuración</button>
+                        <button class="btn btn-secondary" disabled="@(Ocupado || !_config.GoogleDriveHabilitado)" @onclick="() => EjecutarAsync(SincronizarAsync)">Sincronizar ahora</button>
+                    </div>
+                    <StatusBar Mensaje="@StatusMessage" />
+                </section>
+
+                <section class="card">
+                    <h2>Restaurar una copia</h2>
+                    <p class="muted small">Reemplaza todos los datos actuales por los de la copia elegida, para todos los usuarios de la web y de
+                        escritorio que usen esta base. Antes de restaurar se genera una copia de seguridad del estado actual.</p>
+                    <label>Subir un archivo de copia (.zip)</label>
+                    <InputFile OnChange="SubirCopiaAsync" accept=".zip" disabled="@Ocupado" />
+                    <p class="muted small">O elegí «Restaurar» en una copia del historial.</p>
+                    @if (_alerta is not null)
+                    {
+                        <div class="alert alert-warning">@_alerta</div>
+                    }
+                </section>
+            </div>
+        }
+
+        <div class="card">
+            <h2>Historial</h2>
+            <div class="table-wrap">
+                <table class="table">
+                    <thead><tr><th>Fecha</th><th>Tipo</th><th>Archivo</th><th class="num">Tamaño</th><th>Resultado</th><th>Mensaje</th><th></th></tr></thead>
+                    <tbody>
+                        @foreach (var r in _registros)
+                        {
+                            var disponible = r.Exitoso && r.Tipo != "Restauracion" && File.Exists(r.RutaArchivo);
+                            <tr>
+                                <td>@r.FechaHora.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                                <td>@r.Tipo</td>
+                                <td title="@r.RutaArchivo">@Path.GetFileName(r.RutaArchivo)</td>
+                                <td class="num">@Tamanio(r.TamanoBytes)</td>
+                                <td>@(r.Exitoso ? "OK" : "Error")</td>
+                                <td>@r.Mensaje</td>
+                                <td class="row-actions">
+                                    @if (disponible)
+                                    {
+                                        <a class="btn btn-link" href="backups/@r.Id/descargar" download>Descargar</a>
+                                        <button class="btn btn-link danger" disabled="@Ocupado" @onclick="() => EjecutarAsync(() => RestaurarAsync(r.RutaArchivo))">Restaurar</button>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                        @if (_registros.Count == 0)
+                        {
+                            <tr><td colspan="7" class="muted">Todavía no hay copias registradas.</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </ChildContent>
+</PaginaMarco>
+
+@code {
+    protected override string Modulo => ModuleAccess.Backups;
+
+    private const long TamanioMaximo = 500L * 1024 * 1024;
+
+    private BackupSettings? _config;
+    private IReadOnlyList<BackupRecord> _registros = Array.Empty<BackupRecord>();
+    private string? _alerta;
+
+    private IBackupService Copias => Servicio<IBackupService>();
+
+    private string ResumenNube => _config?.UltimaSincronizacionNube is { } ultima
+        ? $"Última sincronización: {ultima.ToLocalTime():dd/MM/yyyy HH:mm}."
+        : "Sin sincronizaciones registradas.";
+
+    protected override async Task CargarAsync()
+    {
+        _config = await Copias.GetSettingsAsync();
+        _registros = await Copias.GetRecentBackupsAsync();
+    }
+
+    private async Task GuardarAsync()
+    {
+        if (_config is null) { return; }
+        if (_config.MantenerUltimasCopias < 1) { StatusMessage = "Se debe mantener al menos una copia."; return; }
+        if (_config.IntervaloMinutos < 5) { StatusMessage = "El intervalo automático debe ser de al menos 5 minutos."; return; }
+
+        await Copias.SaveSettingsAsync(_config);
+        StatusMessage = "Configuración guardada.";
+    }
+
+    private async Task BackupManualAsync()
+    {
+        var registro = await Copias.CreateManualBackupAsync(Session.Actor);
+        await CargarAsync();
+        StatusMessage = registro.Exitoso ? $"Copia generada: {Path.GetFileName(registro.RutaArchivo)}" : $"No se pudo generar la copia: {registro.Mensaje}";
+    }
+
+    private async Task SincronizarAsync()
+    {
+        StatusMessage = "Sincronizando con la nube...";
+        var resultado = await Copias.SynchronizeCloudAsync(Session.Actor);
+        _alerta = resultado.TotalConflictos > 0
+            ? "Se detectaron copias con el mismo nombre y distinto contenido. No se descartó ninguna: la copia de la nube se conservó bajo un nombre alternativo: "
+              + string.Join(", ", resultado.Conflictos)
+            : null;
+        await CargarAsync();
+        StatusMessage = resultado.Ejecutada
+            ? $"{resultado.Mensaje} {resultado.TotalSubidos} subida(s), {resultado.TotalDescargados} descarga(s), {resultado.TotalConflictos} conflicto(s)."
+            : resultado.Mensaje;
+    }
+
+    private Task SubirCopiaAsync(InputFileChangeEventArgs e) => EjecutarAsync(async () =>
+    {
+        if (e.File.Size > TamanioMaximo) { StatusMessage = "El archivo supera los 500 MB."; return; }
+
+        var temporal = Path.Combine(Path.GetTempPath(), $"stockmanufactura-subida-{Guid.NewGuid():N}.zip");
+        try
+        {
+            await using (var destino = File.Create(temporal))
+            {
+                await e.File.OpenReadStream(TamanioMaximo).CopyToAsync(destino);
+            }
+
+            await RestaurarAsync(temporal, e.File.Name);
+        }
+        finally
+        {
+            File.Delete(temporal);
+        }
+    });
+
+    private async Task RestaurarAsync(string ruta, string? nombre = null)
+    {
+        nombre ??= Path.GetFileName(ruta);
+        var confirmacion = await JS.InvokeAsync<string?>("prompt",
+            $"Se van a reemplazar TODOS los datos actuales por los de «{nombre}». Antes se genera una copia del estado actual.\n\nEscribí RESTAURAR para confirmar.");
+        if (!string.Equals(confirmacion?.Trim(), "RESTAURAR", StringComparison.Ordinal))
+        {
+            StatusMessage = "Restauración cancelada.";
+            return;
+        }
+
+        var previa = await Copias.CreateManualBackupAsync(Session.Actor);
+        await Copias.RestoreBackupAsync(ruta, Session.Actor);
+        await CargarAsync();
+        StatusMessage = $"Restauración completada desde «{nombre}». La copia previa quedó en {Path.GetFileName(previa.RutaArchivo)}.";
+    }
+
+    private static string Tamanio(long bytes) => bytes switch
+    {
+        >= 1024 * 1024 => $"{bytes / 1024d / 1024d:0.0} MB",
+        >= 1024 => $"{bytes / 1024d:0.0} KB",
+        _ => $"{bytes} B"
+    };
+}

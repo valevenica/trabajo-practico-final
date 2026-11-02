@@ -1,0 +1,134 @@
+@page "/bitacora"
+@attribute [Authorize]
+@rendermode RenderModes.Interactivo
+@inherits PaginaBase
+
+<PageTitle>Bitácora · StockManufactura</PageTitle>
+
+<PaginaMarco Titulo="Bitácora de auditoría" Cargando="Cargando" AccesoDenegado="@AccesoDenegado">
+    <Acciones>
+        <button class="btn btn-secondary" disabled="@(Ocupado || _registros.Count == 0)" @onclick="() => EjecutarAsync(ExportarAsync)">Exportar CSV</button>
+    </Acciones>
+    <ChildContent>
+        @if (_resumen is { } r)
+        {
+            <div class="kpis">
+                <div class="kpi"><span class="kpi-label">Eventos auditados en el mes</span><span class="kpi-value">@r.AuditEventCount</span>
+                    <span class="kpi-sub">@r.AuditUserCount usuario(s) distintos</span></div>
+                <div class="kpi"><span class="kpi-label">Cobertura de trazabilidad de costos</span><span class="kpi-value">@r.TraceabilityCoveragePercent.ToString("0.#") %</span>
+                    <span class="kpi-sub">Productos activos con historial de costos</span></div>
+                <div class="kpi"><span class="kpi-label">Cambios registrados en el mes</span><span class="kpi-value">@(r.PriceChangeCount + r.CostRecalculationCount)</span>
+                    <span class="kpi-sub">Precios de insumos y recálculos de costo</span></div>
+                <div class="kpi"><span class="kpi-label">Sincronización con la nube</span><span class="kpi-value small">@r.CloudSyncStatus</span>
+                    <span class="kpi-sub">@(r.LastDriveSyncAt is { } s ? $"Última: {s.ToLocalTime():dd/MM/yyyy HH:mm}" : "Sin sincronización")</span></div>
+            </div>
+        }
+
+        <div class="card">
+            <div class="filters filters-5">
+                <div><label>Usuario</label><input @bind="_usuario" /></div>
+                <div><label>Módulo</label><input @bind="_modulo" list="modulos" /></div>
+                <div><label>Acción</label><input @bind="_accion" /></div>
+                <div><label>Desde</label><input type="date" @bind="_desde" /></div>
+                <div><label>Hasta</label><input type="date" @bind="_hasta" /></div>
+            </div>
+            <datalist id="modulos">
+                @foreach (var m in _modulos) { <option value="@m"></option> }
+            </datalist>
+            <div class="form-actions">
+                <button class="btn btn-primary" disabled="@Ocupado" @onclick="() => EjecutarAsync(BuscarAsync)">Buscar</button>
+                <button class="btn btn-link" disabled="@Ocupado" @onclick="() => EjecutarAsync(LimpiarAsync)">Limpiar filtros</button>
+                <span class="muted small">@ResumenResultados</span>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="table-wrap">
+                <table class="table">
+                    <thead><tr><th>Fecha y hora</th><th>Usuario</th><th>Módulo</th><th>Acción</th><th>Entidad</th><th>Descripción</th><th>Equipo</th></tr></thead>
+                    <tbody>
+                        @foreach (var a in _registros.Take(MaxFilas))
+                        {
+                            <tr>
+                                <td>@a.FechaHora.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss")</td>
+                                <td>@a.Usuario</td>
+                                <td>@a.Modulo</td>
+                                <td>@a.Accion</td>
+                                <td title="@a.IdEntidad">@a.Entidad</td>
+                                <td>@a.Descripcion</td>
+                                <td>@a.Equipo</td>
+                            </tr>
+                        }
+                        @if (_registros.Count == 0)
+                        {
+                            <tr><td colspan="7" class="muted">No hay eventos para los filtros elegidos.</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </ChildContent>
+</PaginaMarco>
+
+@code {
+    protected override string Modulo => ModuleAccess.Audit;
+
+    // La tabla muestra los más recientes; la exportación incluye todos los resultados.
+    private const int MaxFilas = 500;
+
+    private Application.Services.SystemStatusSnapshot? _resumen;
+    private IReadOnlyList<AuditLog> _registros = Array.Empty<AuditLog>();
+    private List<string> _modulos = new();
+    private string _usuario = string.Empty;
+    private string _modulo = string.Empty;
+    private string _accion = string.Empty;
+    private DateTime? _desde;
+    private DateTime? _hasta;
+
+    private string ResumenResultados => _registros.Count > MaxFilas
+        ? $"{_registros.Count} eventos · se muestran los {MaxFilas} más recientes (la exportación los incluye todos)"
+        : $"{_registros.Count} evento(s)";
+
+    protected override async Task CargarAsync()
+    {
+        _resumen = await Servicio<ISystemStatusService>().GetSnapshotAsync();
+        await BuscarAsync();
+        _modulos = _registros.Select(x => x.Modulo).Where(x => !string.IsNullOrWhiteSpace(x)).Distinct().OrderBy(x => x).ToList();
+    }
+
+    private async Task BuscarAsync()
+    {
+        // El selector entrega la fecha a las 00:00: "Hasta" incluye el día completo.
+        var desde = _desde?.Date.ToUniversalTime();
+        var hasta = _hasta?.Date.AddDays(1).AddTicks(-1).ToUniversalTime();
+        _registros = (await Servicio<IAuditLogService>().QueryAsync(desde, hasta, _usuario, _modulo, _accion))
+            .OrderByDescending(x => x.FechaHora)
+            .ToList();
+    }
+
+    private Task LimpiarAsync()
+    {
+        _usuario = _modulo = _accion = string.Empty;
+        _desde = _hasta = null;
+        return BuscarAsync();
+    }
+
+    private async Task ExportarAsync()
+    {
+        var csv = new System.Text.StringBuilder("Fecha y hora;Usuario;Módulo;Acción;Entidad;IdEntidad;Descripción;Equipo\n");
+        foreach (var a in _registros)
+        {
+            csv.AppendJoin(';', new[] { a.FechaHora.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss"), a.Usuario, a.Modulo, a.Accion, a.Entidad, a.IdEntidad, a.Descripcion, a.Equipo }.Select(Csv))
+               .Append('\n');
+        }
+
+        await Descargar($"bitacora-{DateTime.Now:yyyyMMdd-HHmm}.csv", csv.ToString(), "text/csv;charset=utf-8");
+        StatusMessage = $"Se exportaron {_registros.Count} evento(s).";
+    }
+
+    private static string Csv(string? valor)
+    {
+        valor ??= string.Empty;
+        return valor.IndexOfAny(new[] { ';', '"', '\n', '\r' }) >= 0 ? $"\"{valor.Replace("\"", "\"\"")}\"" : valor;
+    }
+}

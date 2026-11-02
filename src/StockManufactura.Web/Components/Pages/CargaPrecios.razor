@@ -1,0 +1,150 @@
+@page "/insumos/precios"
+@attribute [Authorize]
+@rendermode RenderModes.Interactivo
+@inherits PaginaBase
+@using StockManufactura.Application.Resources
+
+<PageTitle>Carga masiva de precios · StockManufactura</PageTitle>
+
+<PaginaMarco Titulo="Carga masiva de precios" Cargando="Cargando" AccesoDenegado="@AccesoDenegado">
+    <div class="card">
+        <p class="muted">Elegí el proveedor y un archivo Excel (.xlsx) con 2 columnas: <strong>Código de proveedor</strong> y
+            <strong>Precio</strong> (la primera fila se toma como encabezado y se ignora). Solo se actualizan los insumos que tengan
+            ese código cargado en «Proveedores del insumo».</p>
+        <div class="form-grid">
+            <div>
+                <label>Proveedor</label>
+                <select value="@_proveedorId" @onchange="CambiarProveedorAsync">
+                    <option value="">Elegí un proveedor…</option>
+                    @foreach (var p in _proveedores)
+                    {
+                        <option value="@p.Id">@p.Nombre</option>
+                    }
+                </select>
+            </div>
+            <div>
+                <label>Archivo</label>
+                <InputFile OnChange="ArchivoElegidoAsync" accept=".xlsx" disabled="@(_proveedorId is null || Ocupado)" />
+                @if (_archivoNombre is not null) { <div class="muted small">@_archivoNombre</div> }
+            </div>
+        </div>
+        <StatusBar Mensaje="@StatusMessage" />
+    </div>
+
+    @if (_filas.Count > 0)
+    {
+        <div class="card">
+            <div class="card-header">
+                <h2>Vista previa</h2>
+                <button class="btn btn-primary" disabled="@(Ocupado || CantidadOk == 0)" @onclick="() => EjecutarAsync(ImportarAsync)">
+                    Confirmar importación (@CantidadOk)
+                </button>
+            </div>
+            <div class="table-wrap">
+                <table class="table">
+                    <thead><tr><th class="num">Fila</th><th>Código proveedor</th><th>Insumo</th><th class="num">Precio actual</th><th class="num">Precio nuevo</th><th>Estado</th><th>Mensaje</th></tr></thead>
+                    <tbody>
+                        @foreach (var f in _filas)
+                        {
+                            <tr class="import-@f.Status.ToString().ToLowerInvariant()">
+                                <td class="num">@f.Fila</td>
+                                <td>@f.CodigoProveedor</td>
+                                <td>@(f.RecursoNombre ?? "—")</td>
+                                <td class="num">@(f.PrecioActual?.ToString("N2", Cultura) ?? "—")</td>
+                                <td class="num">@(f.Precio?.ToString("N2", Cultura) ?? f.PrecioTexto)</td>
+                                <td>@EstadoTexto(f.Status)</td>
+                                <td>@f.Mensaje</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</PaginaMarco>
+
+@code {
+    protected override string Modulo => ModuleAccess.PriceImport;
+
+    private const long TamanioMaximo = 10 * 1024 * 1024;
+    private static readonly CultureInfo Cultura = CultureInfo.GetCultureInfo("es-AR");
+
+    private List<Proveedor> _proveedores = new();
+    private Guid? _proveedorId;
+    private byte[]? _archivo;
+    private string? _archivoNombre;
+    private IReadOnlyList<ResourcePriceImportRow> _filas = Array.Empty<ResourcePriceImportRow>();
+
+    private IResourcePriceImportService Importacion => Servicio<IResourcePriceImportService>();
+
+    private int CantidadOk => _filas.Count(x => x.Status == ResourcePriceImportRowStatus.Ok);
+
+    protected override async Task CargarAsync()
+    {
+        _proveedores = (await Servicio<IUnitOfWork>().Proveedores.ListAsync()).Where(p => p.Activo).OrderBy(p => p.Nombre).ToList();
+        StatusMessage = "Elegí un proveedor y un archivo Excel (.xlsx) con columnas: Código de proveedor | Precio.";
+    }
+
+    private Task CambiarProveedorAsync(ChangeEventArgs e)
+    {
+        _proveedorId = Guid.TryParse(e.Value?.ToString(), out var id) ? id : null;
+        _filas = Array.Empty<ResourcePriceImportRow>();
+        // Si ya había un archivo elegido se vuelve a leer contra el nuevo proveedor.
+        return _proveedorId is not null && _archivo is not null ? EjecutarAsync(ParsearAsync) : Task.CompletedTask;
+    }
+
+    private Task ArchivoElegidoAsync(InputFileChangeEventArgs e) => EjecutarAsync(async () =>
+    {
+        if (e.File.Size > TamanioMaximo)
+        {
+            StatusMessage = "El archivo supera los 10 MB.";
+            return;
+        }
+
+        using var memoria = new MemoryStream();
+        await e.File.OpenReadStream(TamanioMaximo).CopyToAsync(memoria);
+        _archivo = memoria.ToArray();
+        _archivoNombre = e.File.Name;
+        await ParsearAsync();
+    });
+
+    private async Task ParsearAsync()
+    {
+        if (_proveedorId is null || _archivo is null) { return; }
+
+        try
+        {
+            using var stream = new MemoryStream(_archivo);
+            _filas = await Importacion.ParsearAsync(stream, _proveedorId.Value);
+            StatusMessage = _filas.Count == 0
+                ? "El archivo no tiene filas con datos."
+                : $"{_filas.Count} fila(s) leídas. {CantidadOk} con precio nuevo listas para importar.";
+        }
+        catch (Exception ex)
+        {
+            _filas = Array.Empty<ResourcePriceImportRow>();
+            StatusMessage = $"Error al leer el archivo: {ex.Message}";
+        }
+    }
+
+    private async Task ImportarAsync()
+    {
+        if (!await ConfirmarAsync($"Se van a actualizar {CantidadOk} insumo(s) con el nuevo precio. ¿Confirmar?"))
+        {
+            return;
+        }
+
+        var resultado = await Importacion.AplicarAsync(_filas, Session.Actor);
+        await ParsearAsync();
+        StatusMessage = $"Importación completada: {resultado.Actualizados} insumo(s) actualizados, {resultado.Omitidos} omitido(s).";
+    }
+
+    private static string EstadoTexto(ResourcePriceImportRowStatus estado) => estado switch
+    {
+        ResourcePriceImportRowStatus.Ok => "Listo",
+        ResourcePriceImportRowStatus.SinCambios => "Sin cambios",
+        ResourcePriceImportRowStatus.NoEncontrado => "No encontrado",
+        ResourcePriceImportRowStatus.PrecioInvalido => "Precio inválido",
+        _ => estado.ToString()
+    };
+}

@@ -1,0 +1,132 @@
+@page "/productos/historial"
+@attribute [Authorize]
+@rendermode RenderModes.Interactivo
+@inherits PaginaBase
+
+<PageTitle>Historial de costos · StockManufactura</PageTitle>
+
+<PaginaMarco Titulo="Historial de costos" Cargando="Cargando" AccesoDenegado="@AccesoDenegado">
+    <Acciones>
+        <a class="btn btn-secondary" href="productos">← Volver a productos</a>
+    </Acciones>
+    <ChildContent>
+        <div class="card">
+            <div class="form-grid">
+                <div>
+                    <label>Producto</label>
+                    <select value="@_productoId" @onchange="CambiarProductoAsync">
+                        @foreach (var p in _productos)
+                        {
+                            <option value="@p.Id">@p.Nombre@(p.Activo ? "" : " (inactivo)")</option>
+                        }
+                    </select>
+                </div>
+                <div>
+                    <label>Tipo de evento</label>
+                    <select @bind="_filtroTipo">
+                        <option value="">Todos</option>
+                        @foreach (var t in _eventos.Select(e => e.Tipo).Distinct().OrderBy(t => t))
+                        {
+                            <option>@t</option>
+                        }
+                    </select>
+                </div>
+            </div>
+            <StatusBar Mensaje="@StatusMessage" />
+        </div>
+
+        <div class="card">
+            <div class="table-wrap">
+                <table class="table">
+                    <thead><tr><th>Fecha</th><th>Evento</th><th>Descripción</th><th>Usuario</th><th class="num">Costo nuevo</th></tr></thead>
+                    <tbody>
+                        @foreach (var e in EventosVisibles)
+                        {
+                            <tr>
+                                <td>@e.FechaUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                                <td>@e.Tipo</td>
+                                <td>@e.Descripcion</td>
+                                <td>@e.Usuario</td>
+                                <td class="num">@(e.CostoNuevo?.ToString("N2", Cultura) ?? "")</td>
+                            </tr>
+                        }
+                        @if (!EventosVisibles.Any())
+                        {
+                            <tr><td colspan="5" class="muted">Sin historial para este producto.</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </ChildContent>
+</PaginaMarco>
+
+@code {
+    protected override string Modulo => ModuleAccess.CostHistory;
+
+    private static readonly CultureInfo Cultura = CultureInfo.GetCultureInfo("es-AR");
+
+    [SupplyParameterFromQuery(Name = "producto")] private Guid? ProductoInicial { get; set; }
+
+    private List<Producto> _productos = new();
+    private Guid? _productoId;
+    private List<Evento> _eventos = new();
+    private string _filtroTipo = string.Empty;
+
+    private IEnumerable<Evento> EventosVisibles => string.IsNullOrEmpty(_filtroTipo) ? _eventos : _eventos.Where(e => e.Tipo == _filtroTipo);
+
+    protected override async Task CargarAsync()
+    {
+        _productos = (await Servicio<IUnitOfWork>().Productos.ListAsync()).OrderBy(x => x.Nombre).ToList();
+        _productoId = _productos.FirstOrDefault(x => x.Id == ProductoInicial)?.Id ?? _productos.FirstOrDefault()?.Id;
+        await CargarHistorialAsync();
+    }
+
+    private Task CambiarProductoAsync(ChangeEventArgs e)
+    {
+        _productoId = Guid.TryParse(e.Value?.ToString(), out var id) ? id : null;
+        _filtroTipo = string.Empty;
+        return EjecutarAsync(CargarHistorialAsync);
+    }
+
+    // Une los recálculos de costo con los eventos de la bitácora del producto (y de su receta) en una sola línea de tiempo.
+    private async Task CargarHistorialAsync()
+    {
+        _eventos = new List<Evento>();
+        if (_productoId is not { } productoId) { StatusMessage = "No hay productos cargados."; return; }
+
+        foreach (var h in await Servicio<IProductCostService>().GetProductCostHistoryAsync(productoId))
+        {
+            _eventos.Add(new Evento(
+                h.Fecha,
+                h.MotivoRecalculo.Contains("receta", StringComparison.OrdinalIgnoreCase) || h.MotivoRecalculo.Contains("BOM", StringComparison.OrdinalIgnoreCase)
+                    ? "Recálculo (receta)" : "Recálculo de costo",
+                $"{h.MotivoRecalculo} · Costo: {h.CostoAnterior.ToString("N2", Cultura)} → {h.CostoNuevo.ToString("N2", Cultura)} · Precio: {h.PrecioSugeridoAnterior.ToString("N2", Cultura)} → {h.PrecioSugeridoNuevo.ToString("N2", Cultura)}",
+                h.Usuario,
+                h.CostoNuevo));
+        }
+
+        foreach (var a in await Servicio<IUnitOfWork>().AuditLogs.ListByProductIdAsync(productoId))
+        {
+            _eventos.Add(new Evento(a.FechaHora, TipoAuditoria(a.Modulo, a.Accion), a.Descripcion, a.Usuario, null));
+        }
+
+        _eventos = _eventos.OrderByDescending(x => x.FechaUtc).ToList();
+        StatusMessage = _eventos.Count == 0 ? "Sin historial para este producto." : $"{_eventos.Count} evento(s) encontrados.";
+    }
+
+    private static string TipoAuditoria(string modulo, string accion) => accion switch
+    {
+        "CrearItem" => "Insumo agregado",
+        "EditarItem" => "Insumo modificado",
+        "EliminarItem" => "Insumo eliminado",
+        "RecalculoCostos" => "Recálculo (receta)",
+        "Crear" => "Producto creado",
+        "Editar" => "Producto editado",
+        "Desactivar" => "Producto desactivado",
+        "Reactivar" => "Producto reactivado",
+        _ => $"{modulo}: {accion}"
+    };
+
+    private sealed record Evento(DateTime FechaUtc, string Tipo, string Descripcion, string Usuario, decimal? CostoNuevo);
+}

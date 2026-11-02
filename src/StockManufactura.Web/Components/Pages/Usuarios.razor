@@ -1,0 +1,359 @@
+@page "/usuarios"
+@attribute [Authorize]
+@rendermode RenderModes.Interactivo
+@inherits PaginaBase
+@using StockManufactura.Application.DTOs
+@using StockManufactura.Application.Email
+
+<PageTitle>Usuarios y roles · StockManufactura</PageTitle>
+
+<PaginaMarco Titulo="Usuarios y roles" Cargando="Cargando" AccesoDenegado="@AccesoDenegado">
+    <div class="tabs">
+        <button class="tab @(_pestania == Pestania.Usuarios ? "active" : "")" @onclick="() => CambiarPestania(Pestania.Usuarios)">Usuarios</button>
+        <button class="tab @(_pestania == Pestania.Roles ? "active" : "")" @onclick="() => CambiarPestania(Pestania.Roles)">Roles y permisos</button>
+        <button class="tab @(_pestania == Pestania.Correo ? "active" : "")" @onclick="() => CambiarPestania(Pestania.Correo)">Correo de recuperación</button>
+    </div>
+
+    @if (_pestania == Pestania.Usuarios)
+    {
+        <div class="split">
+            <section class="card list-panel">
+                <div class="card-header">
+                    <h2>Usuarios</h2>
+                    <button class="btn btn-primary" @onclick="NuevoUsuario">+ Nuevo</button>
+                </div>
+                <input class="search" placeholder="Buscar por nombre, correo o rol" @bind="_busqueda" @bind:event="oninput" />
+                <ul class="item-list">
+                    @foreach (var u in UsuariosVisibles)
+                    {
+                        <li class="@(u.Id == _usuarioSel?.Id ? "selected" : "") @(u.EsActivo ? "" : "inactive")" @onclick="() => SeleccionarUsuario(u)">
+                            <div class="item-title">@u.Nombre @if (!u.EsActivo) { <span class="badge badge-inactivo">Inactivo</span> }</div>
+                            <div class="item-sub">@u.Email · Rol: @u.RolNombre</div>
+                            @if (u.EstaBloqueado) { <div class="item-sub tono-critica">Bloqueado por intentos fallidos</div> }
+                            @if (u.RequiereCambioPassword) { <div class="item-sub tono-advertencia">Debe cambiar la contraseña</div> }
+                        </li>
+                    }
+                </ul>
+            </section>
+
+            <section class="card">
+                <h2>@(_usuarioSel is null ? "Nuevo usuario" : "Gestión de usuario")</h2>
+                <div class="form-grid">
+                    <div><label>Nombre de usuario *</label><input @bind="_nombre" /></div>
+                    <div><label>Correo *</label><input type="email" @bind="_email" /></div>
+                    <div>
+                        <label>Rol *</label>
+                        <select @bind="_rolId">
+                            @foreach (var r in _roles) { <option value="@r.Id">@r.Nombre</option> }
+                        </select>
+                    </div>
+                    <div><label>&nbsp;</label><label class="check"><input type="checkbox" @bind="_activo" /> Usuario activo</label></div>
+                    @if (_usuarioSel is null)
+                    {
+                        <div class="span-2"><label>Contraseña inicial (mínimo 8; deberá cambiarla al ingresar)</label><input type="password" @bind="_password" autocomplete="new-password" /></div>
+                    }
+                </div>
+                <div class="form-actions wrap">
+                    <button class="btn btn-primary" disabled="@Ocupado" @onclick="() => EjecutarAsync(GuardarUsuarioAsync)">Guardar</button>
+                    @if (_usuarioSel is not null)
+                    {
+                        <button class="btn btn-secondary danger" disabled="@(Ocupado || EsUsuarioActual)" title="@(EsUsuarioActual ? "No podés eliminar tu propio usuario" : "")"
+                                @onclick="() => EjecutarAsync(EliminarUsuarioAsync)">Eliminar usuario</button>
+                    }
+                </div>
+
+                @if (_usuarioSel is not null)
+                {
+                    <h3>Contraseña temporal</h3>
+                    <p class="muted small">Desbloquea la cuenta y obliga al usuario a cambiarla en el próximo ingreso.</p>
+                    <div class="inline-form">
+                        <input type="password" placeholder="Nueva contraseña (mínimo 8)" @bind="_password" autocomplete="new-password" />
+                        <button class="btn btn-secondary" disabled="@Ocupado" @onclick="() => EjecutarAsync(AsignarTemporalAsync)">Asignar contraseña temporal</button>
+                    </div>
+                }
+                <StatusBar Mensaje="@StatusMessage" />
+            </section>
+        </div>
+    }
+    else if (_pestania == Pestania.Roles)
+    {
+        <div class="split">
+            <section class="card list-panel">
+                <div class="card-header">
+                    <h2>Roles</h2>
+                    <button class="btn btn-primary" @onclick="() => _mostrarNuevoRol = !_mostrarNuevoRol">@(_mostrarNuevoRol ? "Cancelar" : "+ Nuevo")</button>
+                </div>
+                @if (_mostrarNuevoRol)
+                {
+                    <div class="sub-card">
+                        <label>Nombre</label><input @bind="_nuevoRolNombre" />
+                        <label>Descripción</label><textarea rows="2" @bind="_nuevoRolDescripcion"></textarea>
+                        <div class="form-actions"><button class="btn btn-primary" disabled="@Ocupado" @onclick="() => EjecutarAsync(CrearRolAsync)">Crear rol</button></div>
+                    </div>
+                }
+                <ul class="item-list">
+                    @foreach (var r in _roles)
+                    {
+                        <li class="@(r.Id == _rolSel?.Id ? "selected" : "")" @onclick="() => SeleccionarRol(r)">
+                            <div class="item-title">@r.Nombre</div>
+                            <div class="item-sub">@r.Descripcion</div>
+                            <div class="item-sub">@_usuarios.Count(u => u.RolId == r.Id) usuario(s)</div>
+                        </li>
+                    }
+                </ul>
+            </section>
+
+            <section class="card">
+                @if (_rolSel is null)
+                {
+                    <p class="muted">Seleccioná un rol.</p>
+                }
+                else
+                {
+                    <h2>Permisos del rol · @_rolSel.Nombre</h2>
+                    <div class="permisos">
+                        @foreach (var (codigo, etiqueta) in PermissionCatalog.All)
+                        {
+                            <label class="check"><input type="checkbox" checked="@_permisos.Contains(codigo)" @onchange="e => AlternarPermiso(codigo, (bool)e.Value!)" /> @etiqueta</label>
+                        }
+                    </div>
+                    <div class="form-actions">
+                        <button class="btn btn-primary" disabled="@Ocupado" @onclick="() => EjecutarAsync(GuardarPermisosAsync)">Guardar permisos</button>
+                        <button class="btn btn-secondary danger" disabled="@Ocupado" @onclick="() => EjecutarAsync(EliminarRolAsync)">Eliminar rol</button>
+                    </div>
+                }
+                <StatusBar Mensaje="@StatusMessage" />
+            </section>
+        </div>
+    }
+    else
+    {
+        <section class="card narrow-wide">
+            <h2>Cuenta de correo saliente</h2>
+            <p class="muted small">Desde esta cuenta se envían los códigos para recuperar la contraseña al correo del perfil de cada usuario.
+                Con Gmail: servidor smtp.gmail.com, puerto 587, SSL activado y una contraseña de aplicación.</p>
+            <div class="form-grid">
+                <div><label>Servidor SMTP</label><input @bind="_smtp.Host" /></div>
+                <div><label>Puerto</label><input type="number" min="1" @bind="_smtp.Puerto" /></div>
+                <div><label>Usuario de la cuenta</label><input @bind="_smtp.Usuario" /></div>
+                <div>
+                    <label>Contraseña de la cuenta</label>
+                    <input type="password" @bind="_smtpPassword" autocomplete="new-password" placeholder="@(_smtpTienePassword ? "(guardada; dejar en blanco para conservarla)" : "")" />
+                </div>
+                <div><label>Correo remitente</label><input type="email" @bind="_smtp.Remitente" /></div>
+                <div><label>Nombre del remitente</label><input @bind="_smtp.NombreRemitente" /></div>
+            </div>
+            <label class="check"><input type="checkbox" @bind="_smtp.UsarSsl" /> Usar conexión segura (SSL/TLS)</label>
+            <div class="form-actions wrap">
+                <button class="btn btn-primary" disabled="@Ocupado" @onclick="() => EjecutarAsync(GuardarCorreoAsync)">Guardar configuración</button>
+                <button class="btn btn-secondary" disabled="@Ocupado" @onclick="() => EjecutarAsync(CorreoPruebaAsync)">Enviarme un correo de prueba</button>
+            </div>
+            <StatusBar Mensaje="@StatusMessage" />
+        </section>
+    }
+</PaginaMarco>
+
+@code {
+    protected override string Modulo => ModuleAccess.Users;
+
+    private enum Pestania { Usuarios, Roles, Correo }
+
+    private Pestania _pestania = Pestania.Usuarios;
+    private IReadOnlyList<UsuarioDto> _usuarios = Array.Empty<UsuarioDto>();
+    private IReadOnlyList<Rol> _roles = Array.Empty<Rol>();
+    private string _busqueda = string.Empty;
+
+    private UsuarioDto? _usuarioSel;
+    private string _nombre = string.Empty;
+    private string _email = string.Empty;
+    private Guid _rolId;
+    private bool _activo = true;
+    private string _password = string.Empty;
+
+    private Rol? _rolSel;
+    private HashSet<string> _permisos = new();
+    private bool _mostrarNuevoRol;
+    private string _nuevoRolNombre = string.Empty;
+    private string _nuevoRolDescripcion = string.Empty;
+
+    private EmailSettings _smtp = new();
+    private string _smtpPassword = string.Empty;
+    private bool _smtpTienePassword;
+
+    private IUserManagementService Gestion => Servicio<IUserManagementService>();
+    private IPasswordRecoveryService Recuperacion => Servicio<IPasswordRecoveryService>();
+
+    private bool EsUsuarioActual => _usuarioSel?.Id == Session.Usuario?.Id;
+
+    private IEnumerable<UsuarioDto> UsuariosVisibles => string.IsNullOrWhiteSpace(_busqueda)
+        ? _usuarios
+        : _usuarios.Where(u => u.Nombre.Contains(_busqueda, StringComparison.OrdinalIgnoreCase)
+                               || u.Email.Contains(_busqueda, StringComparison.OrdinalIgnoreCase)
+                               || u.RolNombre.Contains(_busqueda, StringComparison.OrdinalIgnoreCase));
+
+    protected override async Task CargarAsync()
+    {
+        _roles = await Gestion.GetRolesAsync();
+        _usuarios = (await Gestion.GetAllAsync()).OrderBy(u => u.Nombre).ToList();
+        _usuarioSel = _usuarioSel is null ? null : _usuarios.FirstOrDefault(x => x.Id == _usuarioSel.Id);
+        _rolSel = _roles.FirstOrDefault(x => x.Id == _rolSel?.Id) ?? _roles.FirstOrDefault();
+        _permisos = _rolSel is null ? new() : PermissionCatalog.All.Select(p => p.Code).Where(_rolSel.TienePermiso).ToHashSet();
+        if (_usuarioSel is null && _rolId == Guid.Empty) { NuevoUsuario(); }
+
+        _smtp = await Recuperacion.GetEmailSettingsAsync();
+        _smtpTienePassword = !string.IsNullOrEmpty(_smtp.Password);
+        _smtpPassword = string.Empty;
+    }
+
+    private void CambiarPestania(Pestania pestania)
+    {
+        _pestania = pestania;
+        StatusMessage = string.Empty;
+    }
+
+    private void NuevoUsuario()
+    {
+        _usuarioSel = null;
+        _nombre = _email = _password = string.Empty;
+        _activo = true;
+        _rolId = _roles.FirstOrDefault()?.Id ?? Guid.Empty;
+        StatusMessage = string.Empty;
+    }
+
+    private void SeleccionarUsuario(UsuarioDto usuario)
+    {
+        _usuarioSel = usuario;
+        _nombre = usuario.Nombre;
+        _email = usuario.Email;
+        _rolId = usuario.RolId;
+        _activo = usuario.EsActivo;
+        _password = string.Empty;
+        StatusMessage = string.Empty;
+    }
+
+    private async Task GuardarUsuarioAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_nombre) || string.IsNullOrWhiteSpace(_email)) { StatusMessage = "Nombre y correo son requeridos."; return; }
+        if (_rolId == Guid.Empty) { StatusMessage = "Debe seleccionar un rol."; return; }
+        if (EsUsuarioActual && !_activo) { StatusMessage = "No podés desactivar tu propio usuario."; return; }
+
+        var request = new UpsertUsuarioRequest { Nombre = _nombre.Trim(), Email = _email.Trim(), RolId = _rolId, EsActivo = _activo };
+        UsuarioDto guardado;
+        if (_usuarioSel is null)
+        {
+            if (string.IsNullOrWhiteSpace(_password) || _password.Length < 8) { StatusMessage = "La contraseña debe tener al menos 8 caracteres."; return; }
+            guardado = await Gestion.CreateAsync(request, _password, Session.Actor);
+            StatusMessage = "Usuario creado. Deberá cambiar la contraseña en su primer ingreso.";
+        }
+        else
+        {
+            guardado = await Gestion.UpdateAsync(_usuarioSel.Id, request, Session.Actor);
+            StatusMessage = "Usuario actualizado.";
+        }
+
+        var mensaje = StatusMessage;
+        await CargarAsync();
+        SeleccionarUsuario(_usuarios.First(x => x.Id == guardado.Id));
+        StatusMessage = mensaje;
+    }
+
+    private async Task AsignarTemporalAsync()
+    {
+        if (_usuarioSel is null) { return; }
+        if (string.IsNullOrWhiteSpace(_password) || _password.Length < 8) { StatusMessage = "La contraseña debe tener al menos 8 caracteres."; return; }
+
+        await Gestion.ResetPasswordAsync(_usuarioSel.Id, _password, Session.Actor);
+        _password = string.Empty;
+        await CargarAsync();
+        StatusMessage = "Contraseña temporal asignada. La cuenta quedó desbloqueada y el usuario deberá cambiarla al ingresar.";
+    }
+
+    private async Task EliminarUsuarioAsync()
+    {
+        if (_usuarioSel is null || EsUsuarioActual) { return; }
+        if (!await ConfirmarAsync($"¿Eliminar el usuario '{_usuarioSel.Nombre}' ({_usuarioSel.Email})? Esta acción no se puede deshacer. Si solo querés impedirle el ingreso, desmarcá «Usuario activo»."))
+        {
+            return;
+        }
+
+        await Gestion.DeleteUserAsync(_usuarioSel.Id, Session.Actor);
+        _usuarioSel = null;
+        await CargarAsync();
+        NuevoUsuario();
+        StatusMessage = "Usuario eliminado.";
+    }
+
+    private void SeleccionarRol(Rol rol)
+    {
+        _rolSel = rol;
+        _permisos = PermissionCatalog.All.Select(p => p.Code).Where(rol.TienePermiso).ToHashSet();
+        StatusMessage = string.Empty;
+    }
+
+    private void AlternarPermiso(string codigo, bool marcado)
+    {
+        if (marcado) { _permisos.Add(codigo); } else { _permisos.Remove(codigo); }
+    }
+
+    private async Task CrearRolAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_nuevoRolNombre)) { StatusMessage = "Debe ingresar un nombre de rol."; return; }
+
+        var creado = await Gestion.CreateRoleAsync(_nuevoRolNombre.Trim(), _nuevoRolDescripcion.Trim(), Session.Actor);
+        _nuevoRolNombre = _nuevoRolDescripcion = string.Empty;
+        _mostrarNuevoRol = false;
+        await CargarAsync();
+        SeleccionarRol(_roles.First(x => x.Id == creado.Id));
+        StatusMessage = "Rol creado. Marcá sus permisos y guardá.";
+    }
+
+    private async Task GuardarPermisosAsync()
+    {
+        if (_rolSel is null) { return; }
+
+        await Gestion.UpdateRolePermissionsAsync(_rolSel.Id, _permisos.ToList(), Session.Actor);
+        await CargarAsync();
+        StatusMessage = "Permisos actualizados. Se aplican cuando cada usuario vuelve a ingresar.";
+    }
+
+    private async Task EliminarRolAsync()
+    {
+        if (_rolSel is null) { return; }
+        if (!await ConfirmarAsync($"¿Eliminar el rol '{_rolSel.Nombre}'? Esta acción no se puede deshacer.")) { return; }
+
+        await Gestion.DeleteRoleAsync(_rolSel.Id, Session.Actor);
+        _rolSel = null;
+        await CargarAsync();
+        StatusMessage = "Rol eliminado.";
+    }
+
+    private async Task GuardarCorreoAsync()
+    {
+        if (_smtp.Puerto <= 0) { StatusMessage = "El puerto debe ser un número (habitualmente 587)."; return; }
+
+        // Si no se escribe una contraseña nueva se conserva la guardada.
+        var actual = await Recuperacion.GetEmailSettingsAsync();
+        _smtp.Password = string.IsNullOrEmpty(_smtpPassword) ? actual.Password : _smtpPassword;
+        if (string.IsNullOrWhiteSpace(_smtp.NombreRemitente)) { _smtp.NombreRemitente = "Integra Manufacturing"; }
+
+        await Recuperacion.SaveEmailSettingsAsync(_smtp, Session.Actor);
+        await CargarAsync();
+        StatusMessage = "Configuración de correo guardada.";
+    }
+
+    private async Task CorreoPruebaAsync()
+    {
+        var destinatario = Session.Usuario?.Email;
+        if (string.IsNullOrWhiteSpace(destinatario) || !destinatario.Contains('@')) { StatusMessage = "Su usuario no tiene un correo cargado (se configura en «Mi cuenta»)."; return; }
+
+        try
+        {
+            await Recuperacion.SendTestEmailAsync(destinatario);
+            StatusMessage = $"Correo de prueba enviado a {destinatario}.";
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"No se pudo enviar el correo de prueba: {ex.InnerException?.Message ?? ex.Message}";
+        }
+    }
+}

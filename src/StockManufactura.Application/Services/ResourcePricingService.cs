@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using StockManufactura.Application.Interfaces;
@@ -27,6 +28,12 @@ namespace StockManufactura.Application.Services
         public async Task<IReadOnlyList<Recurso>> GetResourcesAsync(CancellationToken cancellationToken = default)
         {
             return await _unitOfWork.Recursos.ListActivosAsync();
+        }
+
+        public async Task<IReadOnlyList<Recurso>> GetAllResourcesAsync(CancellationToken cancellationToken = default)
+        {
+            var recursos = await _unitOfWork.Recursos.ListAsync();
+            return recursos.OrderBy(x => x.Nombre).ToList();
         }
 
         public async Task<Recurso> UpsertResourceAsync(ResourceUpsertRequest request, CancellationToken cancellationToken = default)

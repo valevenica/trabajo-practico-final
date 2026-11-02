@@ -1,0 +1,15 @@
+<span class="badge badge-@Estado.ToString().ToLowerInvariant()">@Texto</span>
+
+@code {
+    [Parameter] public EstadoOrdenProduccion Estado { get; set; }
+
+    private string Texto => Estado switch
+    {
+        EstadoOrdenProduccion.Borrador => "Borrador",
+        EstadoOrdenProduccion.Planificada => "Planificada",
+        EstadoOrdenProduccion.EnProceso => "En proceso",
+        EstadoOrdenProduccion.Finalizada => "Finalizada",
+        EstadoOrdenProduccion.Cancelada => "Cancelada",
+        _ => Estado.ToString()
+    };
+}

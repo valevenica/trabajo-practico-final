@@ -1,0 +1,204 @@
+@page "/proveedores"
+@attribute [Authorize]
+@rendermode RenderModes.Interactivo
+@inherits PaginaBase
+
+<PageTitle>Proveedores · StockManufactura</PageTitle>
+
+<PaginaMarco Titulo="Proveedores" Cargando="Cargando" AccesoDenegado="@AccesoDenegado">
+    <Acciones>
+        <button class="btn btn-primary" @onclick="Nuevo">+ Nuevo proveedor</button>
+    </Acciones>
+    <ChildContent>
+        <div class="split">
+            <section class="card list-panel">
+                <input class="search" placeholder="Buscar por nombre, razón social o CUIT" @bind="_busqueda" @bind:event="oninput" />
+                <label class="check"><input type="checkbox" @bind="_mostrarInactivos" /> Mostrar inactivos</label>
+                <ul class="item-list">
+                    @foreach (var p in Filtrados)
+                    {
+                        <li class="@(p.Id == _seleccionado?.Id ? "selected" : "") @(p.Activo ? "" : "inactive")" @onclick="() => Seleccionar(p)">
+                            <div class="item-title">@p.Nombre @if (!p.Activo) { <span class="badge badge-inactivo">Inactivo</span> }</div>
+                            <div class="item-sub">@p.RazonSocial · CUIT @p.Cuit</div>
+                        </li>
+                    }
+                    @if (!Filtrados.Any())
+                    {
+                        <li class="muted">Sin proveedores.</li>
+                    }
+                </ul>
+            </section>
+
+            <section class="card">
+                <div class="card-header">
+                    <h2>@(_seleccionado is null ? "Nuevo proveedor" : "Datos del proveedor")</h2>
+                    @if (_seleccionado is not null)
+                    {
+                        <button class="btn btn-secondary" disabled="@Ocupado" @onclick="() => EjecutarAsync(ToggleActivoAsync)">@(_seleccionado.Activo ? "Desactivar" : "Activar")</button>
+                    }
+                </div>
+                <div class="form-grid">
+                    <div><label>Nombre *</label><input @bind="_form.Nombre" /></div>
+                    <div><label>Razón social *</label><input @bind="_form.RazonSocial" /></div>
+                    <div><label>CUIT *</label><input @bind="_form.Cuit" /></div>
+                    <div><label>Persona de contacto</label><input @bind="_form.PersonaContacto" /></div>
+                    <div><label>Teléfono</label><input @bind="_form.Telefono" /></div>
+                    <div><label>Email</label><input type="email" @bind="_form.Email" /></div>
+                    <div class="span-2"><label>Dirección</label><input @bind="_form.Direccion" /></div>
+                    <div><label>Ciudad</label><input @bind="_form.Ciudad" /></div>
+                    <div><label>Provincia</label><input @bind="_form.Provincia" /></div>
+                    <div><label>País</label><input @bind="_form.Pais" /></div>
+                    <div class="span-2"><label>Observaciones</label><textarea rows="2" @bind="_form.Observaciones"></textarea></div>
+                </div>
+                <div class="form-actions">
+                    <button class="btn btn-primary" disabled="@Ocupado" @onclick="() => EjecutarAsync(GuardarAsync)">Guardar</button>
+                </div>
+                <StatusBar Mensaje="@StatusMessage" />
+            </section>
+        </div>
+    </ChildContent>
+</PaginaMarco>
+
+@code {
+    protected override string Modulo => ModuleAccess.Providers;
+
+    private List<Proveedor> _proveedores = new();
+    private Proveedor? _seleccionado;
+    private Proveedor _form = NuevoForm();
+    private string _busqueda = string.Empty;
+    private bool _mostrarInactivos;
+
+    private IUnitOfWork UnitOfWork => Servicio<IUnitOfWork>();
+
+    private IEnumerable<Proveedor> Filtrados
+    {
+        get
+        {
+            var q = _busqueda.Trim().ToLowerInvariant();
+            return _proveedores
+                .Where(p => p.Activo || _mostrarInactivos)
+                .Where(p => q.Length == 0 || p.Nombre.ToLowerInvariant().Contains(q) || p.RazonSocial.ToLowerInvariant().Contains(q) || p.Cuit.Contains(q));
+        }
+    }
+
+    protected override async Task CargarAsync()
+    {
+        _proveedores = (await UnitOfWork.Proveedores.ListAsync()).OrderBy(x => x.Nombre).ToList();
+        if (_seleccionado is not null)
+        {
+            _seleccionado = _proveedores.FirstOrDefault(x => x.Id == _seleccionado.Id);
+        }
+    }
+
+    private static Proveedor NuevoForm() => new() { Pais = "Argentina" };
+
+    private void Seleccionar(Proveedor p)
+    {
+        _seleccionado = p;
+        _form = Copiar(p, new Proveedor());
+        StatusMessage = string.Empty;
+    }
+
+    private void Nuevo()
+    {
+        _seleccionado = null;
+        _form = NuevoForm();
+        StatusMessage = "Nuevo proveedor.";
+    }
+
+    private async Task GuardarAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_form.Nombre) || string.IsNullOrWhiteSpace(_form.RazonSocial) || string.IsNullOrWhiteSpace(_form.Cuit))
+        {
+            StatusMessage = "Nombre, razón social y CUIT son requeridos.";
+            return;
+        }
+
+        var cuit = _form.Cuit.Trim();
+        var duplicado = await UnitOfWork.Proveedores.GetByCuitAsync(cuit);
+        if (duplicado is not null && duplicado.Id != _seleccionado?.Id)
+        {
+            StatusMessage = "Ya existe un proveedor con ese CUIT.";
+            return;
+        }
+
+        Proveedor proveedor;
+        var esNuevo = _seleccionado is null;
+        if (esNuevo)
+        {
+            proveedor = Copiar(_form, new Proveedor { FechaAlta = DateTime.UtcNow, Activo = true });
+            await UnitOfWork.Proveedores.AddAsync(proveedor);
+        }
+        else
+        {
+            proveedor = duplicado ?? await UnitOfWork.Proveedores.GetByIdAsync(_seleccionado!.Id)
+                ?? throw new InvalidOperationException("El proveedor ya no existe; recargue el listado.");
+            Copiar(_form, proveedor);
+            proveedor.Activo = _seleccionado!.Activo;
+            proveedor.UpdateTimestamp();
+            UnitOfWork.Proveedores.Update(proveedor);
+        }
+
+        try
+        {
+            await UnitOfWork.SaveChangesAsync();
+        }
+        catch
+        {
+            // Un alta fallida queda en seguimiento y se reintentaría en el próximo Guardar.
+            if (esNuevo) { UnitOfWork.Proveedores.Delete(proveedor); }
+            throw;
+        }
+
+        await RegistrarAuditoriaAsync(esNuevo ? "Crear" : "Editar", proveedor, esNuevo ? "Alta de proveedor." : "Edición de proveedor.");
+        _seleccionado = proveedor;
+        await CargarAsync();
+        StatusMessage = esNuevo ? "Proveedor creado." : "Proveedor actualizado.";
+    }
+
+    private async Task ToggleActivoAsync()
+    {
+        if (_seleccionado is null) { return; }
+
+        var proveedor = await UnitOfWork.Proveedores.GetByIdAsync(_seleccionado.Id)
+            ?? throw new InvalidOperationException("El proveedor ya no existe; recargue el listado.");
+        proveedor.Activo = !_seleccionado.Activo;
+        proveedor.UpdateTimestamp();
+        UnitOfWork.Proveedores.Update(proveedor);
+        await UnitOfWork.SaveChangesAsync();
+        await RegistrarAuditoriaAsync(proveedor.Activo ? "Activar" : "Desactivar", proveedor, "Cambio de estado de proveedor.");
+
+        await CargarAsync();
+        StatusMessage = "Estado actualizado.";
+    }
+
+    private static Proveedor Copiar(Proveedor origen, Proveedor destino)
+    {
+        destino.Nombre = origen.Nombre.Trim();
+        destino.RazonSocial = origen.RazonSocial.Trim();
+        destino.Cuit = origen.Cuit.Trim();
+        destino.Direccion = origen.Direccion.Trim();
+        destino.Ciudad = origen.Ciudad.Trim();
+        destino.Provincia = origen.Provincia.Trim();
+        destino.Pais = origen.Pais.Trim();
+        destino.Telefono = origen.Telefono.Trim();
+        destino.Email = origen.Email.Trim();
+        destino.PersonaContacto = origen.PersonaContacto.Trim();
+        destino.Observaciones = origen.Observaciones.Trim();
+        return destino;
+    }
+
+    private Task RegistrarAuditoriaAsync(string accion, Proveedor proveedor, string descripcion)
+    {
+        return Servicio<IAuditLogService>().RegisterAsync(new AuditLog
+        {
+            Usuario = Session.Actor,
+            Modulo = "Proveedores",
+            Accion = accion,
+            Entidad = "Proveedor",
+            IdEntidad = proveedor.Id.ToString(),
+            Descripcion = descripcion,
+            Equipo = WebSession.Equipo
+        });
+    }
+}

@@ -1,0 +1,216 @@
+@page "/clientes"
+@attribute [Authorize]
+@rendermode RenderModes.Interactivo
+@inherits PaginaBase
+
+<PageTitle>Clientes · StockManufactura</PageTitle>
+
+<PaginaMarco Titulo="Clientes" Cargando="Cargando" AccesoDenegado="@AccesoDenegado">
+    <Acciones>
+        <button class="btn btn-primary" @onclick="Nuevo">+ Nuevo cliente</button>
+    </Acciones>
+    <ChildContent>
+        <div class="split">
+            <section class="card list-panel">
+                <input class="search" placeholder="Buscar por nombre o documento" @bind="_busqueda" @bind:event="oninput" />
+                <label class="check"><input type="checkbox" @bind="_mostrarInactivos" /> Mostrar inactivos</label>
+                <ul class="item-list">
+                    @foreach (var c in Filtrados)
+                    {
+                        <li class="@(c.Id == _seleccionado?.Id ? "selected" : "") @(c.Activo ? "" : "inactive")" @onclick="() => Seleccionar(c)">
+                            <div class="item-title">@c.Nombre @if (!c.Activo) { <span class="badge badge-inactivo">Inactivo</span> }</div>
+                            <div class="item-sub">@(string.IsNullOrEmpty(c.Documento) ? "Sin documento" : c.Documento) · @c.Ciudad</div>
+                        </li>
+                    }
+                    @if (!Filtrados.Any())
+                    {
+                        <li class="muted">Sin clientes. Usá «+ Nuevo cliente» para cargar el primero.</li>
+                    }
+                </ul>
+            </section>
+
+            <section class="card">
+                <div class="card-header">
+                    <h2>@(_seleccionado is null ? "Nuevo cliente" : "Datos del cliente")</h2>
+                    @if (_seleccionado is not null)
+                    {
+                        <button class="btn btn-secondary" disabled="@Ocupado" @onclick="() => EjecutarAsync(ToggleActivoAsync)">@(_seleccionado.Activo ? "Desactivar" : "Activar")</button>
+                    }
+                </div>
+                @if (!string.IsNullOrEmpty(_pedidosResumen))
+                {
+                    <p class="muted">@_pedidosResumen</p>
+                }
+                <div class="form-grid">
+                    <div class="span-2"><label>Nombre o razón social *</label><input @bind="_form.Nombre" /></div>
+                    <div><label>CUIT / CUIL / DNI</label><input @bind="_form.Documento" /></div>
+                    <div><label>Teléfono</label><input @bind="_form.Telefono" /></div>
+                    <div><label>Email</label><input type="email" @bind="_form.Email" /></div>
+                    <div><label>Dirección</label><input @bind="_form.Direccion" /></div>
+                    <div><label>Ciudad</label><input @bind="_form.Ciudad" /></div>
+                    <div><label>Provincia</label><input @bind="_form.Provincia" /></div>
+                    <div class="span-2"><label>Observaciones</label><textarea rows="2" @bind="_form.Observaciones"></textarea></div>
+                </div>
+                <div class="form-actions">
+                    <button class="btn btn-primary" disabled="@Ocupado" @onclick="() => EjecutarAsync(GuardarAsync)">Guardar</button>
+                </div>
+                <StatusBar Mensaje="@StatusMessage" />
+            </section>
+        </div>
+    </ChildContent>
+</PaginaMarco>
+
+@code {
+    protected override string Modulo => ModuleAccess.Clients;
+
+    private List<Cliente> _clientes = new();
+    private List<OrdenProduccion> _ordenes = new();
+    private Cliente? _seleccionado;
+    private Cliente _form = new();
+    private string _busqueda = string.Empty;
+    private bool _mostrarInactivos;
+    private string _pedidosResumen = string.Empty;
+
+    private IUnitOfWork UnitOfWork => Servicio<IUnitOfWork>();
+
+    private IEnumerable<Cliente> Filtrados
+    {
+        get
+        {
+            var q = _busqueda.Trim().ToLowerInvariant();
+            return _clientes
+                .Where(c => c.Activo || _mostrarInactivos)
+                .Where(c => q.Length == 0 || c.Nombre.ToLowerInvariant().Contains(q) || c.Documento.Contains(q));
+        }
+    }
+
+    protected override async Task CargarAsync()
+    {
+        _clientes = (await UnitOfWork.Clientes.ListAsync()).OrderBy(x => x.Nombre).ToList();
+        _ordenes = (await UnitOfWork.OrdenesProduccion.ListByCreatedDescAsync()).ToList();
+        if (_seleccionado is not null)
+        {
+            _seleccionado = _clientes.FirstOrDefault(x => x.Id == _seleccionado.Id);
+        }
+    }
+
+    private void Seleccionar(Cliente c)
+    {
+        _seleccionado = c;
+        _form = Copiar(c, new Cliente());
+        StatusMessage = string.Empty;
+
+        var delCliente = _ordenes.Where(x => x.ClienteId == c.Id).ToArray();
+        var finalizados = delCliente.Count(x => x.Estado == EstadoOrdenProduccion.Finalizada);
+        var enCurso = delCliente.Count(x => x.Estado != EstadoOrdenProduccion.Finalizada && x.Estado != EstadoOrdenProduccion.Cancelada);
+        _pedidosResumen = delCliente.Length == 0
+            ? "Sin pedidos registrados."
+            : $"{delCliente.Length} pedido(s): {enCurso} en curso · {finalizados} finalizado(s). Último: {delCliente[0].Codigo} ({delCliente[0].CreatedAt.ToLocalTime():dd/MM/yyyy}).";
+    }
+
+    private void Nuevo()
+    {
+        _seleccionado = null;
+        _form = new Cliente();
+        _pedidosResumen = string.Empty;
+        StatusMessage = "Nuevo cliente.";
+    }
+
+    private async Task GuardarAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_form.Nombre))
+        {
+            StatusMessage = "El nombre o la razón social del cliente es requerido.";
+            return;
+        }
+
+        var documento = _form.Documento.Trim();
+        Cliente? duplicado = null;
+        if (documento.Length > 0)
+        {
+            duplicado = await UnitOfWork.Clientes.GetByDocumentoAsync(documento);
+            if (duplicado is not null && duplicado.Id != _seleccionado?.Id)
+            {
+                StatusMessage = $"Ya existe un cliente con el documento {documento} ({duplicado.Nombre}).";
+                return;
+            }
+        }
+
+        Cliente cliente;
+        var esNuevo = _seleccionado is null;
+        if (esNuevo)
+        {
+            cliente = Copiar(_form, new Cliente { FechaAlta = DateTime.UtcNow, Activo = true });
+            await UnitOfWork.Clientes.AddAsync(cliente);
+        }
+        else
+        {
+            cliente = duplicado ?? await UnitOfWork.Clientes.GetByIdAsync(_seleccionado!.Id)
+                ?? throw new InvalidOperationException("El cliente ya no existe; recargue el listado.");
+            Copiar(_form, cliente);
+            cliente.Activo = _seleccionado!.Activo;
+            cliente.UpdateTimestamp();
+            UnitOfWork.Clientes.Update(cliente);
+        }
+
+        try
+        {
+            await UnitOfWork.SaveChangesAsync();
+        }
+        catch
+        {
+            if (esNuevo) { UnitOfWork.Clientes.Delete(cliente); }
+            throw;
+        }
+
+        await RegistrarAuditoriaAsync(esNuevo ? "Crear" : "Editar", cliente, $"{(esNuevo ? "Alta" : "Edición")} de cliente {cliente.Nombre}");
+        _seleccionado = cliente;
+        await CargarAsync();
+        StatusMessage = esNuevo ? "Cliente creado." : "Cliente actualizado.";
+    }
+
+    private async Task ToggleActivoAsync()
+    {
+        if (_seleccionado is null) { return; }
+
+        var cliente = await UnitOfWork.Clientes.GetByIdAsync(_seleccionado.Id)
+            ?? throw new InvalidOperationException("El cliente ya no existe; recargue el listado.");
+        cliente.Activo = !_seleccionado.Activo;
+        cliente.UpdateTimestamp();
+        UnitOfWork.Clientes.Update(cliente);
+        await UnitOfWork.SaveChangesAsync();
+        await RegistrarAuditoriaAsync(cliente.Activo ? "Activar" : "Desactivar", cliente, "Cambio de estado de cliente.");
+
+        await CargarAsync();
+        StatusMessage = cliente.Activo
+            ? "Cliente activado."
+            : "Cliente desactivado: ya no se ofrece al crear pedidos, pero conserva su historial.";
+    }
+
+    private static Cliente Copiar(Cliente origen, Cliente destino)
+    {
+        destino.Nombre = origen.Nombre.Trim();
+        destino.Documento = origen.Documento.Trim();
+        destino.Telefono = origen.Telefono.Trim();
+        destino.Email = origen.Email.Trim();
+        destino.Direccion = origen.Direccion.Trim();
+        destino.Ciudad = origen.Ciudad.Trim();
+        destino.Provincia = origen.Provincia.Trim();
+        destino.Observaciones = origen.Observaciones.Trim();
+        return destino;
+    }
+
+    private Task RegistrarAuditoriaAsync(string accion, Cliente cliente, string descripcion)
+    {
+        return Servicio<IAuditLogService>().RegisterAsync(new AuditLog
+        {
+            Usuario = Session.Actor,
+            Modulo = "Clientes",
+            Accion = accion,
+            Entidad = "Cliente",
+            IdEntidad = cliente.Id.ToString(),
+            Descripcion = descripcion,
+            Equipo = WebSession.Equipo
+        });
+    }
+}

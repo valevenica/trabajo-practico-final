@@ -1,0 +1,550 @@
+@page "/productos"
+@attribute [Authorize]
+@rendermode RenderModes.Interactivo
+@inherits PaginaBase
+@using StockManufactura.Application.Products
+@using StockManufactura.Application.Services
+
+<PageTitle>Productos · StockManufactura</PageTitle>
+
+<PaginaMarco Titulo="Productos" Cargando="Cargando" AccesoDenegado="@AccesoDenegado">
+    <Acciones>
+        @if (CanCreate)
+        {
+            <button class="btn btn-primary" @onclick="NuevoProducto">+ Nuevo producto</button>
+        }
+    </Acciones>
+    <ChildContent>
+        <div class="split">
+            <section class="card list-panel">
+                <input class="search" placeholder="Buscar por código o nombre" @bind="_busqueda" @bind:event="oninput" />
+                <label class="check"><input type="checkbox" @bind="_mostrarInactivos" /> Mostrar inactivos</label>
+                <ul class="item-list">
+                    @foreach (var p in ProductosFiltrados)
+                    {
+                        <li class="@(p.Id == _seleccionado?.Id ? "selected" : "") @(p.Activo ? "" : "inactive")" @onclick="() => Seleccionar(p)">
+                            <div class="item-title">@p.Nombre @if (!p.Activo) { <span class="badge badge-inactivo">Inactivo</span> }</div>
+                            <div class="item-sub">@p.Codigo · Precio final @p.PrecioSugeridoActual.ToString("0.00") · Stock @p.StockActual.ToString("0.##")</div>
+                        </li>
+                    }
+                    @if (!ProductosFiltrados.Any())
+                    {
+                        <li class="muted">Sin resultados.</li>
+                    }
+                </ul>
+            </section>
+
+            <section class="card">
+                <div class="card-header">
+                    <h2>@(_esNuevo ? "Nuevo producto" : "Gestión de producto")</h2>
+                    @if (_seleccionado is not null && Session.CanEnter(ModuleAccess.CostHistory))
+                    {
+                        <a class="btn btn-link" href="productos/historial?producto=@_seleccionado.Id">Ver historial de costos</a>
+                    }
+                    @if (_seleccionado is not null && CanEdit)
+                    {
+                        <button class="btn btn-secondary" disabled="@Ocupado" @onclick="() => EjecutarAsync(ToggleActivoAsync)"
+                                title="Los productos no se eliminan: se desactivan para ocultarlos y se pueden reactivar">
+                            @(_seleccionado.Activo ? "Desactivar" : "Reactivar")
+                        </button>
+                    }
+                </div>
+
+                @if (_seleccionado is null && !_esNuevo)
+                {
+                    <p class="muted">Seleccioná un producto del listado o creá uno nuevo.</p>
+                }
+                else
+                {
+                    @if (_seleccionado is { Activo: false })
+                    {
+                        <div class="alert alert-warning">Producto desactivado: no aparece en listados ni en nuevas órdenes.</div>
+                    }
+
+                    <div class="form-grid">
+                        <div><label>Código</label><input @bind="_form.Codigo" /></div>
+                        <div><label>Nombre</label><input @bind="_form.Nombre" /></div>
+                        <div class="span-2"><label>Descripción</label><textarea rows="2" @bind="_form.Descripcion"></textarea></div>
+                        <div><label>Costo fabricación (calculado)</label><input readonly value="@CostoCalculado.ToString("0.00")" /></div>
+                        <div><label>Margen (0,30 = 30%)</label><input type="number" step="0.01" value="@_form.Margen.ToString(CultureInfo.InvariantCulture)" @onchange="CambiarMargen" /></div>
+                        <div><label>Precio final</label><input type="number" step="0.01" @bind="_form.PrecioSugerido" /></div>
+                        <div><label>Stock actual</label><input type="number" step="0.01" min="0" @bind="_form.StockActual" /></div>
+                        <div><label>Stock mínimo</label><input type="number" step="0.01" min="0" @bind="_form.StockMinimo" /></div>
+                        <div class="span-2"><label>Observaciones</label><input @bind="_form.Observaciones" /></div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button class="btn btn-primary" disabled="@Ocupado" @onclick="() => EjecutarAsync(GuardarAsync)">Guardar</button>
+                    </div>
+
+                    <h3>Componentes del producto (insumos o sub-productos)</h3>
+                    @if (_seleccionado is null)
+                    {
+                        <p class="muted">Guardá el producto para poder agregarle componentes.</p>
+                    }
+                    else
+                    {
+                        <div class="table-wrap">
+                            <table class="table">
+                                <thead><tr><th>Componente</th><th>Unidad</th><th class="num">Cantidad</th><th class="num">Costo unit.</th><th class="num">Subtotal</th><th></th></tr></thead>
+                                <tbody>
+                                    @foreach (var row in _receta)
+                                    {
+                                        <tr class="@(row.Id == _componenteEditando ? "selected" : "")">
+                                            <td>@row.Nombre</td>
+                                            <td>@row.Unidad</td>
+                                            <td class="num">@row.Cantidad.ToString("0.##")</td>
+                                            <td class="num">@row.CostoUnitario.ToString("0.00")</td>
+                                            <td class="num">@row.CostoTotal.ToString("0.00")</td>
+                                            <td class="row-actions">
+                                                @if (CanEdit)
+                                                {
+                                                    <button class="btn btn-link" @onclick="() => EditarComponente(row)">Editar</button>
+                                                    <button class="btn btn-link danger" disabled="@Ocupado" @onclick="() => EjecutarAsync(() => QuitarComponenteAsync(row))">Quitar</button>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                    @if (_receta.Count == 0)
+                                    {
+                                        <tr><td colspan="6" class="muted">Sin componentes.</td></tr>
+                                    }
+                                </tbody>
+                                <tfoot><tr><td colspan="4">Costo de fabricación</td><td class="num">@CostoCalculado.ToString("0.00")</td><td></td></tr></tfoot>
+                            </table>
+                        </div>
+
+                        @if (CanEdit)
+                        {
+                            <div class="inline-form">
+                                <select @bind="_componenteKey">
+                                    <option value="">Seleccioná un insumo o producto…</option>
+                                    @foreach (var c in _componentes.Where(c => !(c.EsProducto && c.Id == _seleccionado.Id)))
+                                    {
+                                        <option value="@c.Key">@c.Nombre (@c.PrecioUnitario.ToString("0.00") / @c.Unidad)</option>
+                                    }
+                                </select>
+                                <input type="number" step="0.01" min="0" placeholder="Cantidad" @bind="_componenteCantidad" />
+                                <input placeholder="Observaciones" @bind="_componenteObservaciones" />
+                                <button class="btn btn-primary" disabled="@Ocupado" @onclick="() => EjecutarAsync(GuardarComponenteAsync)">@(_componenteEditando is null ? "+ Agregar" : "Guardar cambios")</button>
+                                @if (_componenteEditando is not null)
+                                {
+                                    <button class="btn btn-secondary" @onclick="ResetComponente">Cancelar</button>
+                                }
+                            </div>
+                        }
+                    }
+                }
+                <StatusBar Mensaje="@StatusMessage" />
+            </section>
+        </div>
+    </ChildContent>
+</PaginaMarco>
+
+@code {
+    protected override string Modulo => ModuleAccess.Products;
+
+    private bool CanCreate => Session.TienePermiso("PRODUCTOS_CREAR");
+    private bool CanEdit => Session.TienePermiso("PRODUCTOS_EDITAR");
+
+    private List<Producto> _productos = new();
+    private List<ComponentOption> _componentes = new();
+    private List<RecipeRow> _receta = new();
+    private List<RecetaProductoItem> _recetaEntidades = new();
+    private Producto? _seleccionado;
+    private bool _esNuevo;
+    private ProductForm _form = new();
+    private string _busqueda = string.Empty;
+    private bool _mostrarInactivos;
+    private decimal _cotizacion = 1m;
+
+    private string _componenteKey = string.Empty;
+    private decimal _componenteCantidad;
+    private string _componenteObservaciones = string.Empty;
+    private Guid? _componenteEditando;
+
+    private IUnitOfWork UnitOfWork => Servicio<IUnitOfWork>();
+
+    private decimal CostoCalculado => _receta.Sum(x => x.CostoTotal);
+
+    private IEnumerable<Producto> ProductosFiltrados
+    {
+        get
+        {
+            var q = _busqueda.Trim().ToLowerInvariant();
+            return _productos
+                .Where(p => p.Activo || _mostrarInactivos)
+                .Where(p => q.Length == 0 || p.Codigo.ToLowerInvariant().Contains(q) || p.Nombre.ToLowerInvariant().Contains(q));
+        }
+    }
+
+    protected override async Task CargarAsync()
+    {
+        await RecargarAsync();
+        if (Navigation.Uri.EndsWith("?nuevo", StringComparison.OrdinalIgnoreCase) && CanCreate)
+        {
+            NuevoProducto();
+        }
+    }
+
+    private async Task RecargarAsync()
+    {
+        var productos = await UnitOfWork.Productos.ListAsync();
+        var recursos = await UnitOfWork.Recursos.ListActivosAsync();
+        _cotizacion = (await UnitOfWork.ExchangeRates.GetLatestAsync())?.Valor ?? 1m;
+
+        _productos = productos.OrderBy(x => x.Nombre).ToList();
+        _componentes = recursos.OrderBy(x => x.Nombre)
+            .Select(r => new ComponentOption(r.Id, r.Nombre, false, r.PrecioEnPesos(_cotizacion), r.UnidadMedida))
+            .Concat(_productos.Where(x => x.Activo).Select(p => new ComponentOption(p.Id, $"[Producto] {p.Nombre}", true, p.CostoFabricacionActual, "u.")))
+            .ToList();
+
+        if (_seleccionado is not null)
+        {
+            _seleccionado = _productos.FirstOrDefault(x => x.Id == _seleccionado.Id);
+        }
+    }
+
+    private async Task Seleccionar(Producto producto)
+    {
+        _seleccionado = producto;
+        _esNuevo = false;
+        _form = ProductForm.From(producto);
+        ResetComponente();
+        StatusMessage = string.Empty;
+        await EjecutarAsync(() => CargarRecetaAsync(producto.Id));
+    }
+
+    private void NuevoProducto()
+    {
+        _seleccionado = null;
+        _esNuevo = true;
+        _form = new ProductForm();
+        _receta.Clear();
+        _recetaEntidades.Clear();
+        ResetComponente();
+        StatusMessage = "Alta de producto nueva. Guardá el producto para poder agregarle componentes.";
+    }
+
+    private void CambiarMargen(ChangeEventArgs e)
+    {
+        if (!decimal.TryParse(e.Value?.ToString(), NumberStyles.Number, CultureInfo.InvariantCulture, out var margen))
+        {
+            return;
+        }
+
+        _form.Margen = margen;
+        var costo = CostoCalculado;
+        _form.PrecioSugerido = decimal.Round(costo + costo * margen, 2);
+    }
+
+    private async Task CargarRecetaAsync(Guid productId)
+    {
+        var items = await UnitOfWork.RecetaProductoItems.ListByProductIdAsync(productId);
+        _recetaEntidades = items.ToList();
+
+        var tramosPorRecurso = new Dictionary<Guid, IReadOnlyList<RecursoTramoPrecio>>();
+        foreach (var recursoId in items.Where(x => x.Recurso is { EsServicio: true }).Select(x => x.RecursoId!.Value).Distinct())
+        {
+            tramosPorRecurso[recursoId] = await UnitOfWork.RecursoTramosPrecio.ListByRecursoIdAsync(recursoId);
+        }
+
+        _receta = items
+            .OrderBy(x => x.RecursoId.HasValue ? x.Recurso!.Nombre : x.ComponenteProducto!.Nombre)
+            .Select(item =>
+            {
+                var esProducto = item.RecursoId is null;
+                decimal unitario;
+                decimal subtotal;
+                if (!esProducto && item.Recurso!.EsServicio && tramosPorRecurso.TryGetValue(item.Recurso.Id, out var tramos) && tramos.Count > 0)
+                {
+                    var resultado = TramoPrecioCalculator.Calcular(tramos, item.Cantidad);
+                    unitario = resultado.PrecioPromedio;
+                    subtotal = decimal.Round(resultado.CostoTotal, 4, MidpointRounding.AwayFromZero);
+                }
+                else
+                {
+                    unitario = esProducto ? item.ComponenteProducto!.CostoFabricacionActual : item.Recurso!.PrecioEnPesos(_cotizacion);
+                    subtotal = decimal.Round(item.Cantidad * unitario, 4, MidpointRounding.AwayFromZero);
+                }
+
+                return new RecipeRow(
+                    item.Id,
+                    esProducto ? $"[Producto] {item.ComponenteProducto!.Nombre}" : item.Recurso!.Nombre,
+                    esProducto ? "u." : item.Recurso!.UnidadMedida,
+                    item.Cantidad, unitario, subtotal);
+            })
+            .ToList();
+    }
+
+    private async Task GuardarAsync()
+    {
+        if (_esNuevo && !CanCreate) { StatusMessage = "No tiene permisos para crear productos."; return; }
+        if (!_esNuevo && !CanEdit) { StatusMessage = "No tiene permisos para editar productos."; return; }
+        if (string.IsNullOrWhiteSpace(_form.Codigo) || string.IsNullOrWhiteSpace(_form.Nombre)) { StatusMessage = "Código y nombre son requeridos."; return; }
+        if (_form.StockActual < 0) { StatusMessage = "Stock actual inválido."; return; }
+        if (_form.StockMinimo < 0) { StatusMessage = "Stock mínimo inválido."; return; }
+
+        var codigo = _form.Codigo.Trim().ToUpperInvariant();
+        var existente = await UnitOfWork.Productos.GetByCodigoAsync(codigo);
+        Producto producto;
+
+        if (_esNuevo)
+        {
+            if (existente is not null) { StatusMessage = "Ya existe un producto con ese código."; return; }
+
+            producto = new Producto { Activo = true, FechaUltimoCalculo = DateTime.UtcNow };
+            _form.CopyTo(producto, codigo, CostoCalculado);
+            await UnitOfWork.Productos.AddAsync(producto);
+            await UnitOfWork.SaveChangesAsync();
+            await RegistrarAuditoriaAsync("Crear", "Producto", producto.Id, "Alta de producto.");
+            await Servicio<IProductCostService>().RecalculateAffectedProductsAsync(new ProductRecalculationRequest
+            {
+                Usuario = Session.Actor,
+                Motivo = "Alta de producto",
+                ProductoDisparadorId = producto.Id
+            });
+            StatusMessage = "Producto creado. Ya podés agregar componentes.";
+        }
+        else
+        {
+            if (_seleccionado is null) { StatusMessage = "Debe seleccionar un producto."; return; }
+            if (existente is not null && existente.Id != _seleccionado.Id) { StatusMessage = "Ya existe un producto con ese código."; return; }
+
+            // Se edita la instancia seguida por el contexto, como en escritorio (el listado se carga sin seguimiento).
+            producto = existente ?? await UnitOfWork.Productos.GetByIdAsync(_seleccionado.Id)
+                ?? throw new InvalidOperationException("El producto ya no existe; recargue el listado.");
+            _form.CopyTo(producto, codigo, CostoCalculado);
+            // El estado lo cambia ICatalogActivationService con su propio contexto: se toma del listado recién cargado
+            // para no pisarlo con una instancia seguida que haya quedado desactualizada.
+            producto.Activo = _seleccionado.Activo;
+            producto.UpdateTimestamp();
+            UnitOfWork.Productos.Update(producto);
+            await UnitOfWork.SaveChangesAsync();
+            await RegistrarAuditoriaAsync("Editar", "Producto", producto.Id, "Edición de producto.");
+            StatusMessage = "Producto actualizado.";
+        }
+
+        _seleccionado = producto;
+        _esNuevo = false;
+        await RecargarAsync();
+        if (_seleccionado is not null)
+        {
+            _form = ProductForm.From(_seleccionado);
+            await CargarRecetaAsync(_seleccionado.Id);
+        }
+    }
+
+    private async Task ToggleActivoAsync()
+    {
+        if (_seleccionado is null) { return; }
+        if (!CanEdit) { StatusMessage = "No tiene permisos para editar productos."; return; }
+
+        var activar = !_seleccionado.Activo;
+        if (!activar && !await ConfirmarAsync($"¿Desactivar el producto '{_seleccionado.Nombre}'? Dejará de aparecer en los listados y en nuevas órdenes. Se puede reactivar desde \"Mostrar inactivos\"."))
+        {
+            return;
+        }
+
+        var result = await Servicio<ICatalogActivationService>().SetProductoActivoAsync(_seleccionado.Id, activar, Session.Actor, WebSession.Equipo);
+        await RecargarAsync();
+        if (_seleccionado is { Activo: false } && !_mostrarInactivos)
+        {
+            _seleccionado = null;
+        }
+        else if (_seleccionado is not null)
+        {
+            _form = ProductForm.From(_seleccionado);
+        }
+
+        StatusMessage = result.Mensaje;
+    }
+
+    private void EditarComponente(RecipeRow row)
+    {
+        var entidad = _recetaEntidades.FirstOrDefault(x => x.Id == row.Id);
+        if (entidad is null) { return; }
+
+        _componenteEditando = row.Id;
+        _componenteKey = entidad.RecursoId is { } r ? $"R:{r}" : $"P:{entidad.ComponenteProductoId}";
+        _componenteCantidad = entidad.Cantidad;
+        _componenteObservaciones = entidad.Observaciones;
+    }
+
+    private void ResetComponente()
+    {
+        _componenteEditando = null;
+        _componenteKey = string.Empty;
+        _componenteCantidad = 0;
+        _componenteObservaciones = string.Empty;
+    }
+
+    private async Task GuardarComponenteAsync()
+    {
+        if (!CanEdit) { StatusMessage = "No tiene permisos para editar productos."; return; }
+        if (_seleccionado is null) { StatusMessage = "Guardá el producto antes de agregar componentes."; return; }
+
+        var componente = _componentes.FirstOrDefault(x => x.Key == _componenteKey);
+        if (componente is null) { StatusMessage = "Seleccioná un insumo o producto para agregar."; return; }
+        if (componente.EsProducto && componente.Id == _seleccionado.Id) { StatusMessage = "Un producto no puede ser su propio componente."; return; }
+        if (_componenteCantidad <= 0) { StatusMessage = "Cantidad inválida."; return; }
+
+        var duplicado = componente.EsProducto
+            ? _recetaEntidades.Any(x => x.ComponenteProductoId == componente.Id && x.Id != _componenteEditando)
+            : _recetaEntidades.Any(x => x.RecursoId == componente.Id && x.Id != _componenteEditando);
+        if (duplicado) { StatusMessage = "Ese componente ya está en la receta del producto."; return; }
+
+        var costoParcial = await CalcularCostoParcialAsync(componente, _componenteCantidad);
+
+        if (_componenteEditando is { } editandoId)
+        {
+            var entidad = _recetaEntidades.FirstOrDefault(x => x.Id == editandoId);
+            if (entidad is null) { StatusMessage = "El componente seleccionado ya no existe."; ResetComponente(); return; }
+
+            entidad.RecursoId = componente.EsProducto ? null : componente.Id;
+            entidad.ComponenteProductoId = componente.EsProducto ? componente.Id : null;
+            entidad.Cantidad = _componenteCantidad;
+            entidad.CostoParcialManual = costoParcial;
+            entidad.Observaciones = _componenteObservaciones.Trim();
+            entidad.UpdateTimestamp();
+            UnitOfWork.RecetaProductoItems.Update(entidad);
+            await UnitOfWork.SaveChangesAsync();
+            await RegistrarAuditoriaAsync("EditarItem", "RecetaProductoItem", _seleccionado.Id,
+                $"Componente editado: {componente.Nombre} | Cantidad: {_componenteCantidad:0.00} | Costo parcial: {costoParcial:0.00}");
+            StatusMessage = "Componente actualizado.";
+        }
+        else
+        {
+            await UnitOfWork.RecetaProductoItems.AddAsync(new RecetaProductoItem
+            {
+                ProductoId = _seleccionado.Id,
+                RecursoId = componente.EsProducto ? null : componente.Id,
+                ComponenteProductoId = componente.EsProducto ? componente.Id : null,
+                Cantidad = _componenteCantidad,
+                CostoParcialManual = costoParcial,
+                Observaciones = _componenteObservaciones.Trim()
+            });
+            await UnitOfWork.SaveChangesAsync();
+            await RegistrarAuditoriaAsync("CrearItem", "RecetaProductoItem", _seleccionado.Id,
+                $"Componente agregado: {componente.Nombre} | Cantidad: {_componenteCantidad:0.00} | Costo parcial: {costoParcial:0.00}");
+            StatusMessage = "Componente agregado.";
+        }
+
+        ResetComponente();
+        await RecalcularCostoAsync();
+    }
+
+    private async Task QuitarComponenteAsync(RecipeRow row)
+    {
+        if (!CanEdit || _seleccionado is null) { return; }
+        if (!await ConfirmarAsync($"¿Quitar '{row.Nombre}' de la receta?")) { return; }
+
+        var entidad = await UnitOfWork.RecetaProductoItems.GetByIdAsync(row.Id);
+        if (entidad is null) { return; }
+
+        UnitOfWork.RecetaProductoItems.Delete(entidad);
+        await UnitOfWork.SaveChangesAsync();
+        await RegistrarAuditoriaAsync("EliminarItem", "RecetaProductoItem", _seleccionado.Id,
+            $"Componente eliminado: {row.Nombre} | Cantidad: {row.Cantidad:0.00}");
+        if (_componenteEditando == row.Id) { ResetComponente(); }
+
+        StatusMessage = "Componente quitado.";
+        await RecalcularCostoAsync();
+    }
+
+    private async Task<decimal> CalcularCostoParcialAsync(ComponentOption componente, decimal cantidad)
+    {
+        if (!componente.EsProducto)
+        {
+            var recurso = await UnitOfWork.Recursos.GetByIdAsync(componente.Id);
+            if (recurso is { EsServicio: true })
+            {
+                var tramos = await UnitOfWork.RecursoTramosPrecio.ListByRecursoIdAsync(componente.Id);
+                if (tramos.Count > 0)
+                {
+                    return decimal.Round(TramoPrecioCalculator.Calcular(tramos, cantidad).CostoTotal, 4, MidpointRounding.AwayFromZero);
+                }
+            }
+        }
+
+        return decimal.Round(cantidad * componente.PrecioUnitario, 4, MidpointRounding.AwayFromZero);
+    }
+
+    private async Task RecalcularCostoAsync()
+    {
+        await Servicio<IProductCostService>().RecalculateAffectedProductsAsync(new ProductRecalculationRequest
+        {
+            Usuario = Session.Actor,
+            Motivo = "Actualizacion de componentes del producto",
+            CambioReceta = true
+        });
+
+        await RecargarAsync();
+        if (_seleccionado is not null)
+        {
+            var margen = _form.Margen;
+            _form = ProductForm.From(_seleccionado);
+            _form.Margen = margen;
+            await CargarRecetaAsync(_seleccionado.Id);
+        }
+    }
+
+    private Task RegistrarAuditoriaAsync(string accion, string entidad, Guid id, string descripcion)
+    {
+        return Servicio<IAuditLogService>().RegisterAsync(new AuditLog
+        {
+            Usuario = Session.Actor,
+            Modulo = "Productos",
+            Accion = accion,
+            Entidad = entidad,
+            IdEntidad = id.ToString(),
+            Descripcion = descripcion,
+            Equipo = WebSession.Equipo
+        });
+    }
+
+    private sealed record RecipeRow(Guid Id, string Nombre, string Unidad, decimal Cantidad, decimal CostoUnitario, decimal CostoTotal);
+
+    private sealed record ComponentOption(Guid Id, string Nombre, bool EsProducto, decimal PrecioUnitario, string Unidad)
+    {
+        public string Key => $"{(EsProducto ? "P" : "R")}:{Id}";
+    }
+
+    private sealed class ProductForm
+    {
+        public string Codigo { get; set; } = string.Empty;
+        public string Nombre { get; set; } = string.Empty;
+        public string Descripcion { get; set; } = string.Empty;
+        public decimal Margen { get; set; }
+        public decimal PrecioSugerido { get; set; }
+        public decimal StockActual { get; set; }
+        public decimal StockMinimo { get; set; }
+        public string Observaciones { get; set; } = string.Empty;
+
+        public static ProductForm From(Producto p) => new()
+        {
+            Codigo = p.Codigo,
+            Nombre = p.Nombre,
+            Descripcion = p.Descripcion,
+            Margen = p.MargenActual,
+            PrecioSugerido = p.PrecioSugeridoActual,
+            StockActual = p.StockActual,
+            StockMinimo = p.StockMinimo,
+            Observaciones = p.Observaciones
+        };
+
+        public void CopyTo(Producto p, string codigoNormalizado, decimal costo)
+        {
+            p.Codigo = codigoNormalizado;
+            p.Nombre = Nombre.Trim();
+            p.Descripcion = Descripcion.Trim();
+            p.CostoFabricacionActual = costo;
+            p.MargenActual = Margen;
+            p.PrecioSugeridoActual = PrecioSugerido;
+            p.StockActual = StockActual;
+            p.StockMinimo = StockMinimo;
+            p.Observaciones = Observaciones.Trim();
+            p.FechaUltimoCalculo = DateTime.UtcNow;
+        }
+    }
+}

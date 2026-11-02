@@ -1,0 +1,134 @@
+@page "/cotizacion"
+@attribute [Authorize]
+@rendermode RenderModes.Interactivo
+@inherits PaginaBase
+
+<PageTitle>Configuración monetaria · StockManufactura</PageTitle>
+
+<PaginaMarco Titulo="Configuración monetaria" Cargando="Cargando" AccesoDenegado="@AccesoDenegado">
+    @if (_estado is not null)
+    {
+        <div class="kpis">
+            <div class="kpi"><span class="kpi-label">Cotización activa</span><span class="kpi-value">$ @_estado.CurrentRate.ToString("N2", Cultura)</span></div>
+            <div class="kpi"><span class="kpi-label">Fuente</span><span class="kpi-value small">@_estado.Source</span></div>
+            <div class="kpi"><span class="kpi-label">Actualizado</span><span class="kpi-value small">@(_estado.LastUpdate == DateTime.MinValue ? "—" : _estado.LastUpdate.ToLocalTime().ToString("dd/MM/yyyy HH:mm"))</span></div>
+        </div>
+    }
+
+    <div class="split">
+        <section class="card">
+            <h2>Agregar cotización</h2>
+            <button class="btn btn-primary" disabled="@Ocupado" @onclick="() => EjecutarAsync(ActualizarBlueAsync)">🔄 Actualizar blue</button>
+            <p class="muted small">Obtiene el precio de venta del dólar blue en tiempo real desde DolarHoy.</p>
+
+            <h3>Carga manual</h3>
+            <div class="form-grid">
+                <div><label>Valor ($)</label><input type="number" step="0.01" min="0" @bind="_valorManual" /></div>
+                <div><label>Fuente (de dónde lo sacás)</label><input @bind="_fuenteManual" placeholder="Manual" /></div>
+            </div>
+            <div class="form-actions">
+                <button class="btn btn-secondary" disabled="@Ocupado" @onclick="() => EjecutarAsync(GuardarManualAsync)">Guardar manual</button>
+            </div>
+            <StatusBar Mensaje="@StatusMessage" />
+        </section>
+
+        <section class="card list-panel">
+            <div class="card-header">
+                <h2>Historial de cotizaciones</h2>
+                <button class="btn btn-secondary" disabled="@(Ocupado || _seleccionada is null || _seleccionada.EsPrioritaria)"
+                        @onclick="() => EjecutarAsync(UsarSeleccionadaAsync)">★ Usar esta cotización</button>
+            </div>
+            <p class="muted small">Seleccioná una fila para usarla como cotización activa.</p>
+            <div class="table-wrap">
+                <table class="table selectable">
+                    <thead><tr><th>★</th><th>Fecha</th><th class="num">Valor ($)</th><th>Fuente</th><th>Tipo</th></tr></thead>
+                    <tbody>
+                        @foreach (var c in _historial)
+                        {
+                            <tr class="@(c.Id == _seleccionada?.Id ? "selected" : "")" @onclick="() => _seleccionada = c">
+                                <td>@(c.EsPrioritaria ? "★" : "")</td>
+                                <td>@c.Fecha.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                                <td class="num">@c.Valor.ToString("N2", Cultura)</td>
+                                <td>@c.Fuente</td>
+                                <td>@(c.Automatica ? "Automática" : "Manual")</td>
+                            </tr>
+                        }
+                        @if (_historial.Count == 0)
+                        {
+                            <tr><td colspan="5" class="muted">Todavía no hay cotizaciones.</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+</PaginaMarco>
+
+@code {
+    protected override string Modulo => ModuleAccess.Monetary;
+
+    private static readonly CultureInfo Cultura = CultureInfo.GetCultureInfo("es-AR");
+
+    private Application.Monetary.MonetaryConfigurationState? _estado;
+    private IReadOnlyList<ExchangeRate> _historial = Array.Empty<ExchangeRate>();
+    private ExchangeRate? _seleccionada;
+    private decimal? _valorManual;
+    private string _fuenteManual = string.Empty;
+
+    private IMonetaryConfigurationService Monetario => Servicio<IMonetaryConfigurationService>();
+
+    protected override async Task CargarAsync()
+    {
+        _estado = await Monetario.GetCurrentStateAsync();
+        _historial = await Monetario.GetHistoryAsync();
+        _seleccionada = _seleccionada is null ? null : _historial.FirstOrDefault(x => x.Id == _seleccionada.Id);
+    }
+
+    private async Task ActualizarBlueAsync()
+    {
+        StatusMessage = "Buscando cotización dólar blue...";
+        try
+        {
+            var cotizacion = await Monetario.UpdateAutomaticAsync("dolar-hoy", Session.Actor);
+            StatusMessage = $"Dólar blue actualizado: $ {cotizacion.Valor.ToString("N2", Cultura)}";
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"No se pudo obtener la cotización: {ex.InnerException?.Message ?? ex.Message}";
+        }
+
+        await RecargarConservandoMensajeAsync();
+    }
+
+    private async Task GuardarManualAsync()
+    {
+        if (_valorManual is not > 0)
+        {
+            StatusMessage = "Ingresá una cotización válida mayor a cero.";
+            return;
+        }
+
+        var fuente = string.IsNullOrWhiteSpace(_fuenteManual) ? "Manual" : _fuenteManual.Trim();
+        await Monetario.UpdateManualAsync(_valorManual.Value, fuente, Session.Actor);
+        StatusMessage = $"Cotización manual guardada: $ {_valorManual.Value.ToString("N2", Cultura)} ({fuente})";
+        _valorManual = null;
+        _fuenteManual = string.Empty;
+        await RecargarConservandoMensajeAsync();
+    }
+
+    private async Task UsarSeleccionadaAsync()
+    {
+        if (_seleccionada is null) { StatusMessage = "Seleccioná una cotización de la tabla."; return; }
+
+        await Monetario.SetPrioritariaAsync(_seleccionada.Id, Session.Actor);
+        StatusMessage = $"Cotización prioritaria: $ {_seleccionada.Valor.ToString("N2", Cultura)} ({_seleccionada.Fuente})";
+        await RecargarConservandoMensajeAsync();
+    }
+
+    private async Task RecargarConservandoMensajeAsync()
+    {
+        var mensaje = StatusMessage;
+        await CargarAsync();
+        StatusMessage = mensaje;
+    }
+}

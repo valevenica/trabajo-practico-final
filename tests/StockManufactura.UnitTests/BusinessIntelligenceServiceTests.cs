@@ -103,7 +103,7 @@ public class BusinessIntelligenceServiceTests
         var report = await BuildService(new FakeUnitOfWork(), faltantes).GetReportAsync(Anio, Mes);
 
         var alerta = Assert.Single(report.Alertas, a => a.Severidad == "Critica");
-        Assert.Contains("stock minimo", alerta.Titulo);
+        Assert.Contains("stock mínimo", alerta.Titulo);
     }
 
     [Fact]

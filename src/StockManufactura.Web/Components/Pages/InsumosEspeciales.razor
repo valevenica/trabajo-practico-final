@@ -1,0 +1,255 @@
+@page "/insumos/especiales"
+@attribute [Authorize]
+@rendermode RenderModes.Interactivo
+@inherits PaginaBase
+@using StockManufactura.Application.Resources
+@using StockManufactura.Application.Services
+
+<PageTitle>Insumos especiales · StockManufactura</PageTitle>
+
+<PaginaMarco Titulo="Insumos especiales" Cargando="Cargando" AccesoDenegado="@AccesoDenegado">
+    <Acciones>
+        <button class="btn btn-primary" @onclick="() => _mostrarAlta = !_mostrarAlta">@(_mostrarAlta ? "Cancelar alta" : "+ Nuevo insumo especial")</button>
+    </Acciones>
+    <ChildContent>
+        <p class="muted">Servicios sin stock físico (electricidad, gas, alquiler) cuyo precio depende del consumo: cada tramo cobra
+            un precio por unidad hasta la cantidad indicada, y el último tramo (sin tope) cubre el resto.</p>
+
+        @if (_mostrarAlta)
+        {
+            <div class="card">
+                <h2>Nuevo insumo especial</h2>
+                <div class="form-grid">
+                    <div><label>Código *</label><input @bind="_nuevo.Codigo" /></div>
+                    <div><label>Nombre *</label><input @bind="_nuevo.Nombre" /></div>
+                    <div><label>Unidad de medida (ej. kWh)</label><input @bind="_nuevo.Unidad" /></div>
+                    <div><label>Categoría</label><input @bind="_nuevo.Categoria" /></div>
+                </div>
+                <div class="form-actions">
+                    <button class="btn btn-primary" disabled="@Ocupado" @onclick="() => EjecutarAsync(CrearAsync)">Crear</button>
+                </div>
+            </div>
+        }
+
+        <div class="split">
+            <section class="card list-panel">
+                <label class="check"><input type="checkbox" @bind="_mostrarInactivos" /> Mostrar inactivos</label>
+                <ul class="item-list">
+                    @foreach (var r in Filtrados)
+                    {
+                        <li class="@(r.Id == _seleccionado?.Id ? "selected" : "") @(r.Activo ? "" : "inactive")" @onclick="() => EjecutarAsync(() => SeleccionarAsync(r))">
+                            <div class="item-title">@r.Nombre @if (!r.Activo) { <span class="badge badge-inactivo">Inactivo</span> }</div>
+                            <div class="item-sub">@r.Codigo · @r.UnidadMedida</div>
+                        </li>
+                    }
+                    @if (!Filtrados.Any())
+                    {
+                        <li class="muted">Sin insumos especiales.</li>
+                    }
+                </ul>
+            </section>
+
+            <section class="card">
+                @if (_seleccionado is null)
+                {
+                    <p class="muted">Seleccioná un insumo especial o creá uno nuevo.</p>
+                }
+                else
+                {
+                    <div class="card-header">
+                        <h2>Tramos de precio · @_seleccionado.Nombre</h2>
+                        <button class="btn btn-secondary" disabled="@Ocupado" @onclick="() => EjecutarAsync(ToggleActivoAsync)"
+                                title="Los insumos no se eliminan: se desactivan para ocultarlos y se pueden reactivar">
+                            @(_seleccionado.Activo ? "Desactivar" : "Reactivar")
+                        </button>
+                    </div>
+
+                    @if (!_seleccionado.Activo)
+                    {
+                        <div class="alert alert-warning">Insumo desactivado: no aparece en listados ni en recetas nuevas.</div>
+                    }
+
+                    <div class="table-wrap">
+                        <table class="table">
+                            <thead><tr><th>#</th><th>Hasta (@_seleccionado.UnidadMedida, vacío = sin tope)</th><th>Precio por unidad ($)</th><th></th></tr></thead>
+                            <tbody>
+                                @for (var i = 0; i < _tramos.Count; i++)
+                                {
+                                    var tramo = _tramos[i];
+                                    var numero = i + 1;
+                                    <tr>
+                                        <td>@numero</td>
+                                        <td><input type="number" step="0.01" min="0" @bind="tramo.CantidadHasta" placeholder="Sin tope" /></td>
+                                        <td><input type="number" step="0.0001" min="0" @bind="tramo.PrecioPorUnidad" /></td>
+                                        <td class="row-actions"><button class="btn btn-link danger" @onclick="() => _tramos.Remove(tramo)">Quitar</button></td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="form-actions">
+                        <button class="btn btn-secondary" @onclick="AgregarTramo">+ Agregar tramo</button>
+                        <button class="btn btn-primary" disabled="@Ocupado" @onclick="() => EjecutarAsync(GuardarTramosAsync)">Guardar tramos</button>
+                    </div>
+
+                    <h3>Simular consumo</h3>
+                    <div class="inline-form">
+                        <input type="number" step="0.01" min="0" placeholder="Consumo (@_seleccionado.UnidadMedida)" @bind="_consumoSimulado" @bind:event="oninput" />
+                    </div>
+                    @if (Simulacion is { ConsumoTotal: > 0 } sim)
+                    {
+                        <p>Costo total: <strong>$ @sim.CostoTotal.ToString("0.00")</strong> · precio promedio $ @sim.PrecioPromedio.ToString("0.0000") por @_seleccionado.UnidadMedida</p>
+                        <div class="table-wrap">
+                            <table class="table">
+                                <thead><tr><th>Tramo</th><th class="num">Consumido</th><th class="num">Precio</th><th class="num">Subtotal</th></tr></thead>
+                                <tbody>
+                                    @foreach (var d in sim.Detalle)
+                                    {
+                                        <tr><td>@(d.CantidadHasta is { } h ? $"hasta {h:0.##}" : "resto")</td><td class="num">@d.CantidadConsumida.ToString("0.##")</td><td class="num">@d.PrecioPorUnidad.ToString("0.0000")</td><td class="num">@d.Subtotal.ToString("0.00")</td></tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                }
+                <StatusBar Mensaje="@StatusMessage" />
+            </section>
+        </div>
+    </ChildContent>
+</PaginaMarco>
+
+@code {
+    protected override string Modulo => ModuleAccess.SpecialResources;
+
+    private List<Recurso> _especiales = new();
+    private Recurso? _seleccionado;
+    private List<TramoRow> _tramos = new();
+    private bool _mostrarInactivos;
+    private bool _mostrarAlta;
+    private NuevoEspecial _nuevo = new();
+    private decimal? _consumoSimulado;
+
+    private IResourcePricingService Pricing => Servicio<IResourcePricingService>();
+
+    private IEnumerable<Recurso> Filtrados => _especiales.Where(r => r.Activo || _mostrarInactivos);
+
+    // Se calcula con los tramos tal como están en pantalla, antes de guardarlos.
+    private TramoCalculationResult? Simulacion => _consumoSimulado is { } consumo
+        ? TramoPrecioCalculator.Calcular(
+            _tramos.Select((t, i) => new RecursoTramoPrecio { Orden = i + 1, CantidadHasta = t.CantidadHasta, PrecioPorUnidad = t.PrecioPorUnidad }).ToList(),
+            consumo)
+        : null;
+
+    protected override async Task CargarAsync()
+    {
+        await RecargarAsync();
+        if (_seleccionado is null && Filtrados.FirstOrDefault() is { } primero)
+        {
+            await SeleccionarAsync(primero);
+        }
+    }
+
+    private async Task RecargarAsync()
+    {
+        _especiales = (await Pricing.GetAllResourcesAsync()).Where(r => r.EsServicio).OrderBy(r => r.Nombre).ToList();
+        if (_seleccionado is not null)
+        {
+            _seleccionado = _especiales.FirstOrDefault(x => x.Id == _seleccionado.Id);
+        }
+    }
+
+    private async Task SeleccionarAsync(Recurso recurso)
+    {
+        _seleccionado = recurso;
+        _consumoSimulado = null;
+        StatusMessage = string.Empty;
+        _tramos = (await Pricing.GetTramosAsync(recurso.Id))
+            .OrderBy(t => t.Orden)
+            .Select(t => new TramoRow { CantidadHasta = t.CantidadHasta, PrecioPorUnidad = t.PrecioPorUnidad })
+            .ToList();
+        if (_tramos.Count == 0)
+        {
+            AgregarTramo();
+        }
+    }
+
+    private void AgregarTramo() => _tramos.Add(new TramoRow());
+
+    private async Task CrearAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_nuevo.Codigo) || string.IsNullOrWhiteSpace(_nuevo.Nombre))
+        {
+            StatusMessage = "Código y nombre son requeridos.";
+            return;
+        }
+
+        var creado = await Pricing.UpsertResourceAsync(new ResourceUpsertRequest
+        {
+            Codigo = _nuevo.Codigo.Trim(),
+            Nombre = _nuevo.Nombre.Trim(),
+            Categoria = _nuevo.Categoria.Trim(),
+            UnidadMedida = _nuevo.Unidad.Trim(),
+            EsServicio = true,
+            Moneda = Moneda.ARS,
+            Activo = true,
+            MotivoCambio = "Alta de insumo especial",
+            Usuario = Session.Actor
+        });
+
+        _mostrarAlta = false;
+        _nuevo = new NuevoEspecial();
+        await RecargarAsync();
+        await SeleccionarAsync(_especiales.First(x => x.Id == creado.Id));
+        StatusMessage = "Insumo especial creado. Ahora definí sus tramos de precio.";
+    }
+
+    private async Task GuardarTramosAsync()
+    {
+        if (_seleccionado is null) { StatusMessage = "Seleccioná un insumo especial."; return; }
+        if (_tramos.Count == 0) { StatusMessage = "Debe definir al menos un tramo de precio."; return; }
+        if (_tramos.Any(t => t.PrecioPorUnidad < 0)) { StatusMessage = "Hay un precio de tramo inválido."; return; }
+        if (_tramos.Any(t => t.CantidadHasta is <= 0)) { StatusMessage = "Hay una cantidad de tramo inválida."; return; }
+
+        var entrada = _tramos
+            .Select(t => new TramoPrecioInput { CantidadHasta = t.CantidadHasta, PrecioPorUnidad = t.PrecioPorUnidad })
+            .ToList();
+        await Pricing.GuardarTramosAsync(_seleccionado.Id, entrada, Session.Actor);
+        await SeleccionarAsync(_seleccionado);
+        StatusMessage = "Tramos guardados. El costo de los productos que usan este insumo ya se recalculó.";
+    }
+
+    private async Task ToggleActivoAsync()
+    {
+        if (_seleccionado is null) { return; }
+
+        var activar = !_seleccionado.Activo;
+        if (!activar && !await ConfirmarAsync($"¿Desactivar el insumo especial '{_seleccionado.Nombre}'? Dejará de aparecer en los listados y en recetas nuevas. Se puede reactivar desde \"Mostrar inactivos\"."))
+        {
+            return;
+        }
+
+        var result = await Servicio<ICatalogActivationService>().SetRecursoActivoAsync(_seleccionado.Id, activar, Session.Actor, WebSession.Equipo);
+        await RecargarAsync();
+        if (_seleccionado is { Activo: false } && !_mostrarInactivos)
+        {
+            _seleccionado = null;
+            _tramos.Clear();
+        }
+
+        StatusMessage = result.Mensaje;
+    }
+
+    private sealed class TramoRow
+    {
+        public decimal? CantidadHasta { get; set; }
+        public decimal PrecioPorUnidad { get; set; }
+    }
+
+    private sealed class NuevoEspecial
+    {
+        public string Codigo { get; set; } = string.Empty;
+        public string Nombre { get; set; } = string.Empty;
+        public string Unidad { get; set; } = string.Empty;
+        public string Categoria { get; set; } = string.Empty;
+    }
+}

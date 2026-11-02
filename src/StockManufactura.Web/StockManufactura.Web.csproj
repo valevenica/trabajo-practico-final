@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <ItemGroup>
+    <ProjectReference Include="..\StockManufactura.Application\StockManufactura.Application.csproj" />
+    <ProjectReference Include="..\StockManufactura.Infrastructure\StockManufactura.Infrastructure.csproj" />
+    <ProjectReference Include="..\StockManufactura.Domain\StockManufactura.Domain.csproj" />
+    <ProjectReference Include="..\StockManufactura.Shared\StockManufactura.Shared.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
+  </PropertyGroup>
+
+</Project>

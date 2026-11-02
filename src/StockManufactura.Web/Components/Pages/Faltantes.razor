@@ -1,0 +1,67 @@
+@page "/faltantes"
+@attribute [Authorize]
+@rendermode RenderModes.Interactivo
+@inherits PaginaBase
+@using StockManufactura.Application.Resources
+
+<PageTitle>Faltantes · StockManufactura</PageTitle>
+
+<PaginaMarco Titulo="Faltantes" Cargando="Cargando" AccesoDenegado="@AccesoDenegado">
+    <Acciones>
+        <button class="btn btn-secondary" disabled="@Ocupado" @onclick="() => EjecutarAsync(CargarAsync)">Actualizar</button>
+    </Acciones>
+    <ChildContent>
+        @if (_reporte is not null)
+        {
+            <div class="card">
+                <h2>Productos (@_reporte.Productos.Count)</h2>
+                <div class="table-wrap">
+                    <table class="table">
+                        <thead><tr><th>Producto</th><th class="num">Stock</th><th class="num">Reservado</th><th class="num">Faltante</th><th>Motivo</th></tr></thead>
+                        <tbody>
+                            @foreach (var p in _reporte.Productos)
+                            {
+                                <tr><td>@p.ProductoNombre</td><td class="num">@p.StockActual.ToString("0.##")</td><td class="num">@p.Reservado.ToString("0.##")</td><td class="num strong">@p.Faltante.ToString("0.##")</td><td>@p.Motivo</td></tr>
+                            }
+                            @if (_reporte.Productos.Count == 0)
+                            {
+                                <tr><td colspan="5" class="muted">Sin faltantes de productos.</td></tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Insumos (@_reporte.Insumos.Count)</h2>
+                <div class="table-wrap">
+                    <table class="table">
+                        <thead><tr><th>Insumo</th><th>Unidad</th><th class="num">Stock</th><th class="num">Faltante</th><th>Motivo</th></tr></thead>
+                        <tbody>
+                            @foreach (var r in _reporte.Insumos)
+                            {
+                                <tr><td>@r.RecursoNombre</td><td>@r.UnidadMedida</td><td class="num">@r.StockActual.ToString("0.##")</td><td class="num strong">@r.Faltante.ToString("0.##")</td><td>@r.Motivo</td></tr>
+                            }
+                            @if (_reporte.Insumos.Count == 0)
+                            {
+                                <tr><td colspan="5" class="muted">Sin faltantes de insumos.</td></tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+        <StatusBar Mensaje="@StatusMessage" />
+    </ChildContent>
+</PaginaMarco>
+
+@code {
+    protected override string Modulo => ModuleAccess.Shortages;
+
+    private ShortageReport? _reporte;
+
+    protected override async Task CargarAsync()
+    {
+        _reporte = await Servicio<IShortageService>().GetShortagesAsync();
+    }
+}

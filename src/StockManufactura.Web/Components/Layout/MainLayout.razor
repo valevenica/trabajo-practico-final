@@ -1,0 +1,94 @@
+@inherits LayoutComponentBase
+@inject WebSession Session
+
+<div class="shell">
+    <aside class="sidebar">
+        <input type="checkbox" id="nav-toggle" class="nav-toggle" aria-label="Mostrar u ocultar el menú" />
+        <div class="sidebar-top">
+            <a class="brand" href="">
+                <img src="img/logo.png" alt="" />
+                <span>StockManufactura</span>
+            </a>
+            @if (Session.Usuario is not null)
+            {
+                <label for="nav-toggle" class="nav-toggle-btn">☰ Menú</label>
+            }
+        </div>
+
+        @if (Session.Usuario is not null)
+        {
+            <nav class="nav">
+                @foreach (var grupo in Menu)
+                {
+                    var items = grupo.Items.Where(x => x.Modulo is null || Session.CanEnter(x.Modulo)).ToList();
+                    if (items.Count == 0) { continue; }
+                    <div class="nav-group">@grupo.Titulo</div>
+                    @foreach (var item in items)
+                    {
+                        <NavLink href="@item.Ruta" Match="NavLinkMatch.All">@item.Texto</NavLink>
+                    }
+                }
+            </nav>
+
+            <div class="user-box">
+                <div class="user-name">@Session.Usuario.Nombre</div>
+                <div class="muted small">@Session.Usuario.Rol?.Nombre</div>
+                <a href="cuenta" class="small">Mi cuenta</a>
+                <form method="post" action="cuenta/salir">
+                    <AntiforgeryToken />
+                    <button type="submit" class="btn btn-link small">Cerrar sesión</button>
+                </form>
+            </div>
+        }
+    </aside>
+
+    <main class="content">
+        @Body
+    </main>
+</div>
+
+<div id="blazor-error-ui" data-nosnippet>
+    Ocurrió un error inesperado.
+    <a href="." class="reload">Recargar</a>
+    <span class="dismiss">🗙</span>
+</div>
+
+@code {
+    // Mismos grupos y orden que el menú lateral de escritorio; cada opción se muestra solo si el rol tiene permiso.
+    private static readonly (string Titulo, (string Ruta, string Texto, string? Modulo)[] Items)[] Menu =
+    {
+        ("Dashboard", new (string, string, string?)[]
+        {
+            ("", "Panel principal", null),
+            ("inteligencia", "Inteligencia de negocio", ModuleAccess.BusinessIntelligence),
+            ("faltantes", "Faltantes", ModuleAccess.Shortages),
+        }),
+        ("Stock", new (string, string, string?)[]
+        {
+            ("productos", "Productos", ModuleAccess.Products),
+            ("insumos", "Insumos", ModuleAccess.Resources),
+            ("insumos/especiales", "Insumos especiales", ModuleAccess.SpecialResources),
+            ("stock/ingresos", "Ingresos", ModuleAccess.StockIntake),
+            ("insumos/precios", "Carga masiva de precios", ModuleAccess.PriceImport),
+        }),
+        ("Proveedores", new (string, string, string?)[] { ("proveedores", "Proveedores", ModuleAccess.Providers) }),
+        ("Clientes", new (string, string, string?)[] { ("clientes", "Clientes", ModuleAccess.Clients) }),
+        ("Producción", new (string, string, string?)[]
+        {
+            ("ordenes", "Órdenes", ModuleAccess.ProductionOrders),
+            ("productos/historial", "Historial de costos", ModuleAccess.CostHistory),
+        }),
+        ("Finanzas", new (string, string, string?)[] { ("cotizacion", "Configuración monetaria", ModuleAccess.Monetary) }),
+        ("Administración", new (string, string, string?)[]
+        {
+            ("usuarios", "Usuarios", ModuleAccess.Users),
+            ("backups", "Backups", ModuleAccess.Backups),
+            ("bitacora", "Bitácora", ModuleAccess.Audit),
+        }),
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Session.GetUsuarioAsync();
+    }
+}

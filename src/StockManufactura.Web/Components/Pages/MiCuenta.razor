@@ -1,0 +1,68 @@
+@page "/cuenta"
+@attribute [Authorize]
+@rendermode RenderModes.Interactivo
+@inherits PaginaBase
+@using StockManufactura.Application.DTOs
+
+<PageTitle>Mi cuenta · StockManufactura</PageTitle>
+
+<PaginaMarco Titulo="Mi cuenta" Cargando="Cargando" AccesoDenegado="@AccesoDenegado">
+    @if (Session.Usuario is { } usuario)
+    {
+        <div class="split">
+            <section class="card">
+                <h2>Mis datos</h2>
+                <div class="form-grid">
+                    <div class="span-2"><label>Nombre de usuario (con el que ingresa)</label><input @bind="_nombre" /></div>
+                    <div class="span-2"><label>Correo (para recuperar la contraseña)</label><input type="email" @bind="_email" /></div>
+                </div>
+                <div class="form-actions">
+                    <button class="btn btn-primary" disabled="@Ocupado" @onclick="() => EjecutarAsync(GuardarAsync)">Guardar mis datos</button>
+                </div>
+                <StatusBar Mensaje="@StatusMessage" />
+            </section>
+
+            <section class="card">
+                <h2>Acceso</h2>
+                <dl class="datos">
+                    <dt>Rol</dt><dd>@usuario.Rol?.Nombre</dd>
+                    <dt>Último ingreso</dt><dd>@(usuario.UltimoAcceso?.ToLocalTime().ToString("dd/MM/yyyy HH:mm") ?? "—")</dd>
+                </dl>
+                <a class="btn btn-secondary" href="cuenta/password">Cambiar contraseña</a>
+            </section>
+        </div>
+    }
+</PaginaMarco>
+
+@code {
+    // Sin permisos especiales: cualquier usuario puede ver y editar sus propios datos.
+    protected override string Modulo => ModuleAccess.Dashboard;
+
+    private string _nombre = string.Empty;
+    private string _email = string.Empty;
+
+    protected override Task CargarAsync()
+    {
+        _nombre = Session.Usuario?.Nombre ?? string.Empty;
+        _email = Session.Usuario?.Email ?? string.Empty;
+        return Task.CompletedTask;
+    }
+
+    private async Task GuardarAsync()
+    {
+        var usuario = Session.Usuario;
+        if (usuario is null) { return; }
+        if (string.IsNullOrWhiteSpace(_nombre) || string.IsNullOrWhiteSpace(_email)) { StatusMessage = "Nombre y correo son requeridos."; return; }
+
+        var actualizado = await Servicio<IUserManagementService>().UpdateAsync(usuario.Id, new UpsertUsuarioRequest
+        {
+            Nombre = _nombre.Trim(),
+            Email = _email.Trim(),
+            RolId = usuario.RolId,
+            EsActivo = usuario.EsActivo
+        }, usuario.Email);
+
+        usuario.ActualizarDatos(actualizado.Nombre, actualizado.Email);
+        StatusMessage = "Sus datos fueron actualizados. Si cambió el nombre de usuario, úselo en el próximo ingreso.";
+    }
+}

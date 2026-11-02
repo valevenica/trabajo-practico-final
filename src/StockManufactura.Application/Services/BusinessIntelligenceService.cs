@@ -194,7 +194,7 @@ namespace StockManufactura.Application.Services
                     Etiqueta = char.ToUpperInvariant(etiqueta[0]) + etiqueta[1..],
                     Valor = Math.Round(promedio, 2),
                     ValorFormateado = FormatoMoneda(promedio),
-                    Detalle = $"{delMes.Length} recalculo(s)"
+                    Detalle = $"{delMes.Length} recálculo(s)"
                 };
             }
         }
@@ -213,9 +213,9 @@ namespace StockManufactura.Application.Services
                 alertas.Add(new DecisionAlert
                 {
                     Severidad = "Critica",
-                    Titulo = $"{faltantes} item(s) por debajo del stock minimo",
+                    Titulo = $"{faltantes} item(s) por debajo del stock mínimo",
                     Detalle = "Hay productos o insumos cuyo stock actual no alcanza el umbral configurado.",
-                    Recomendacion = "Revisar la pantalla de Faltantes y generar las ordenes de compra o produccion correspondientes."
+                    Recomendacion = "Revisar la pantalla de Faltantes y generar las órdenes de compra o producción correspondientes."
                 });
             }
 
@@ -225,8 +225,8 @@ namespace StockManufactura.Application.Services
                 {
                     Severidad = "Critica",
                     Titulo = $"Los costos subieron {variacionCostoPromedioPct.ToString("N2", Cultura)} % en promedio",
-                    Detalle = "El promedio de variacion de los recalculos del periodo supera el 10 %.",
-                    Recomendacion = "Revisar los precios de venta sugeridos: con el margen actual el aumento de costos se esta absorbiendo."
+                    Detalle = "El promedio de variación de los recálculos del período supera el 10 %.",
+                    Recomendacion = "Revisar los precios de venta sugeridos: con el margen actual el aumento de costos se está absorbiendo."
                 });
             }
 
@@ -239,8 +239,8 @@ namespace StockManufactura.Application.Services
                 {
                     Severidad = "Advertencia",
                     Titulo = $"{sinTrazabilidad.Length} producto(s) sin historial de costos",
-                    Detalle = "Esos productos nunca registraron un recalculo, por lo que su evolucion de costo no se puede reconstruir.",
-                    Recomendacion = "Ejecutar un recalculo de costos sobre esos productos para dejar la linea de base en el historial."
+                    Detalle = "Esos productos nunca registraron un recálculo, por lo que su evolución de costo no se puede reconstruir.",
+                    Recomendacion = "Ejecutar un recálculo de costos sobre esos productos para dejar la línea de base en el historial."
                 });
             }
 
@@ -261,9 +261,9 @@ namespace StockManufactura.Application.Services
                 alertas.Add(new DecisionAlert
                 {
                     Severidad = "Advertencia",
-                    Titulo = "La cotizacion del dolar tiene mas de 7 dias",
-                    Detalle = $"Ultima actualizacion: {ultimaCotizacion.ToLocalTime():dd/MM/yyyy HH:mm}.",
-                    Recomendacion = "Actualizar la cotizacion antes de recalcular costos de insumos importados."
+                    Titulo = "La cotización del dólar tiene más de 7 días",
+                    Detalle = $"Última actualización: {ultimaCotizacion.ToLocalTime():dd/MM/yyyy HH:mm}.",
+                    Recomendacion = "Actualizar la cotización antes de recalcular costos de insumos importados."
                 });
             }
 
@@ -272,9 +272,9 @@ namespace StockManufactura.Application.Services
                 alertas.Add(new DecisionAlert
                 {
                     Severidad = "Ok",
-                    Titulo = "Sin alertas para el periodo",
+                    Titulo = "Sin alertas para el período",
                     Detalle = "No se detectaron faltantes, aumentos de costo relevantes ni brechas de trazabilidad.",
-                    Recomendacion = "Mantener la frecuencia actual de recalculo de costos y actualizacion de cotizacion."
+                    Recomendacion = "Mantener la frecuencia actual de recálculo de costos y actualización de cotización."
                 });
             }
 
